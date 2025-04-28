@@ -11,10 +11,11 @@ import com.ugarosa.neovim.infra.NeovimRpcClient
 class NeovimStartupActivity : ProjectActivity {
     override suspend fun execute(project: Project) {
         val processManager = NeovimProcessManager()
-        val client = NeovimRpcClient(
-            input = processManager.getInputStream(),
-            output = processManager.getOutputStream(),
-        )
+        val client =
+            NeovimRpcClient(
+                input = processManager.getInputStream(),
+                output = processManager.getOutputStream(),
+            )
         inject(client)
 
         EditorFactory.getInstance().allEditors.forEach { editor ->
@@ -26,7 +27,7 @@ class NeovimStartupActivity : ProjectActivity {
                     client.initializeNeovimBuffer(event.editor)
                 }
             },
-            project
+            project,
         )
     }
 }

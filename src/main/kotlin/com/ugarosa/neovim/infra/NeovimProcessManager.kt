@@ -13,11 +13,12 @@ class NeovimProcessManager {
     }
 
     private fun start() {
-        val builder = ProcessBuilder(
-            "nvim",
-            "--embed",
-            "--headless",
-        )
+        val builder =
+            ProcessBuilder(
+                "nvim",
+                "--embed",
+                "--headless",
+            )
         builder.redirectErrorStream(true)
         process = builder.start()
         inputStream = process.inputStream
@@ -25,5 +26,6 @@ class NeovimProcessManager {
     }
 
     fun getInputStream(): InputStream = inputStream
+
     fun getOutputStream(): OutputStream = outputStream
 }

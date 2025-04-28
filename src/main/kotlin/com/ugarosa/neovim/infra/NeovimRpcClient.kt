@@ -11,13 +11,16 @@ import java.util.concurrent.atomic.AtomicInteger
 
 class NeovimRpcClient(
     input: InputStream,
-    output: OutputStream
+    output: OutputStream,
 ) {
     private val messageIdGenerator = AtomicInteger(0)
     private val packer = MessagePack.newDefaultPacker(output)
     private val unpacker = MessagePack.newDefaultUnpacker(input)
 
-    fun sendRequest(method: String, params: List<Any?> = emptyList()): Int {
+    fun sendRequest(
+        method: String,
+        params: List<Any?> = emptyList(),
+    ): Int {
         val msgId = messageIdGenerator.getAndIncrement()
 
         packer.packArrayHeader(4)
@@ -49,7 +52,7 @@ class NeovimRpcClient(
 
         sendRequest(
             "nvim_buf_set_lines",
-            listOf(0, 0, -1, false, lines)
+            listOf(0, 0, -1, false, lines),
         )
         receiveResponse()
     }
@@ -109,6 +112,6 @@ class NeovimRpcClient(
     data class Response(
         val msgId: Int,
         val error: Value,
-        val result: Value
+        val result: Value,
     )
 }

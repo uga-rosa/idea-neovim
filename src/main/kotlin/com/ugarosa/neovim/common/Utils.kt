@@ -1,6 +1,9 @@
 package com.ugarosa.neovim.common
 
-fun utf8ByteOffsetToCharOffset(text: String, byteOffset: Int): Int {
+fun utf8ByteOffsetToCharOffset(
+    text: String,
+    byteOffset: Int,
+): Int {
     var bytes = 0
     var index = 0
     for (ch in text) {

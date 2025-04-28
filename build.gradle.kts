@@ -37,9 +37,10 @@ intellijPlatform {
             sinceBuild = "251"
         }
 
-        changeNotes = """
-        Initial version
-    """.trimIndent()
+        changeNotes =
+            """
+            Initial version
+            """.trimIndent()
     }
 }
 

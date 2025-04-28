@@ -11,11 +11,20 @@ class NeovimTypedActionHandler(
     private val originalHandler: TypedActionHandler,
     private val client: NeovimRpcClient,
 ) : TypedActionHandlerEx {
-    override fun beforeExecute(p0: Editor, p1: Char, p2: DataContext, p3: ActionPlan) {
+    override fun beforeExecute(
+        p0: Editor,
+        p1: Char,
+        p2: DataContext,
+        p3: ActionPlan,
+    ) {
         // no-op
     }
 
-    override fun execute(editor: Editor, char: Char, ctx: DataContext) {
+    override fun execute(
+        editor: Editor,
+        char: Char,
+        ctx: DataContext,
+    ) {
         if (char in setOf('h', 'j', 'k', 'l')) {
             client.sendInput(char.toString())
             val pos = client.getCursor(editor)
