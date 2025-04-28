@@ -5,11 +5,11 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.actionSystem.ActionPlan
 import com.intellij.openapi.editor.actionSystem.TypedActionHandler
 import com.intellij.openapi.editor.actionSystem.TypedActionHandlerEx
-import com.ugarosa.neovim.infra.NeovimRpcClient
+import com.ugarosa.neovim.service.NeovimService
 
 class NeovimTypedActionHandler(
     private val originalHandler: TypedActionHandler,
-    private val client: NeovimRpcClient,
+    private val service: NeovimService,
 ) : TypedActionHandlerEx {
     override fun beforeExecute(
         p0: Editor,
@@ -26,8 +26,8 @@ class NeovimTypedActionHandler(
         ctx: DataContext,
     ) {
         if (char in setOf('h', 'j', 'k', 'l')) {
-            client.sendInput(char.toString())
-            val pos = client.getCursor(editor)
+            service.sendInput(char.toString())
+            val pos = service.getCursor(editor)
             editor.caretModel.moveToLogicalPosition(pos)
         } else {
             originalHandler.execute(editor, char, ctx)

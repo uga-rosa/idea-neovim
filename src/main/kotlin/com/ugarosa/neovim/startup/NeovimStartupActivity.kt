@@ -7,6 +7,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
 import com.ugarosa.neovim.infra.NeovimProcessManager
 import com.ugarosa.neovim.infra.NeovimRpcClient
+import com.ugarosa.neovim.service.NeovimService
 
 class NeovimStartupActivity : ProjectActivity {
     override suspend fun execute(project: Project) {
@@ -16,15 +17,16 @@ class NeovimStartupActivity : ProjectActivity {
                 input = processManager.getInputStream(),
                 output = processManager.getOutputStream(),
             )
-        inject(client)
+        val service = NeovimService(client)
+        inject(service)
 
         EditorFactory.getInstance().allEditors.forEach { editor ->
-            client.initializeNeovimBuffer(editor)
+            service.initializeNeovimBuffer(editor)
         }
         EditorFactory.getInstance().addEditorFactoryListener(
             object : EditorFactoryListener {
                 override fun editorCreated(event: EditorFactoryEvent) {
-                    client.initializeNeovimBuffer(event.editor)
+                    service.initializeNeovimBuffer(event.editor)
                 }
             },
             project,

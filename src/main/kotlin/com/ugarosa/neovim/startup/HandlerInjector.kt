@@ -3,9 +3,9 @@ package com.ugarosa.neovim.startup
 import com.intellij.openapi.editor.actionSystem.TypedAction
 import com.intellij.openapi.editor.actionSystem.TypedActionHandler
 import com.ugarosa.neovim.handler.NeovimTypedActionHandler
-import com.ugarosa.neovim.infra.NeovimRpcClient
+import com.ugarosa.neovim.service.NeovimService
 
-fun inject(client: NeovimRpcClient): TypedActionHandler? {
+fun inject(service: NeovimService): TypedActionHandler? {
     val typedAction = TypedAction.getInstance()
     val rawHandler = typedAction.rawHandler
     val handlerClass = rawHandler.javaClass
@@ -20,7 +20,7 @@ fun inject(client: NeovimRpcClient): TypedActionHandler? {
         field.get(rawHandler) as? TypedActionHandler
             ?: return null
 
-    val newHandler = NeovimTypedActionHandler(original, client)
+    val newHandler = NeovimTypedActionHandler(original, service)
     field.set(rawHandler, newHandler)
 
     return original
