@@ -5,11 +5,10 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.actionSystem.ActionPlan
 import com.intellij.openapi.editor.actionSystem.TypedActionHandler
 import com.intellij.openapi.editor.actionSystem.TypedActionHandlerEx
-import com.ugarosa.neovim.service.NeovimService
+import com.ugarosa.neovim.session.NEOVIM_SESSION_KEY
 
 class NeovimTypedActionHandler(
     private val originalHandler: TypedActionHandler,
-    private val service: NeovimService,
 ) : TypedActionHandlerEx {
     override fun beforeExecute(
         p0: Editor,
@@ -25,12 +24,12 @@ class NeovimTypedActionHandler(
         char: Char,
         ctx: DataContext,
     ) {
-        if (char in setOf('h', 'j', 'k', 'l')) {
-            service.sendInput(char.toString())
-            val pos = service.getCursor(editor)
-            editor.caretModel.moveToLogicalPosition(pos)
-        } else {
-            originalHandler.execute(editor, char, ctx)
-        }
+        println("char = $char")
+        println("ctx = $ctx")
+        val session =
+            editor.getUserData(NEOVIM_SESSION_KEY)
+                ?: error("NeovimEditorSession does not exist")
+
+        session.sendInput(char.toString())
     }
 }
