@@ -1,4 +1,4 @@
-package com.ugarosa.neovim.listener
+package com.ugarosa.neovim.factory
 
 import com.intellij.openapi.editor.event.EditorFactoryEvent
 import com.intellij.openapi.editor.event.EditorFactoryListener
@@ -21,7 +21,7 @@ class NeovimEditorFactoryListener : EditorFactoryListener {
                     if (key.length <= 1) {
                         super.keyPressed(e)
                     } else {
-                        session.sendInput(key)
+                        session.sendKeyAndFetchStatus(key)
                         e.consume()
                     }
                 }
@@ -34,7 +34,8 @@ class NeovimEditorFactoryListener : EditorFactoryListener {
             KeyEvent.VK_CONTROL,
             KeyEvent.VK_SHIFT,
             KeyEvent.VK_ALT,
-            KeyEvent.VK_META -> return ""
+            KeyEvent.VK_META,
+            -> return ""
         }
 
         val modifiers =

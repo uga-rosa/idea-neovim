@@ -30,6 +30,6 @@ class NeovimTypedActionHandler(
             editor.getUserData(NEOVIM_SESSION_KEY)
                 ?: error("NeovimEditorSession does not exist")
 
-        session.sendInput(char.toString())
+        session.sendKeyAndFetchStatus(char.toString())
     }
 }

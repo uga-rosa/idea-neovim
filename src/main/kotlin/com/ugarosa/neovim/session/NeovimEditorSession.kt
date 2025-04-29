@@ -4,10 +4,15 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.LogicalPosition
+import com.intellij.openapi.wm.WindowManager
 import com.ugarosa.neovim.common.utf8ByteOffsetToCharOffset
+import com.ugarosa.neovim.factory.NEOVIM_MODE_ID
+import com.ugarosa.neovim.factory.NeovimModeWidget
 import com.ugarosa.neovim.infra.NeovimRpcClient
+import com.ugarosa.neovim.service.BufLinesEvent
 import com.ugarosa.neovim.service.BufferId
 import com.ugarosa.neovim.service.NeovimFunctions
+import com.ugarosa.neovim.service.NeovimMode
 
 class NeovimEditorSession(
     private val rpcClient: NeovimRpcClient,
@@ -33,10 +38,11 @@ class NeovimEditorSession(
         NeovimFunctions.setCurrentBuffer(rpcClient, bufferId)
     }
 
-    fun sendInput(key: String) {
+    fun sendKeyAndFetchStatus(key: String) {
         NeovimFunctions.input(rpcClient, key)
         val pos = getCursor()
         editor.caretModel.moveToLogicalPosition(pos)
+        updateModeWidget()
     }
 
     private fun initializeBuffer() {
@@ -48,7 +54,7 @@ class NeovimEditorSession(
         NeovimFunctions.bufferAttach(rpcClient, bufferId)
     }
 
-    private fun handleBufferLinesEvent(e: NeovimFunctions.BufLinesEvent) {
+    private fun handleBufferLinesEvent(e: BufLinesEvent) {
         ApplicationManager.getApplication().invokeLater {
             WriteCommandAction.runWriteCommandAction(editor.project) {
                 val document = editor.document
@@ -89,5 +95,26 @@ class NeovimEditorSession(
         val correctedCol = utf8ByteOffsetToCharOffset(lineText, nvimByteCol)
 
         return LogicalPosition(lineIndex, correctedCol)
+    }
+
+    private fun updateModeWidget() {
+        val mode = NeovimFunctions.getMode(rpcClient)
+        val project = editor.project ?: return
+        val widget = WindowManager.getInstance().getStatusBar(project)?.getWidget(NEOVIM_MODE_ID)
+        if (widget is NeovimModeWidget) {
+            widget.updateMode(mode)
+        }
+        applyCursorShape(mode)
+    }
+
+    private fun applyCursorShape(mode: NeovimMode) {
+        editor.settings.isBlockCursor = mode in
+            setOf(
+                NeovimMode.NORMAL,
+                NeovimMode.VISUAL,
+                NeovimMode.VISUAL_LINE,
+                NeovimMode.VISUAL_BLOCK,
+                NeovimMode.SELECT,
+            )
     }
 }

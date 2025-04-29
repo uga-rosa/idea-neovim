@@ -1,6 +1,7 @@
 package com.ugarosa.neovim.service
 
 import org.msgpack.core.MessagePack
+import org.msgpack.value.MapValue
 import org.msgpack.value.Value
 
 // :h api-definitions
@@ -37,4 +38,10 @@ fun Value.asTabPageId(): TabPageId {
 
 private fun ByteArray.toLongFromMsgpack(): Long {
     return MessagePack.newDefaultUnpacker(this).unpackLong()
+}
+
+fun MapValue.get(key: String): Value? {
+    return this.map().entries
+        .firstOrNull { it.key.isStringValue && it.key.asStringValue().asString() == key }
+        ?.value
 }

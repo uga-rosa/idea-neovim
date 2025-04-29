@@ -1,5 +1,6 @@
 package com.ugarosa.neovim.service
 
+import com.intellij.ui.JBColor
 import com.ugarosa.neovim.infra.NeovimRpcClient
 
 object NeovimFunctions {
@@ -53,13 +54,6 @@ object NeovimFunctions {
         return row to col
     }
 
-    data class BufLinesEvent(
-        val bufferId: BufferId,
-        val firstLine: Int,
-        val lastLine: Int,
-        val replacementLines: List<String>,
-    )
-
     fun maybeBufLinesEvent(push: NeovimRpcClient.PushNotification): BufLinesEvent? {
         if (push.method != "nvim_buf_lines_event") {
             return null
@@ -71,4 +65,39 @@ object NeovimFunctions {
         val replacementLines = params[4].asArrayValue().list().map { it.asStringValue().asString() }
         return BufLinesEvent(bufferId, firstLine, lastLine, replacementLines)
     }
+
+    fun getMode(rpcClient: NeovimRpcClient): NeovimMode {
+        val response = rpcClient.requestSync("nvim_get_mode")
+        val modeString = response.result.asMapValue().get("mode")?.asStringValue()?.asString()
+        return when (modeString?.get(0)) {
+            'n' -> NeovimMode.NORMAL
+            'v' -> NeovimMode.VISUAL
+            'V' -> NeovimMode.VISUAL_LINE
+            '\u0016' -> NeovimMode.VISUAL_BLOCK
+            's' -> NeovimMode.SELECT
+            'i' -> NeovimMode.INSERT
+            'R' -> NeovimMode.REPLACE
+            'c' -> NeovimMode.COMMAND
+            else -> NeovimMode.OTHER
+        }
+    }
+}
+
+data class BufLinesEvent(
+    val bufferId: BufferId,
+    val firstLine: Int,
+    val lastLine: Int,
+    val replacementLines: List<String>,
+)
+
+enum class NeovimMode(val color: JBColor) {
+    NORMAL(JBColor.GREEN),
+    VISUAL(JBColor.BLUE),
+    VISUAL_LINE(JBColor.BLUE),
+    VISUAL_BLOCK(JBColor.BLUE),
+    SELECT(JBColor.BLUE),
+    INSERT(JBColor.YELLOW),
+    REPLACE(JBColor.ORANGE),
+    COMMAND(JBColor.GREEN),
+    OTHER(JBColor.RED),
 }
