@@ -17,7 +17,6 @@ class NeovimEditorFactoryListener : EditorFactoryListener {
                             ?: error("NeovimEditorSession does not exist")
 
                     val key = neovimNotation(e)
-                    println("key = $key")
                     if (key.length <= 1) {
                         super.keyPressed(e)
                     } else {

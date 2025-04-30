@@ -21,7 +21,6 @@ class NeovimProcessManager {
     private fun connectToExistingProcess(debugAddress: String) {
         val (host, portStr) = debugAddress.split(":")
         val port = portStr.toInt()
-        println("Connecting to existing Neovim process at $host:$port")
         val socket = Socket(host, port)
         inputStream = socket.getInputStream()
         outputStream = socket.getOutputStream()

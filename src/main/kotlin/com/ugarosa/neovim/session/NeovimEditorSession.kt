@@ -16,30 +16,43 @@ import com.ugarosa.neovim.rpc.NeovimFunctions
 import com.ugarosa.neovim.rpc.NeovimMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class NeovimEditorSession(
+class NeovimEditorSession private constructor(
     private val rpcClient: NeovimRpcClient,
     private val editor: Editor,
     private val scope: CoroutineScope,
+    private val bufferId: BufferId,
 ) {
-    private lateinit var bufferId: BufferId
+    companion object {
+        suspend fun create(
+            rpcClient: NeovimRpcClient,
+            editor: Editor,
+            scope: CoroutineScope,
+        ): NeovimEditorSession {
+            return scope.async(Dispatchers.IO) {
+                val bufferId = NeovimFunctions.createBuffer(rpcClient)
+                val session = NeovimEditorSession(rpcClient, editor, scope, bufferId)
 
-    init {
-        scope.launch(Dispatchers.IO) {
-            bufferId = NeovimFunctions.createBuffer(rpcClient)
-
-            rpcClient.registerPushHandler { push ->
-                val event = NeovimFunctions.maybeBufLinesEvent(push)
-                if (event?.bufferId == bufferId) {
-                    handleBufferLinesEvent(event)
+                rpcClient.registerPushHandler { push ->
+                    val event = NeovimFunctions.maybeBufLinesEvent(push)
+                    if (event?.bufferId == bufferId) {
+                        session.handleBufferLinesEvent(event)
+                    }
                 }
-            }
 
-            initializeBuffer()
-            attachBuffer()
+                session.initializeBuffer()
+                session.attachBuffer()
+
+                session
+            }.await()
         }
+    }
+
+    fun setToEditor() {
+        editor.putUserData(NEOVIM_SESSION_KEY, this)
     }
 
     fun activateBuffer() {

@@ -24,8 +24,6 @@ class NeovimTypedActionHandler(
         char: Char,
         ctx: DataContext,
     ) {
-        println("char = $char")
-        println("ctx = $ctx")
         val session =
             editor.getUserData(NEOVIM_SESSION_KEY)
                 ?: error("NeovimEditorSession does not exist")

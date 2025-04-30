@@ -16,6 +16,7 @@ import com.ugarosa.neovim.service.CoroutineService
 import com.ugarosa.neovim.service.PluginDisposable
 import com.ugarosa.neovim.session.NEOVIM_SESSION_KEY
 import com.ugarosa.neovim.session.NeovimEditorSession
+import kotlinx.coroutines.launch
 
 class NeovimStartupActivity : ProjectActivity {
     override suspend fun execute(project: Project) {
@@ -26,15 +27,17 @@ class NeovimStartupActivity : ProjectActivity {
 
         // Initialize all existing editors
         EditorFactory.getInstance().allEditors.forEach { editor ->
-            val session = NeovimEditorSession(client, editor, scope)
-            editor.putUserData(NEOVIM_SESSION_KEY, session)
+            NeovimEditorSession.create(client, editor, scope)
+                .setToEditor()
         }
         // Initialize new editors
         EditorFactory.getInstance().addEditorFactoryListener(
             object : EditorFactoryListener {
                 override fun editorCreated(event: EditorFactoryEvent) {
-                    val session = NeovimEditorSession(client, event.editor, scope)
-                    event.editor.putUserData(NEOVIM_SESSION_KEY, session)
+                    scope.launch {
+                        NeovimEditorSession.create(client, event.editor, scope)
+                            .setToEditor()
+                    }
                 }
             },
             project.service<PluginDisposable>(),
