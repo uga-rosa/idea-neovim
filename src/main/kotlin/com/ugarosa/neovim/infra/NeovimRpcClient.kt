@@ -1,26 +1,30 @@
 package com.ugarosa.neovim.infra
 
-import com.ugarosa.neovim.service.BufferId
-import com.ugarosa.neovim.service.TabPageId
-import com.ugarosa.neovim.service.WindowId
+import com.intellij.openapi.components.Service
+import com.jetbrains.rd.util.concurrentMapOf
+import com.ugarosa.neovim.rpc.BufferId
+import com.ugarosa.neovim.rpc.TabPageId
+import com.ugarosa.neovim.rpc.WindowId
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import org.msgpack.core.MessagePack
+import org.msgpack.core.MessagePacker
+import org.msgpack.core.MessageUnpacker
 import org.msgpack.value.Value
-import java.io.InputStream
-import java.io.OutputStream
 import java.util.concurrent.atomic.AtomicInteger
 
+@Service(Service.Level.APP)
 class NeovimRpcClient(
-    input: InputStream,
-    output: OutputStream,
+    private val scope: CoroutineScope,
 ) {
     private val messageIdGenerator = AtomicInteger(0)
-    private val packer = MessagePack.newDefaultPacker(output)
-    private val unpacker = MessagePack.newDefaultUnpacker(input)
-    private val responseChannel = Channel<Response>(Channel.UNLIMITED)
+    private val packer: MessagePacker
+    private val unpacker: MessageUnpacker
+    private val waitingResponses = concurrentMapOf<Int, CompletableDeferred<Response>>()
 
     private val pushHandlers = mutableListOf<(PushNotification) -> Unit>()
 
@@ -29,16 +33,19 @@ class NeovimRpcClient(
     }
 
     init {
-        CoroutineScope(Dispatchers.IO).launch {
+        val processManager = NeovimProcessManager()
+        packer = MessagePack.newDefaultPacker(processManager.getOutputStream())
+        unpacker = MessagePack.newDefaultUnpacker(processManager.getInputStream())
+
+        scope.launch(Dispatchers.IO) {
             while (true) {
                 unpacker.unpackArrayHeader()
-                val type = unpacker.unpackInt()
-                when (type) {
+                when (val type = unpacker.unpackInt()) {
                     1 -> {
                         val msgId = unpacker.unpackInt()
                         val error = unpacker.unpackValue()
                         val result = unpacker.unpackValue()
-                        responseChannel.send(Response(msgId, error, result))
+                        waitingResponses.remove(msgId)?.complete(Response(msgId, error, result))
                     }
 
                     2 -> {
@@ -56,36 +63,32 @@ class NeovimRpcClient(
         }
     }
 
-    fun requestSync(
+    suspend fun requestAsync(
         method: String,
         params: List<Any?> = emptyList(),
-        timeoutMillis: Int? = 500,
+        timeoutMills: Long? = 500,
     ): Response {
         val msgId = messageIdGenerator.getAndIncrement()
+        val deferred = CompletableDeferred<Response>()
+        waitingResponses[msgId] = deferred
 
-        packer.packArrayHeader(4)
-        packer.packInt(0) // 0 = Request
-        packer.packInt(msgId)
-        packer.packString(method)
-        packParams(params)
-        packer.flush()
+        return withContext(Dispatchers.IO) {
+            synchronized(packer) {
+                packer.packArrayHeader(4)
+                packer.packInt(0) // 0 = Request
+                packer.packInt(msgId)
+                packer.packString(method)
+                packParams(params)
+                packer.flush()
+            }
 
-        val deadline = timeoutMillis?.let { System.currentTimeMillis() + it }
-
-        while (true) {
-            val result = responseChannel.tryReceive()
-            if (result.isSuccess) {
-                val response = result.getOrThrow()
-                if (response.msgId == msgId) {
-                    return response
-                } else {
-                    // TODO: Handle unexpected message
+            if (timeoutMills == null) {
+                deferred.await()
+            } else {
+                withTimeout(timeoutMills) {
+                    deferred.await()
                 }
             }
-            if (deadline != null && System.currentTimeMillis() > deadline) {
-                error("Timeout waiting for response to $method")
-            }
-            Thread.sleep(1)
         }
     }
 

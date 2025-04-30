@@ -21,7 +21,7 @@ class NeovimEditorFactoryListener : EditorFactoryListener {
                     if (key.length <= 1) {
                         super.keyPressed(e)
                     } else {
-                        session.sendKeyAndFetchStatus(key)
+                        session.sendKeyAndSyncStatus(key)
                         e.consume()
                     }
                 }

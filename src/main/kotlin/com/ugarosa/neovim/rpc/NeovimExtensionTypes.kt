@@ -1,4 +1,4 @@
-package com.ugarosa.neovim.service
+package com.ugarosa.neovim.rpc
 
 import org.msgpack.core.MessagePack
 import org.msgpack.value.MapValue

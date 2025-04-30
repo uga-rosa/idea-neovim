@@ -1,53 +1,53 @@
-package com.ugarosa.neovim.service
+package com.ugarosa.neovim.rpc
 
 import com.intellij.ui.JBColor
 import com.ugarosa.neovim.infra.NeovimRpcClient
 
 object NeovimFunctions {
-    fun createBuffer(rpcClient: NeovimRpcClient): BufferId {
-        val response = rpcClient.requestSync("nvim_create_buf", listOf(true, false), null)
+    suspend fun createBuffer(rpcClient: NeovimRpcClient): BufferId {
+        val response = rpcClient.requestAsync("nvim_create_buf", listOf(true, false), null)
         return response.result.asBufferId()
     }
 
-    fun bufferSetLines(
+    suspend fun bufferSetLines(
         rpcClient: NeovimRpcClient,
         bufferId: BufferId,
         start: Int,
         end: Int,
         lines: List<String>,
     ) {
-        rpcClient.requestSync(
+        rpcClient.requestAsync(
             "nvim_buf_set_lines",
             listOf(bufferId, start, end, false, lines),
         )
     }
 
-    fun bufferAttach(
+    suspend fun bufferAttach(
         rpcClient: NeovimRpcClient,
         bufferId: BufferId,
     ) {
-        rpcClient.requestSync(
+        rpcClient.requestAsync(
             "nvim_buf_attach",
             listOf(bufferId, true, emptyMap<String, Any>()),
         )
     }
 
-    fun setCurrentBuffer(
+    suspend fun setCurrentBuffer(
         rpcClient: NeovimRpcClient,
         bufferId: BufferId,
     ) {
-        rpcClient.requestSync("nvim_set_current_buf", listOf(bufferId))
+        rpcClient.requestAsync("nvim_set_current_buf", listOf(bufferId))
     }
 
-    fun input(
+    suspend fun input(
         rpcClient: NeovimRpcClient,
         key: String,
     ) {
-        rpcClient.requestSync("nvim_input", listOf(key))
+        rpcClient.requestAsync("nvim_input", listOf(key))
     }
 
-    fun getCursor(rpcClient: NeovimRpcClient): Pair<Int, Int> {
-        val response = rpcClient.requestSync("nvim_win_get_cursor", listOf(0))
+    suspend fun getCursor(rpcClient: NeovimRpcClient): Pair<Int, Int> {
+        val response = rpcClient.requestAsync("nvim_win_get_cursor", listOf(0))
         val cursorArray = response.result.asArrayValue().list()
         val row = cursorArray[0].asIntegerValue().toInt()
         val col = cursorArray[1].asIntegerValue().toInt()
@@ -66,8 +66,8 @@ object NeovimFunctions {
         return BufLinesEvent(bufferId, firstLine, lastLine, replacementLines)
     }
 
-    fun getMode(rpcClient: NeovimRpcClient): NeovimMode {
-        val response = rpcClient.requestSync("nvim_get_mode")
+    suspend fun getMode(rpcClient: NeovimRpcClient): NeovimMode {
+        val response = rpcClient.requestAsync("nvim_get_mode")
         val modeString = response.result.asMapValue().get("mode")?.asStringValue()?.asString()
         return when (modeString?.get(0)) {
             'n' -> NeovimMode.NORMAL

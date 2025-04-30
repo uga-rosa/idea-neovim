@@ -7,7 +7,7 @@ import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.openapi.wm.StatusBarWidgetFactory
 import com.intellij.ui.JBColor
 import com.intellij.util.ui.JBUI
-import com.ugarosa.neovim.service.NeovimMode
+import com.ugarosa.neovim.rpc.NeovimMode
 import javax.swing.JLabel
 
 const val NEOVIM_MODE_ID = "NeovimModeWidgetId"
