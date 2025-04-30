@@ -1,40 +1,50 @@
 package com.ugarosa.neovim.session
 
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.EDT
-import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Editor
-import com.intellij.openapi.editor.LogicalPosition
-import com.intellij.openapi.wm.WindowManager
-import com.ugarosa.neovim.common.utf8ByteOffsetToCharOffset
-import com.ugarosa.neovim.factory.NEOVIM_MODE_ID
-import com.ugarosa.neovim.factory.NeovimModeWidget
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Key
 import com.ugarosa.neovim.infra.NeovimRpcClient
 import com.ugarosa.neovim.rpc.BufLinesEvent
-import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.NeovimFunctions
 import com.ugarosa.neovim.rpc.NeovimMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+
+val NEOVIM_SESSION_KEY = Key.create<NeovimEditorSession>("NEOVIM_SESSION_KEY")
 
 class NeovimEditorSession private constructor(
     private val rpcClient: NeovimRpcClient,
     private val editor: Editor,
     private val scope: CoroutineScope,
-    private val bufferId: BufferId,
+    private val documentHandler: NeovimDocumentHandler,
+    private val cursorHandler: NeovimCursorHandler,
+    private val statusLineHandler: StatusLineHandler,
 ) {
+    private var currentMode = NeovimMode.NORMAL
+
     companion object {
         suspend fun create(
             rpcClient: NeovimRpcClient,
-            editor: Editor,
             scope: CoroutineScope,
+            editor: Editor,
+            project: Project,
         ): NeovimEditorSession {
             return scope.async(Dispatchers.IO) {
                 val bufferId = NeovimFunctions.createBuffer(rpcClient)
-                val session = NeovimEditorSession(rpcClient, editor, scope, bufferId)
+                val documentHandler = NeovimDocumentHandler.create(rpcClient, editor, bufferId)
+                val cursorHandler = NeovimCursorHandler(rpcClient, editor)
+                val statusLineHandler = StatusLineHandler(project)
+                val session =
+                    NeovimEditorSession(
+                        rpcClient,
+                        editor,
+                        scope,
+                        documentHandler,
+                        cursorHandler,
+                        statusLineHandler,
+                    )
 
                 rpcClient.registerPushHandler { push ->
                     val event = NeovimFunctions.maybeBufLinesEvent(push)
@@ -42,9 +52,6 @@ class NeovimEditorSession private constructor(
                         session.handleBufferLinesEvent(event)
                     }
                 }
-
-                session.initializeBuffer()
-                session.attachBuffer()
 
                 session
             }.await()
@@ -56,104 +63,27 @@ class NeovimEditorSession private constructor(
     }
 
     fun activateBuffer() {
-        scope.launch(Dispatchers.IO) {
-            NeovimFunctions.setCurrentBuffer(rpcClient, bufferId)
+        scope.launch {
+            documentHandler.activateBuffer()
         }
     }
 
     fun sendKeyAndSyncStatus(key: String) {
-        scope.launch(Dispatchers.IO) {
+        scope.launch {
             NeovimFunctions.input(rpcClient, key)
-            syncCursorFromNeovimToIdea()
+            cursorHandler.syncCursorFromNeovimToIdea()
             syncNeovimMode()
         }
     }
 
-    private suspend fun initializeBuffer() {
-        val lines = editor.document.text.split("\n")
-        NeovimFunctions.bufferSetLines(rpcClient, bufferId, 0, -1, lines)
-    }
-
-    private suspend fun attachBuffer() {
-        NeovimFunctions.bufferAttach(rpcClient, bufferId)
-    }
-
-    private fun handleBufferLinesEvent(e: BufLinesEvent) {
-        ApplicationManager.getApplication().invokeLater {
-            WriteCommandAction.runWriteCommandAction(editor.project) {
-                val document = editor.document
-                val startOffset = document.getLineStartOffset(e.firstLine)
-                val endOffset =
-                    if (e.lastLine == -1) {
-                        document.textLength
-                    } else {
-                        document.getLineStartOffset(e.lastLine)
-                    }
-                val replacementText =
-                    if (e.replacementLines.isEmpty()) {
-                        ""
-                    } else {
-                        e.replacementLines.joinToString("\n", postfix = "\n")
-                    }
-                document.replaceString(startOffset, endOffset, replacementText)
-            }
-
-            scope.launch(Dispatchers.IO) {
-                syncCursorFromNeovimToIdea()
-            }
-        }
-    }
-
-    private suspend fun syncCursorFromNeovimToIdea() {
-        val (row, col) = getNeovimCursor().run { line to column }
-        withContext(Dispatchers.EDT) {
-            editor.caretModel.moveToLogicalPosition(LogicalPosition(row, col))
-        }
-    }
-
-    private suspend fun getNeovimCursor(): LogicalPosition {
-        // Neovim uses (1, 0) byte-based indexing
-        val (nvimRow, nvimByteCol) = NeovimFunctions.getCursor(rpcClient)
-        val document = editor.document
-        // IntelliJ uses 0-based line indexing
-        val lineIndex = nvimRow - 1
-        if (lineIndex < 0 || lineIndex >= document.lineCount) {
-            return LogicalPosition(0, 0)
-        }
-
-        val lineStartOffset = document.getLineStartOffset(lineIndex)
-        val lineEndOffset = document.getLineEndOffset(lineIndex)
-        val lineText = document.text.substring(lineStartOffset, lineEndOffset)
-        val correctedCol = utf8ByteOffsetToCharOffset(lineText, nvimByteCol)
-
-        return LogicalPosition(lineIndex, correctedCol)
+    private suspend fun handleBufferLinesEvent(e: BufLinesEvent) {
+        documentHandler.applyBufferLinesEvent(e)
+        cursorHandler.syncCursorFromNeovimToIdea()
     }
 
     private suspend fun syncNeovimMode() {
-        val mode = NeovimFunctions.getMode(rpcClient)
-        updateModeWidget(mode)
-        applyCursorShape(mode)
-    }
-
-    private suspend fun updateModeWidget(mode: NeovimMode) {
-        val project = editor.project ?: return
-        withContext(Dispatchers.EDT) {
-            val widget = WindowManager.getInstance().getStatusBar(project)?.getWidget(NEOVIM_MODE_ID)
-            check(widget is NeovimModeWidget) { "NeovimModeWidget not found in status bar" }
-            widget.updateMode(mode)
-        }
-    }
-
-    private suspend fun applyCursorShape(mode: NeovimMode) {
-        withContext(Dispatchers.EDT) {
-            editor.settings.isBlockCursor = mode in
-                setOf(
-                    NeovimMode.NORMAL,
-                    NeovimMode.VISUAL,
-                    NeovimMode.VISUAL_LINE,
-                    NeovimMode.VISUAL_BLOCK,
-                    NeovimMode.SELECT,
-                )
-        }
+        currentMode = NeovimFunctions.getMode(rpcClient)
+        cursorHandler.changeCursorShape(currentMode)
+        statusLineHandler.updateStatusLine(currentMode)
     }
 }

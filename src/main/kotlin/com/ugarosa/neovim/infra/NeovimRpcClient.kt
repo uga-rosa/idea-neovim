@@ -8,6 +8,7 @@ import com.ugarosa.neovim.rpc.WindowId
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -26,9 +27,9 @@ class NeovimRpcClient(
     private val unpacker: MessageUnpacker
     private val waitingResponses = concurrentMapOf<Int, CompletableDeferred<Response>>()
 
-    private val pushHandlers = mutableListOf<(PushNotification) -> Unit>()
+    private val pushHandlers = mutableListOf<suspend (PushNotification) -> Unit>()
 
-    fun registerPushHandler(handler: (PushNotification) -> Unit) {
+    fun registerPushHandler(handler: suspend (PushNotification) -> Unit) {
         pushHandlers.add(handler)
     }
 
@@ -38,27 +39,35 @@ class NeovimRpcClient(
         unpacker = MessagePack.newDefaultUnpacker(processManager.getInputStream())
 
         scope.launch(Dispatchers.IO) {
-            while (true) {
-                unpacker.unpackArrayHeader()
-                when (val type = unpacker.unpackInt()) {
-                    1 -> {
-                        val msgId = unpacker.unpackInt()
-                        val error = unpacker.unpackValue()
-                        val result = unpacker.unpackValue()
-                        waitingResponses.remove(msgId)?.complete(Response(msgId, error, result))
-                    }
+            try {
+                while (isActive) {
+                    unpacker.unpackArrayHeader()
+                    when (val type = unpacker.unpackInt()) {
+                        1 -> {
+                            val msgId = unpacker.unpackInt()
+                            val error = unpacker.unpackValue()
+                            val result = unpacker.unpackValue()
+                            waitingResponses.remove(msgId)?.complete(Response(msgId, error, result))
+                        }
 
-                    2 -> {
-                        val method = unpacker.unpackString()
-                        val params = unpacker.unpackValue()
-                        val notification = PushNotification(method, params)
-                        pushHandlers.forEach { it(notification) }
-                    }
+                        2 -> {
+                            val method = unpacker.unpackString()
+                            val params = unpacker.unpackValue()
+                            withContext(Dispatchers.Default) {
+                                val notification = PushNotification(method, params)
+                                pushHandlers.forEach {
+                                    it(notification)
+                                }
+                            }
+                        }
 
-                    else -> {
-                        error("Unknown message type: $type")
+                        else -> {
+                            error("Unknown message type: $type")
+                        }
                     }
                 }
+            } finally {
+                waitingResponses.values.forEach { it.cancel() }
             }
         }
     }
@@ -72,7 +81,7 @@ class NeovimRpcClient(
         val deferred = CompletableDeferred<Response>()
         waitingResponses[msgId] = deferred
 
-        return withContext(Dispatchers.IO) {
+        withContext(Dispatchers.IO) {
             synchronized(packer) {
                 packer.packArrayHeader(4)
                 packer.packInt(0) // 0 = Request
@@ -81,13 +90,13 @@ class NeovimRpcClient(
                 packParams(params)
                 packer.flush()
             }
+        }
 
-            if (timeoutMills == null) {
+        return if (timeoutMills == null) {
+            deferred.await()
+        } else {
+            withTimeout(timeoutMills) {
                 deferred.await()
-            } else {
-                withTimeout(timeoutMills) {
-                    deferred.await()
-                }
             }
         }
     }

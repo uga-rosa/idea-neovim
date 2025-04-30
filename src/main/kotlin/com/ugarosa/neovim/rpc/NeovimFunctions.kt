@@ -32,6 +32,16 @@ object NeovimFunctions {
         )
     }
 
+    suspend fun bufferDetach(
+        rpcClient: NeovimRpcClient,
+        bufferId: BufferId,
+    ) {
+        rpcClient.requestAsync(
+            "nvim_buf_detach",
+            listOf(bufferId),
+        )
+    }
+
     suspend fun setCurrentBuffer(
         rpcClient: NeovimRpcClient,
         bufferId: BufferId,

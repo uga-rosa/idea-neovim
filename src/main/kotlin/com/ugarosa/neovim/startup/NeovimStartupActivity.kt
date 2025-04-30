@@ -27,7 +27,7 @@ class NeovimStartupActivity : ProjectActivity {
 
         // Initialize all existing editors
         EditorFactory.getInstance().allEditors.forEach { editor ->
-            NeovimEditorSession.create(client, editor, scope)
+            NeovimEditorSession.create(client, scope, editor, project)
                 .setToEditor()
         }
         // Initialize new editors
@@ -35,7 +35,7 @@ class NeovimStartupActivity : ProjectActivity {
             object : EditorFactoryListener {
                 override fun editorCreated(event: EditorFactoryEvent) {
                     scope.launch {
-                        NeovimEditorSession.create(client, event.editor, scope)
+                        NeovimEditorSession.create(client, scope, event.editor, project)
                             .setToEditor()
                     }
                 }
