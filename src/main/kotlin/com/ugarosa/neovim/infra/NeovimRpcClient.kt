@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 @Service(Service.Level.APP)
 class NeovimRpcClient(
-    private val scope: CoroutineScope,
+    scope: CoroutineScope,
 ) {
     private val messageIdGenerator = AtomicInteger(0)
     private val packer: MessagePacker
