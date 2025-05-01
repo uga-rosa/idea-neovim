@@ -26,6 +26,6 @@
     <extensions defaultExtensionNs="com.intellij">
         <postStartupActivity implementation="com.ugarosa.neovim.startup.NeovimStartupActivity"/>
         <editorFactoryListener implementation="com.ugarosa.neovim.factory.NeovimEditorFactoryListener"/>
-        <statusBarWidgetFactory implementation="com.ugarosa.neovim.factory.NeovimModeWidgetFactory"/>
+        <statusBarWidgetFactory id="NeovimModeWidgetId" implementation="com.ugarosa.neovim.factory.NeovimModeWidgetFactory"/>
     </extensions>
 </idea-plugin>
