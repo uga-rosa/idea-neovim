@@ -1,4 +1,4 @@
-package com.ugarosa.neovim.factory
+package com.ugarosa.neovim.extension
 
 import com.intellij.openapi.editor.event.EditorFactoryEvent
 import com.intellij.openapi.editor.event.EditorFactoryListener

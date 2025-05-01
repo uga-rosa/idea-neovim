@@ -25,7 +25,8 @@
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
         <postStartupActivity implementation="com.ugarosa.neovim.startup.NeovimStartupActivity"/>
-        <editorFactoryListener implementation="com.ugarosa.neovim.factory.NeovimEditorFactoryListener"/>
-        <statusBarWidgetFactory id="NeovimModeWidgetId" implementation="com.ugarosa.neovim.factory.NeovimModeWidgetFactory"/>
+        <editorFactoryListener implementation="com.ugarosa.neovim.extension.NeovimEditorFactoryListener"/>
+        <statusBarWidgetFactory id="NeovimModeWidgetId" implementation="com.ugarosa.neovim.extension.NeovimModeWidgetFactory"/>
+        <applicationConfigurable displayName="Neovim Keymap" instance="com.ugarosa.neovim.extension.NeovimKeymapConfigurable"/>
     </extensions>
 </idea-plugin>
