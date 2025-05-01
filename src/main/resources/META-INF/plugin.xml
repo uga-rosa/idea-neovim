@@ -26,7 +26,19 @@
     <extensions defaultExtensionNs="com.intellij">
         <postStartupActivity implementation="com.ugarosa.neovim.startup.NeovimStartupActivity"/>
         <editorFactoryListener implementation="com.ugarosa.neovim.extension.NeovimEditorFactoryListener"/>
-        <statusBarWidgetFactory id="NeovimModeWidgetId" implementation="com.ugarosa.neovim.extension.NeovimModeWidgetFactory"/>
-        <applicationConfigurable displayName="Neovim Keymap" instance="com.ugarosa.neovim.extension.NeovimKeymapConfigurable"/>
+        <statusBarWidgetFactory id="NeovimModeWidgetId"
+                                implementation="com.ugarosa.neovim.extension.NeovimModeWidgetFactory"/>
+        <applicationConfigurable displayName="Neovim Keymap"
+                                 instance="com.ugarosa.neovim.extension.NeovimKeymapConfigurable"/>
+        <actionPromoter implementation="com.ugarosa.neovim.extension.NeovimActionPromoter"/>
     </extensions>
+
+    <applicationListeners>
+        <listener class="com.ugarosa.neovim.listener.NeovimKeymapInitializer"
+                  topic="com.intellij.ide.AppLifecycleListener"/>
+    </applicationListeners>
+
+    <actions>
+        <action id="NeovimKeyAction" class="com.ugarosa.neovim.action.NeovimKeyAction"/>
+    </actions>
 </idea-plugin>

@@ -6,6 +6,7 @@ import com.ugarosa.neovim.session.NEOVIM_SESSION_KEY
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 
+@Deprecated("User NeovimKeyAction and NeovimKeymapInitializer instead")
 class NeovimEditorFactoryListener : EditorFactoryListener {
     override fun editorCreated(event: EditorFactoryEvent) {
         val editor = event.editor
