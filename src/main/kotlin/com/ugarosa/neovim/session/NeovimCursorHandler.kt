@@ -8,14 +8,22 @@ import com.ugarosa.neovim.infra.NeovimRpcClient
 import com.ugarosa.neovim.rpc.NeovimFunctions
 import com.ugarosa.neovim.rpc.NeovimMode
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withContext
+import kotlin.jvm.Throws
 
 class NeovimCursorHandler(
     private val rpcClient: NeovimRpcClient,
     private val editor: Editor,
 ) {
     suspend fun syncCursorFromNeovimToIdea() {
-        val pos = getNeovimCursorPosition()
+        val pos =
+            try {
+                getNeovimCursorPosition()
+            } catch (e: TimeoutCancellationException) {
+                // Ignore
+                return
+            }
         withContext(Dispatchers.EDT) {
             editor.caretModel.moveToLogicalPosition(pos)
         }
@@ -32,6 +40,7 @@ class NeovimCursorHandler(
             )
     }
 
+    @Throws(TimeoutCancellationException::class)
     private suspend fun getNeovimCursorPosition(): LogicalPosition {
         // Neovim uses (1, 0) byte-based indexing
         val (nvimRow, nvimByteCol) = NeovimFunctions.getCursor(rpcClient)

@@ -1,6 +1,7 @@
 package com.ugarosa.neovim.infra
 
 import com.intellij.openapi.components.Service
+import com.intellij.openapi.diagnostic.thisLogger
 import com.jetbrains.rd.util.concurrentMapOf
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.TabPageId
@@ -8,6 +9,7 @@ import com.ugarosa.neovim.rpc.WindowId
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -22,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger
 class NeovimRpcClient(
     scope: CoroutineScope,
 ) {
+    private val logger = thisLogger()
     private val messageIdGenerator = AtomicInteger(0)
     private val packer: MessagePacker
     private val unpacker: MessageUnpacker
@@ -39,39 +42,42 @@ class NeovimRpcClient(
         unpacker = MessagePack.newDefaultUnpacker(processManager.getInputStream())
 
         scope.launch(Dispatchers.IO) {
-            try {
-                while (isActive) {
-                    unpacker.unpackArrayHeader()
-                    when (val type = unpacker.unpackInt()) {
-                        1 -> {
-                            val msgId = unpacker.unpackInt()
-                            val error = unpacker.unpackValue()
-                            val result = unpacker.unpackValue()
-                            waitingResponses.remove(msgId)?.complete(Response(msgId, error, result))
-                        }
+            while (isActive) {
+                unpacker.unpackArrayHeader()
+                when (val type = unpacker.unpackInt()) {
+                    1 -> {
+                        val msgId = unpacker.unpackInt()
+                        val error = unpacker.unpackValue()
+                        val result = unpacker.unpackValue()
+                        logger.debug("Received response: $msgId, result: $result")
+                        waitingResponses.remove(msgId)?.complete(Response(msgId, error, result))
+                    }
 
-                        2 -> {
-                            val method = unpacker.unpackString()
-                            val params = unpacker.unpackValue()
-                            withContext(Dispatchers.Default) {
-                                val notification = PushNotification(method, params)
-                                pushHandlers.forEach {
+                    2 -> {
+                        val method = unpacker.unpackString()
+                        val params = unpacker.unpackValue()
+                        logger.debug("Received push notification: $method, params: $params")
+                        withContext(Dispatchers.Default) {
+                            val notification = PushNotification(method, params)
+                            pushHandlers.forEach {
+                                try {
                                     it(notification)
+                                } catch (e: Exception) {
+                                    logger.error("NeovimRpcClient: Unpacking loop error", e)
                                 }
                             }
                         }
+                    }
 
-                        else -> {
-                            error("Unknown message type: $type")
-                        }
+                    else -> {
+                        logger.error("Unknown message type: $type")
                     }
                 }
-            } finally {
-                waitingResponses.values.forEach { it.cancel() }
             }
         }
     }
 
+    @Throws(TimeoutCancellationException::class, IllegalArgumentException::class)
     suspend fun requestAsync(
         method: String,
         params: List<Any?> = emptyList(),
@@ -91,6 +97,8 @@ class NeovimRpcClient(
                 packer.flush()
             }
         }
+
+        logger.debug("Sending request: $msgId, method: $method, params: $params")
 
         return if (timeoutMills == null) {
             deferred.await()
