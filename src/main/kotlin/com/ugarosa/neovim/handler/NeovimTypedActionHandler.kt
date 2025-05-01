@@ -1,6 +1,7 @@
 package com.ugarosa.neovim.handler
 
 import com.intellij.openapi.actionSystem.DataContext
+import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.actionSystem.ActionPlan
 import com.intellij.openapi.editor.actionSystem.TypedActionHandler
@@ -10,6 +11,8 @@ import com.ugarosa.neovim.session.NEOVIM_SESSION_KEY
 class NeovimTypedActionHandler(
     private val originalHandler: TypedActionHandler,
 ) : TypedActionHandlerEx {
+    private val logger = thisLogger()
+
     override fun beforeExecute(
         p0: Editor,
         p1: Char,
@@ -27,7 +30,7 @@ class NeovimTypedActionHandler(
         val session =
             editor.getUserData(NEOVIM_SESSION_KEY)
                 ?: error("NeovimEditorSession does not exist")
-
+        logger.debug("TypedActionHandler: $char")
         session.sendKeyAndSyncStatus(char.toString())
     }
 }
