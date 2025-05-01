@@ -28,7 +28,8 @@
         <editorFactoryListener implementation="com.ugarosa.neovim.extension.NeovimEditorFactoryListener"/>
         <statusBarWidgetFactory id="NeovimModeWidgetId"
                                 implementation="com.ugarosa.neovim.extension.NeovimModeWidgetFactory"/>
-        <applicationConfigurable displayName="Neovim Keymap"
+        <applicationConfigurable key="configurable.display.name.neovim"
+                                 bundle="messages.NeovimBundle"
                                  instance="com.ugarosa.neovim.extension.NeovimKeymapConfigurable"/>
         <actionPromoter implementation="com.ugarosa.neovim.extension.NeovimActionPromoter"/>
     </extensions>
