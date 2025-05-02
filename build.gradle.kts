@@ -2,9 +2,9 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("java")
-    id("org.jetbrains.kotlin.jvm") version "2.1.20"
-    id("org.jetbrains.intellij.platform") version "2.5.0"
-    id("org.jlleitschuh.gradle.ktlint") version "12.2.0"
+    alias(libs.plugins.kotlin)
+    alias(libs.plugins.intellij.platform)
+    alias(libs.plugins.ktlint)
 }
 
 group = "com.ugarosa"
@@ -20,7 +20,8 @@ repositories {
 // Configure Gradle IntelliJ Plugin
 // Read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin.html
 dependencies {
-    implementation("org.msgpack:msgpack-core:0.9.9")
+    implementation(libs.msgpack)
+    implementation(libs.arrow.core)
 
     intellijPlatform {
         create("IC", "2025.1")
