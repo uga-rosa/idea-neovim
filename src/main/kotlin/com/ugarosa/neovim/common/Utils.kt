@@ -1,5 +1,7 @@
 package com.ugarosa.neovim.common
 
+import org.msgpack.value.MapValue
+import org.msgpack.value.Value
 import java.awt.event.KeyEvent
 
 fun utf8ByteOffsetToCharOffset(
@@ -44,4 +46,10 @@ fun neovimNotation(e: KeyEvent): String {
     } else {
         "<$key>"
     }
+}
+
+fun MapValue.get(key: String): Value? {
+    return this.map().entries
+        .firstOrNull { it.key.isStringValue && it.key.asStringValue().asString() == key }
+        ?.value
 }

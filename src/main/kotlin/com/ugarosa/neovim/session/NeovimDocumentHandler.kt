@@ -2,24 +2,30 @@ package com.ugarosa.neovim.session
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.ugarosa.neovim.rpc.BufLinesEvent
-import com.ugarosa.neovim.rpc.BufferId
-import com.ugarosa.neovim.rpc.NeovimFunctions
-import com.ugarosa.neovim.rpc.NeovimRpcClient
+import com.ugarosa.neovim.rpc.NeovimClient
+import com.ugarosa.neovim.rpc.bufferAttach
+import com.ugarosa.neovim.rpc.bufferDetach
+import com.ugarosa.neovim.rpc.bufferSetLines
+import com.ugarosa.neovim.rpc.msgpack.BufferId
+import com.ugarosa.neovim.rpc.setCurrentBuffer
 
 class NeovimDocumentHandler private constructor(
-    private val rpcClient: NeovimRpcClient,
+    private val client: NeovimClient,
     private val editor: Editor,
     private val bufferId: BufferId,
 ) {
+    private val logger = thisLogger()
+
     companion object {
         suspend fun create(
-            rpcClient: NeovimRpcClient,
+            client: NeovimClient,
             editor: Editor,
             bufferId: BufferId,
         ): NeovimDocumentHandler {
-            val handler = NeovimDocumentHandler(rpcClient, editor, bufferId)
+            val handler = NeovimDocumentHandler(client, editor, bufferId)
             handler.initializeBuffer()
             handler.attachBuffer()
             return handler
@@ -28,19 +34,23 @@ class NeovimDocumentHandler private constructor(
 
     private suspend fun initializeBuffer() {
         val liens = editor.document.text.split("\n")
-        NeovimFunctions.bufferSetLines(rpcClient, bufferId, 0, -1, liens)
+        bufferSetLines(client, bufferId, 0, -1, liens)
+            .onLeft { logger.warn("Failed to initialize: $it") }
     }
 
     private suspend fun attachBuffer() {
-        NeovimFunctions.bufferAttach(rpcClient, bufferId)
+        bufferAttach(client, bufferId)
+            .onLeft { logger.warn("Failed to attach buffer: $it") }
     }
 
     suspend fun detachBuffer() {
-        NeovimFunctions.bufferDetach(rpcClient, bufferId)
+        bufferDetach(client, bufferId)
+            .onLeft { logger.warn("Failed to detach buffer: $it") }
     }
 
     suspend fun activateBuffer() {
-        NeovimFunctions.setCurrentBuffer(rpcClient, bufferId)
+        setCurrentBuffer(client, bufferId)
+            .onLeft { logger.warn("Failed to activate buffer") }
     }
 
     fun applyBufferLinesEvent(e: BufLinesEvent) {

@@ -1,8 +1,13 @@
 package com.ugarosa.neovim.rpc
 
+import arrow.core.Either
+import arrow.core.raise.either
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.jetbrains.rd.util.concurrentMapOf
+import com.ugarosa.neovim.rpc.msgpack.BufferId
+import com.ugarosa.neovim.rpc.msgpack.TabPageId
+import com.ugarosa.neovim.rpc.msgpack.WindowId
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -11,30 +16,30 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.io.IOException
 import org.msgpack.core.MessagePack
 import org.msgpack.core.MessagePacker
 import org.msgpack.core.MessageUnpacker
-import org.msgpack.value.Value
 import java.util.concurrent.atomic.AtomicInteger
 
 @Service(Service.Level.APP)
-class NeovimRpcClient(
+class NeovimRpcClientImpl(
     scope: CoroutineScope,
-) {
+) : NeovimClient {
     private val logger = thisLogger()
     private val messageIdGenerator = AtomicInteger(0)
     private val packer: MessagePacker
     private val unpacker: MessageUnpacker
-    private val waitingResponses = concurrentMapOf<Int, CompletableDeferred<Response>>()
+    private val waitingResponses = concurrentMapOf<Int, CompletableDeferred<NeovimClient.Response>>()
 
-    private val pushHandlers = mutableListOf<suspend (PushNotification) -> Unit>()
+    private val pushHandlers = mutableListOf<suspend (NeovimClient.PushNotification) -> Unit>()
 
-    fun registerPushHandler(handler: suspend (PushNotification) -> Unit) {
+    override fun registerPushHandler(handler: suspend (NeovimClient.PushNotification) -> Unit) {
         pushHandlers.add(handler)
     }
 
     init {
-        val processManager = NeovimProcessManager()
+        val processManager = NeovimProcessManagerImpl()
         packer = MessagePack.newDefaultPacker(processManager.getOutputStream())
         unpacker = MessagePack.newDefaultUnpacker(processManager.getInputStream())
 
@@ -47,7 +52,7 @@ class NeovimRpcClient(
                         val error = unpacker.unpackValue()
                         val result = unpacker.unpackValue()
                         logger.trace("Received response: $msgId, result: $result")
-                        waitingResponses.remove(msgId)?.complete(Response(msgId, error, result))
+                        waitingResponses.remove(msgId)?.complete(NeovimClient.Response(msgId, error, result))
                     }
 
                     2 -> {
@@ -55,55 +60,65 @@ class NeovimRpcClient(
                         val params = unpacker.unpackValue()
                         logger.trace("Received push notification: $method, params: $params")
                         withContext(Dispatchers.Default) {
-                            val notification = PushNotification(method, params)
-                            pushHandlers.forEach {
-                                try {
-                                    it(notification)
-                                } catch (e: Exception) {
-                                    logger.error("NeovimRpcClient: Unpacking loop error", e)
-                                }
-                            }
+                            val notification = NeovimClient.PushNotification(method, params)
+                            pushHandlers.forEach { it(notification) }
                         }
                     }
 
                     else -> {
-                        logger.error("Unknown message type: $type")
+                        logger.warn("Unknown message type: $type")
                     }
                 }
             }
         }
     }
 
-    @Throws(TimeoutCancellationException::class, IllegalArgumentException::class)
-    suspend fun requestAsync(
+    override suspend fun requestAsync(
         method: String,
-        params: List<Any?> = emptyList(),
-        timeoutMills: Long? = 500,
-    ): Response {
-        val msgId = messageIdGenerator.getAndIncrement()
-        val deferred = CompletableDeferred<Response>()
-        waitingResponses[msgId] = deferred
+        params: List<Any?>,
+        timeoutMills: Long?,
+    ): Either<NeovimClient.RequestError, NeovimClient.Response> =
+        either {
+            val msgId = messageIdGenerator.getAndIncrement()
+            val deferred = CompletableDeferred<NeovimClient.Response>()
+            waitingResponses[msgId] = deferred
 
-        withContext(Dispatchers.IO) {
-            synchronized(packer) {
-                packer.packArrayHeader(4)
-                packer.packInt(0) // 0 = Request
-                packer.packInt(msgId)
-                packer.packString(method)
-                packParams(params)
-                packer.flush()
+            try {
+                withContext(Dispatchers.IO) {
+                    synchronized(packer) {
+                        packer.packArrayHeader(4)
+                        packer.packInt(0) // 0 = Request
+                        packer.packInt(msgId)
+                        packer.packString(method)
+                        packParams(params)
+                        packer.flush()
+                    }
+                }
+            } catch (_: IOException) {
+                raise(NeovimClient.RequestError.IO)
+            } catch (_: IllegalStateException) {
+                raise(NeovimClient.RequestError.BadRequest)
             }
-        }
 
             logger.trace("Sending request: $msgId, method: $method, params: $params")
 
-        return if (timeoutMills == null) {
-            deferred.await()
-        } else {
-            withTimeout(timeoutMills) {
+            if (timeoutMills == null) {
                 deferred.await()
+            } else {
+                try {
+                    withTimeout(timeoutMills) {
+                        deferred.await()
+                    }
+                } catch (_: TimeoutCancellationException) {
+                    waitingResponses.remove(msgId)
+                    raise(NeovimClient.RequestError.Timeout)
+                }
             }
         }
+
+    private fun packParams(params: List<Any?>) {
+        packer.packArrayHeader(params.size)
+        params.forEach { packParam(it) }
     }
 
     private fun packParam(param: Any?) {
@@ -133,20 +148,4 @@ class NeovimRpcClient(
             else -> throw IllegalArgumentException("Unsupported param type: ${param::class}")
         }
     }
-
-    private fun packParams(params: List<Any?>) {
-        packer.packArrayHeader(params.size)
-        params.forEach { packParam(it) }
-    }
-
-    data class Response(
-        val msgId: Int,
-        val error: Value,
-        val result: Value,
-    )
-
-    data class PushNotification(
-        val method: String,
-        val params: Value,
-    )
 }

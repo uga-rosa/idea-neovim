@@ -1,29 +1,27 @@
 package com.ugarosa.neovim.session
 
+import arrow.core.getOrElse
 import com.intellij.openapi.application.EDT
+import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.LogicalPosition
 import com.ugarosa.neovim.common.utf8ByteOffsetToCharOffset
-import com.ugarosa.neovim.rpc.NeovimFunctions
+import com.ugarosa.neovim.rpc.NeovimClient
 import com.ugarosa.neovim.rpc.NeovimMode
-import com.ugarosa.neovim.rpc.NeovimRpcClient
+import com.ugarosa.neovim.rpc.getCursor
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withContext
-import kotlin.jvm.Throws
 
 class NeovimCursorHandler(
-    private val rpcClient: NeovimRpcClient,
+    private val client: NeovimClient,
     private val editor: Editor,
 ) {
+    private val logger = thisLogger()
+
     suspend fun syncCursorFromNeovimToIdea() {
         val pos =
-            try {
-                getNeovimCursorPosition()
-            } catch (e: TimeoutCancellationException) {
-                // Ignore
-                return
-            }
+            getNeovimCursorPosition()
+                ?: return
         withContext(Dispatchers.EDT) {
             editor.caretModel.moveToLogicalPosition(pos)
         }
@@ -40,10 +38,13 @@ class NeovimCursorHandler(
             )
     }
 
-    @Throws(TimeoutCancellationException::class)
-    private suspend fun getNeovimCursorPosition(): LogicalPosition {
+    private suspend fun getNeovimCursorPosition(): LogicalPosition? {
         // Neovim uses (1, 0) byte-based indexing
-        val (nvimRow, nvimByteCol) = NeovimFunctions.getCursor(rpcClient)
+        val (nvimRow, nvimByteCol) =
+            getCursor(client).getOrElse {
+                logger.warn("Failed to get Neovim cursor: $it")
+                return null
+            }
         val document = editor.document
         // IntelliJ uses 0-based line indexing
         val lineIndex = nvimRow - 1
