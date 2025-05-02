@@ -46,14 +46,14 @@ class NeovimRpcClient(
                         val msgId = unpacker.unpackInt()
                         val error = unpacker.unpackValue()
                         val result = unpacker.unpackValue()
-                        logger.debug("Received response: $msgId, result: $result")
+                        logger.trace("Received response: $msgId, result: $result")
                         waitingResponses.remove(msgId)?.complete(Response(msgId, error, result))
                     }
 
                     2 -> {
                         val method = unpacker.unpackString()
                         val params = unpacker.unpackValue()
-                        logger.debug("Received push notification: $method, params: $params")
+                        logger.trace("Received push notification: $method, params: $params")
                         withContext(Dispatchers.Default) {
                             val notification = PushNotification(method, params)
                             pushHandlers.forEach {
@@ -95,7 +95,7 @@ class NeovimRpcClient(
             }
         }
 
-        logger.debug("Sending request: $msgId, method: $method, params: $params")
+            logger.trace("Sending request: $msgId, method: $method, params: $params")
 
         return if (timeoutMills == null) {
             deferred.await()

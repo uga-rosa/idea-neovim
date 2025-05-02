@@ -19,7 +19,7 @@ class NeovimTypedActionHandler(
         val session =
             editor.getUserData(NEOVIM_SESSION_KEY)
                 ?: error("NeovimEditorSession does not exist")
-        logger.debug("TypedActionHandler: $char")
+        logger.trace("TypedActionHandler: $char")
         session.sendKeyAndSyncStatus(char.toString())
     }
 }

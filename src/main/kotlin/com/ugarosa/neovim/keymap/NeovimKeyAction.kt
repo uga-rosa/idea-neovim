@@ -20,7 +20,7 @@ class NeovimKeyAction : AnAction() {
         val session = editor.getUserData(NEOVIM_SESSION_KEY) ?: return
 
         val key = neovimNotation(inputEvent)
-        logger.debug("pressed key: $key")
+        logger.trace("pressed key: $key")
         session.sendKeyAndSyncStatus(key)
     }
 
