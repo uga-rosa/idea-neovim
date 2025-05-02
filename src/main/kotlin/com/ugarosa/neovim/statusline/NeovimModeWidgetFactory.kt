@@ -1,4 +1,4 @@
-package com.ugarosa.neovim.extension
+package com.ugarosa.neovim.statusline
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.CustomStatusBarWidget

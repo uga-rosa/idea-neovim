@@ -1,7 +1,6 @@
 package com.ugarosa.neovim.rpc
 
 import com.intellij.ui.JBColor
-import com.ugarosa.neovim.infra.NeovimRpcClient
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlin.jvm.Throws
 

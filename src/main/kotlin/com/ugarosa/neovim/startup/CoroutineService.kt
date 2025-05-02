@@ -1,4 +1,4 @@
-package com.ugarosa.neovim.service
+package com.ugarosa.neovim.startup
 
 import com.intellij.openapi.components.Service
 import kotlinx.coroutines.CoroutineScope

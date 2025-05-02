@@ -1,4 +1,4 @@
-package com.ugarosa.neovim.action
+package com.ugarosa.neovim.keymap
 
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent

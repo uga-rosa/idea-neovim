@@ -1,11 +1,8 @@
-package com.ugarosa.neovim.infra
+package com.ugarosa.neovim.rpc
 
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.jetbrains.rd.util.concurrentMapOf
-import com.ugarosa.neovim.rpc.BufferId
-import com.ugarosa.neovim.rpc.TabPageId
-import com.ugarosa.neovim.rpc.WindowId
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

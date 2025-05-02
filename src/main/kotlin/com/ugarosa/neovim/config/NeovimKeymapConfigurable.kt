@@ -1,4 +1,4 @@
-package com.ugarosa.neovim.extension
+package com.ugarosa.neovim.config
 
 import com.intellij.openapi.options.Configurable
 import java.awt.BorderLayout

@@ -2,9 +2,9 @@ package com.ugarosa.neovim.session
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.WindowManager
-import com.ugarosa.neovim.extension.NEOVIM_MODE_ID
-import com.ugarosa.neovim.extension.NeovimModeWidget
 import com.ugarosa.neovim.rpc.NeovimMode
+import com.ugarosa.neovim.statusline.NEOVIM_MODE_ID
+import com.ugarosa.neovim.statusline.NeovimModeWidget
 
 class StatusLineHandler(
     private val project: Project,

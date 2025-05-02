@@ -3,10 +3,10 @@ package com.ugarosa.neovim.session
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Editor
-import com.ugarosa.neovim.infra.NeovimRpcClient
 import com.ugarosa.neovim.rpc.BufLinesEvent
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.NeovimFunctions
+import com.ugarosa.neovim.rpc.NeovimRpcClient
 
 class NeovimDocumentHandler private constructor(
     private val rpcClient: NeovimRpcClient,

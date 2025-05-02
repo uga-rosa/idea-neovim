@@ -1,9 +1,8 @@
-package com.ugarosa.neovim.extension
+package com.ugarosa.neovim.keymap
 
 import com.intellij.openapi.actionSystem.ActionPromoter
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.DataContext
-import com.ugarosa.neovim.action.NeovimKeyAction
 
 class NeovimActionPromoter : ActionPromoter {
     // Promote NeovimKeyAction to the top

@@ -1,9 +1,8 @@
-package com.ugarosa.neovim.listener
+package com.ugarosa.neovim.keymap
 
 import com.intellij.ide.AppLifecycleListener
 import com.intellij.openapi.actionSystem.KeyboardShortcut
 import com.intellij.openapi.keymap.KeymapManager
-import com.ugarosa.neovim.action.NEOVIM_KEY_ACTION_ID
 import javax.swing.KeyStroke
 
 class NeovimKeymapInitializer : AppLifecycleListener {

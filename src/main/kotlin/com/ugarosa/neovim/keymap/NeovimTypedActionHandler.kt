@@ -1,4 +1,4 @@
-package com.ugarosa.neovim.handler
+package com.ugarosa.neovim.keymap
 
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.diagnostic.thisLogger

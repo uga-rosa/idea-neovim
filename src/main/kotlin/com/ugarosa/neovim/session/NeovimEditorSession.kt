@@ -3,10 +3,10 @@ package com.ugarosa.neovim.session
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
-import com.ugarosa.neovim.infra.NeovimRpcClient
 import com.ugarosa.neovim.rpc.BufLinesEvent
 import com.ugarosa.neovim.rpc.NeovimFunctions
 import com.ugarosa.neovim.rpc.NeovimMode
+import com.ugarosa.neovim.rpc.NeovimRpcClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async

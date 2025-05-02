@@ -1,4 +1,4 @@
-package com.ugarosa.neovim.infra
+package com.ugarosa.neovim.rpc
 
 import java.io.InputStream
 import java.io.OutputStream

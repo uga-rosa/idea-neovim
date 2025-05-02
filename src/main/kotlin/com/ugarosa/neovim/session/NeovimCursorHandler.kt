@@ -4,9 +4,9 @@ import com.intellij.openapi.application.EDT
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.LogicalPosition
 import com.ugarosa.neovim.common.utf8ByteOffsetToCharOffset
-import com.ugarosa.neovim.infra.NeovimRpcClient
 import com.ugarosa.neovim.rpc.NeovimFunctions
 import com.ugarosa.neovim.rpc.NeovimMode
+import com.ugarosa.neovim.rpc.NeovimRpcClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withContext

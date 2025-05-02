@@ -12,10 +12,8 @@ import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.fileEditor.TextEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
-import com.ugarosa.neovim.handler.NeovimTypedActionHandler
-import com.ugarosa.neovim.infra.NeovimRpcClient
-import com.ugarosa.neovim.service.CoroutineService
-import com.ugarosa.neovim.service.PluginDisposable
+import com.ugarosa.neovim.keymap.NeovimTypedActionHandler
+import com.ugarosa.neovim.rpc.NeovimRpcClient
 import com.ugarosa.neovim.session.NEOVIM_SESSION_KEY
 import com.ugarosa.neovim.session.NeovimEditorSession
 import kotlinx.coroutines.launch

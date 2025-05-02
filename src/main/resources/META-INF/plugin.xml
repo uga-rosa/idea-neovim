@@ -25,21 +25,20 @@
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
         <postStartupActivity implementation="com.ugarosa.neovim.startup.NeovimProjectActivity"/>
-        <editorFactoryListener implementation="com.ugarosa.neovim.extension.NeovimEditorFactoryListener"/>
         <statusBarWidgetFactory id="NeovimModeWidgetId"
-                                implementation="com.ugarosa.neovim.extension.NeovimModeWidgetFactory"/>
+                                implementation="com.ugarosa.neovim.statusline.NeovimModeWidgetFactory"/>
         <applicationConfigurable key="configurable.display.name.neovim"
                                  bundle="messages.NeovimBundle"
-                                 instance="com.ugarosa.neovim.extension.NeovimKeymapConfigurable"/>
-        <actionPromoter implementation="com.ugarosa.neovim.extension.NeovimActionPromoter"/>
+                                 instance="com.ugarosa.neovim.config.NeovimKeymapConfigurable"/>
+        <actionPromoter implementation="com.ugarosa.neovim.keymap.NeovimActionPromoter"/>
     </extensions>
 
     <applicationListeners>
-        <listener class="com.ugarosa.neovim.listener.NeovimKeymapInitializer"
+        <listener class="com.ugarosa.neovim.keymap.NeovimKeymapInitializer"
                   topic="com.intellij.ide.AppLifecycleListener"/>
     </applicationListeners>
 
     <actions>
-        <action id="NeovimKeyAction" class="com.ugarosa.neovim.action.NeovimKeyAction"/>
+        <action id="NeovimKeyAction" class="com.ugarosa.neovim.keymap.NeovimKeyAction"/>
     </actions>
 </idea-plugin>
