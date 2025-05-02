@@ -24,7 +24,7 @@
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
-        <postStartupActivity implementation="com.ugarosa.neovim.startup.NeovimStartupActivity"/>
+        <postStartupActivity implementation="com.ugarosa.neovim.startup.NeovimProjectActivity"/>
         <editorFactoryListener implementation="com.ugarosa.neovim.extension.NeovimEditorFactoryListener"/>
         <statusBarWidgetFactory id="NeovimModeWidgetId"
                                 implementation="com.ugarosa.neovim.extension.NeovimModeWidgetFactory"/>

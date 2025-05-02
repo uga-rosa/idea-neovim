@@ -20,7 +20,7 @@ import com.ugarosa.neovim.session.NEOVIM_SESSION_KEY
 import com.ugarosa.neovim.session.NeovimEditorSession
 import kotlinx.coroutines.launch
 
-class NeovimStartupActivity : ProjectActivity {
+class NeovimProjectActivity : ProjectActivity {
     override suspend fun execute(project: Project) {
         installNeovimTypedActionHandler()
         initializeEditorSessions(project)
