@@ -1,10 +1,13 @@
-package com.ugarosa.neovim.session
+package com.ugarosa.neovim.cursor
 
 import arrow.core.getOrElse
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.LogicalPosition
+import com.ugarosa.neovim.common.CARET_LISTENER_GUARD_KEY
+import com.ugarosa.neovim.common.ListenerGuard
+import com.ugarosa.neovim.common.SyncInhibitor
 import com.ugarosa.neovim.common.charOffsetToUtf8ByteOffset
 import com.ugarosa.neovim.common.utf8ByteOffsetToCharOffset
 import com.ugarosa.neovim.rpc.NeovimMode
@@ -19,20 +22,28 @@ class NeovimCursorHandler(
     private val editor: Editor,
 ) {
     private val logger = thisLogger()
+    private val syncInhibitor = SyncInhibitor()
+    private val caretListenerGuard: ListenerGuard<NeovimCaretListener> =
+        editor.getUserData(CARET_LISTENER_GUARD_KEY)
+            ?: throw IllegalStateException("NeovimCaretListener not found in editor user data")
 
     // TODO: Make this configurable
     private val scrolloff = 3
 
     suspend fun syncCursorFromNeovimToIdea() {
-        val nvimCursor =
-            getCursor(client).getOrElse {
-                logger.warn("Failed to get Neovim cursor: $it")
-                return
+        syncInhibitor.runIfAllowedSuspend {
+            val nvimCursor =
+                getCursor(client).getOrElse {
+                    logger.warn("Failed to get Neovim cursor: $it")
+                    return@runIfAllowedSuspend
+                }
+            val pos = nvimCursor.toLogicalPosition()
+            caretListenerGuard.runWithoutListenerSuspend {
+                withContext(Dispatchers.EDT) {
+                    editor.caretModel.moveToLogicalPosition(pos)
+                    scrollLineIntoView(pos.line)
+                }
             }
-        val pos = nvimCursor.toLogicalPosition()
-        withContext(Dispatchers.EDT) {
-            editor.caretModel.moveToLogicalPosition(pos)
-            scrollLineIntoView(pos.line)
         }
     }
 
@@ -52,6 +63,7 @@ class NeovimCursorHandler(
                 val scrollToY = targetTop.coerceAtLeast(0) * lineHeight
                 scrollingModel.scrollVertically(scrollToY)
             }
+
             targetBottom > lastVisibleLine -> {
                 val linesToScroll = targetBottom - lastVisibleLine
                 scrollingModel.scrollVertically(visibleArea.y + linesToScroll * lineHeight)
@@ -61,9 +73,11 @@ class NeovimCursorHandler(
     }
 
     suspend fun syncCursorFromIdeaToNeovim() {
-        val logicalPosition = editor.caretModel.logicalPosition
-        val nvimCursor = logicalPosition.toNeovimPosition()
-        setCursor(client, nvimCursor)
+        syncInhibitor.runIfAllowedSuspend {
+            val logicalPosition = editor.caretModel.logicalPosition
+            val nvimCursor = logicalPosition.toNeovimPosition()
+            setCursor(client, nvimCursor)
+        }
     }
 
     fun changeCursorShape(mode: NeovimMode) {

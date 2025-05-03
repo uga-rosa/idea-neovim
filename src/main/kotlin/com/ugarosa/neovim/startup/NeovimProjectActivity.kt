@@ -6,8 +6,6 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.actionSystem.TypedAction
-import com.intellij.openapi.editor.event.CaretEvent
-import com.intellij.openapi.editor.event.CaretListener
 import com.intellij.openapi.editor.event.EditorFactoryEvent
 import com.intellij.openapi.editor.event.EditorFactoryListener
 import com.intellij.openapi.fileEditor.FileEditorManager
@@ -16,6 +14,9 @@ import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.fileEditor.TextEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
+import com.ugarosa.neovim.common.CARET_LISTENER_GUARD_KEY
+import com.ugarosa.neovim.common.ListenerGuard
+import com.ugarosa.neovim.cursor.NeovimCaretListener
 import com.ugarosa.neovim.keymap.NeovimTypedActionHandler
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 import com.ugarosa.neovim.session.NEOVIM_SESSION_KEY
@@ -75,16 +76,14 @@ class NeovimProjectActivity(
         client: NeovimRpcClient,
         disposable: Disposable,
     ) {
+        ListenerGuard(
+            NeovimCaretListener(editor),
+            { editor.caretModel.addCaretListener(it, disposable) },
+            { editor.caretModel.removeCaretListener(it) },
+        ).let { editor.putUserData(CARET_LISTENER_GUARD_KEY, it) }
         NeovimEditorSession.create(client, scope, editor, project)
-        editor.caretModel.addCaretListener(
-            object : CaretListener {
-                override fun caretPositionChanged(event: CaretEvent) {
-                    editor.getUserData(NEOVIM_SESSION_KEY)
-                        ?.syncCursorFromIdeaToNeovim()
-                }
-            },
-            disposable,
-        )
+            ?.let { editor.putUserData(NEOVIM_SESSION_KEY, it) }
+            ?: throw IllegalStateException("Failed to create Neovim session")
     }
 
     private fun setupBufferActivationOnEditorSwitch(

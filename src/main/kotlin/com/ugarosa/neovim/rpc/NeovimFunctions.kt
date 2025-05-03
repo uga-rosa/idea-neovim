@@ -77,6 +77,30 @@ suspend fun bufferDetach(
             .onLeft { raise(it.translate()) }
     }
 
+suspend fun execLua(
+    client: NeovimClient,
+    code: String,
+    args: List<Any> = emptyList(),
+): Either<NeovimFunctionsError, Unit> =
+    either {
+        client.requestAsync(
+            "nvim_exec_lua",
+            listOf(code, args),
+        )
+            .onLeft { raise(it.translate()) }
+    }
+
+suspend fun getChanId(client: NeovimClient): Either<NeovimFunctionsError, Int> =
+    either {
+        val response =
+            client.requestAsync("nvim_get_chan_info", listOf(0))
+                .mapLeft { it.translate() }.bind()
+        Either.catch {
+            response.result.asMapValue().get("id")?.asIntegerValue()?.toInt()!!
+        }
+            .mapLeft { NeovimFunctionsError.ResponseTypeMismatch }.bind()
+    }
+
 suspend fun setCurrentBuffer(
     client: NeovimClient,
     bufferId: BufferId,

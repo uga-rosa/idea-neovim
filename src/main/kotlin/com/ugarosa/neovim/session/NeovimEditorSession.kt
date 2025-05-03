@@ -5,6 +5,7 @@ import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
+import com.ugarosa.neovim.cursor.NeovimCursorHandler
 import com.ugarosa.neovim.document.NeovimDocumentHandler
 import com.ugarosa.neovim.rpc.BufLinesEvent
 import com.ugarosa.neovim.rpc.NeovimMode
@@ -67,8 +68,6 @@ class NeovimEditorSession private constructor(
                         session.handleBufferLinesEvent(event)
                     }
                 }
-
-                editor.putUserData(NEOVIM_SESSION_KEY, session)
 
                 session
             }.await()
