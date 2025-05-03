@@ -20,6 +20,9 @@ class NeovimCursorHandler(
 ) {
     private val logger = thisLogger()
 
+    // TODO: Make this configurable
+    private val scrolloff = 3
+
     suspend fun syncCursorFromNeovimToIdea() {
         val nvimCursor =
             getCursor(client).getOrElse {
@@ -29,6 +32,31 @@ class NeovimCursorHandler(
         val pos = nvimCursor.toLogicalPosition()
         withContext(Dispatchers.EDT) {
             editor.caretModel.moveToLogicalPosition(pos)
+            scrollLineIntoView(pos.line)
+        }
+    }
+
+    private fun scrollLineIntoView(line: Int) {
+        val scrollingModel = editor.scrollingModel
+        val visibleArea = scrollingModel.visibleArea
+        val lineHeight = editor.lineHeight
+
+        val firstVisibleLine = editor.yToVisualLine(visibleArea.y)
+        val lastVisibleLine = editor.yToVisualLine(visibleArea.y + visibleArea.height)
+
+        val targetTop = line - scrolloff
+        val targetBottom = line + scrolloff
+
+        when {
+            targetTop < firstVisibleLine -> {
+                val scrollToY = targetTop.coerceAtLeast(0) * lineHeight
+                scrollingModel.scrollVertically(scrollToY)
+            }
+            targetBottom > lastVisibleLine -> {
+                val linesToScroll = targetBottom - lastVisibleLine
+                scrollingModel.scrollVertically(visibleArea.y + linesToScroll * lineHeight)
+            }
+            // Do nothing if the line is already in view
         }
     }
 
