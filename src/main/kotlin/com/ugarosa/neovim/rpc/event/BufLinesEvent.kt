@@ -1,9 +1,9 @@
-package com.ugarosa.neovim.rpc
+package com.ugarosa.neovim.rpc.event
 
 import com.intellij.openapi.diagnostic.Logger
 import com.ugarosa.neovim.rpc.client.NeovimClient
-import com.ugarosa.neovim.rpc.msgpack.BufferId
-import com.ugarosa.neovim.rpc.msgpack.asBufferId
+import com.ugarosa.neovim.rpc.BufferId
+import com.ugarosa.neovim.rpc.asBufferId
 
 private val logger = Logger.getInstance("com.ugarosa.neovim.rpc.NeovimNotifyConverter")
 

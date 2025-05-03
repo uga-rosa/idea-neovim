@@ -1,4 +1,4 @@
-package com.ugarosa.neovim.rpc.msgpack
+package com.ugarosa.neovim.rpc
 
 import arrow.core.Either
 import arrow.core.raise.either

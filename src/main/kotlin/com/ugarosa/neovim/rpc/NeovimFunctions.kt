@@ -5,8 +5,6 @@ import arrow.core.raise.either
 import com.intellij.ui.JBColor
 import com.ugarosa.neovim.common.get
 import com.ugarosa.neovim.rpc.client.NeovimClient
-import com.ugarosa.neovim.rpc.msgpack.BufferId
-import com.ugarosa.neovim.rpc.msgpack.asBufferId
 
 sealed interface NeovimFunctionsError {
     data object Timeout : NeovimFunctionsError

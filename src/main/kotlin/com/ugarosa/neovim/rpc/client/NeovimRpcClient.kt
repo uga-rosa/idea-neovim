@@ -5,9 +5,9 @@ import arrow.core.raise.either
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.jetbrains.rd.util.concurrentMapOf
-import com.ugarosa.neovim.rpc.msgpack.BufferId
-import com.ugarosa.neovim.rpc.msgpack.TabPageId
-import com.ugarosa.neovim.rpc.msgpack.WindowId
+import com.ugarosa.neovim.rpc.BufferId
+import com.ugarosa.neovim.rpc.TabPageId
+import com.ugarosa.neovim.rpc.WindowId
 import com.ugarosa.neovim.rpc.process.AutoNeovimProcessManager
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
