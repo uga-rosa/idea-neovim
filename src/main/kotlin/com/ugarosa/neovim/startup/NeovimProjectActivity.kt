@@ -1,5 +1,6 @@
 package com.ugarosa.neovim.startup
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.EditorFactory
@@ -16,13 +17,17 @@ import com.ugarosa.neovim.keymap.NeovimTypedActionHandler
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 import com.ugarosa.neovim.session.NEOVIM_SESSION_KEY
 import com.ugarosa.neovim.session.NeovimEditorSession
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-class NeovimProjectActivity : ProjectActivity {
+class NeovimProjectActivity(
+    private val scope: CoroutineScope,
+) : ProjectActivity {
     override suspend fun execute(project: Project) {
+        val disposable = project.service<PluginDisposable>()
         installNeovimTypedActionHandler()
-        initializeEditorSessions(project)
-        setupBufferActivationOnEditorSwitch(project)
+        initializeEditorSessions(project, disposable)
+        setupBufferActivationOnEditorSwitch(project, disposable)
     }
 
     private fun installNeovimTypedActionHandler() {
@@ -31,9 +36,11 @@ class NeovimProjectActivity : ProjectActivity {
         typedAction.setupRawHandler(NeovimTypedActionHandler(originalHandler))
     }
 
-    private suspend fun initializeEditorSessions(project: Project) {
+    private suspend fun initializeEditorSessions(
+        project: Project,
+        disposable: Disposable,
+    ) {
         val client = ApplicationManager.getApplication().service<NeovimRpcClient>()
-        val scope = project.service<CoroutineService>().scope
         // Initialize all existing editors
         EditorFactory.getInstance().allEditors.forEach { editor ->
             NeovimEditorSession.create(client, scope, editor, project)
@@ -47,27 +54,28 @@ class NeovimProjectActivity : ProjectActivity {
                     }
                 }
             },
-            project.service<PluginDisposable>(),
+            disposable,
         )
     }
 
-    private fun setupBufferActivationOnEditorSwitch(project: Project) {
+    private fun setupBufferActivationOnEditorSwitch(
+        project: Project,
+        disposable: Disposable,
+    ) {
         // Activate the buffer in the currently selected editor
         val fileEditorManager = FileEditorManager.getInstance(project)
         val selectedEditor = fileEditorManager.selectedTextEditor
-        if (selectedEditor != null) {
-            val session = selectedEditor.getUserData(NEOVIM_SESSION_KEY)
-            session?.activateBuffer()
-        }
+        selectedEditor?.getUserData(NEOVIM_SESSION_KEY)
+            ?.activateBuffer()
         // Activate the buffer when the editor selection changes
-        project.messageBus.connect().subscribe(
+        project.messageBus.connect(disposable).subscribe(
             FileEditorManagerListener.FILE_EDITOR_MANAGER,
             object : FileEditorManagerListener {
                 override fun selectionChanged(event: FileEditorManagerEvent) {
                     val newEditor = event.newEditor
                     if (newEditor is TextEditor) {
-                        val session = newEditor.editor.getUserData(NEOVIM_SESSION_KEY)
-                        session?.activateBuffer()
+                        newEditor.editor.getUserData(NEOVIM_SESSION_KEY)
+                            ?.activateBuffer()
                     }
                     super.selectionChanged(event)
                 }
