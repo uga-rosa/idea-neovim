@@ -5,6 +5,7 @@ import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
+import com.ugarosa.neovim.document.NeovimDocumentHandler
 import com.ugarosa.neovim.rpc.BufLinesEvent
 import com.ugarosa.neovim.rpc.NeovimMode
 import com.ugarosa.neovim.rpc.client.NeovimClient
@@ -12,6 +13,7 @@ import com.ugarosa.neovim.rpc.createBuffer
 import com.ugarosa.neovim.rpc.getMode
 import com.ugarosa.neovim.rpc.input
 import com.ugarosa.neovim.rpc.maybeBufLinesEvent
+import com.ugarosa.neovim.statusline.StatusLineHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -19,6 +21,11 @@ import kotlinx.coroutines.launch
 
 val NEOVIM_SESSION_KEY = Key.create<NeovimEditorSession>("NEOVIM_SESSION_KEY")
 
+/**
+ * Represents a session of Neovim editor.
+ * Manages the interaction between Neovim and the IntelliJ editor.
+ * Actual handling of events delegated to specific handlers.
+ */
 class NeovimEditorSession private constructor(
     private val client: NeovimClient,
     private val scope: CoroutineScope,

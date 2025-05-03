@@ -1,4 +1,4 @@
-package com.ugarosa.neovim.session
+package com.ugarosa.neovim.document
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
