@@ -8,7 +8,7 @@ import com.intellij.openapi.util.Key
 import com.ugarosa.neovim.cursor.NeovimCursorHandler
 import com.ugarosa.neovim.document.NeovimDocumentHandler
 import com.ugarosa.neovim.rpc.NeovimMode
-import com.ugarosa.neovim.rpc.client.NeovimClient
+import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 import com.ugarosa.neovim.rpc.createBuffer
 import com.ugarosa.neovim.rpc.event.BufLinesEvent
 import com.ugarosa.neovim.rpc.event.maybeBufLinesEvent
@@ -28,7 +28,7 @@ val NEOVIM_SESSION_KEY = Key.create<NeovimEditorSession>("NEOVIM_SESSION_KEY")
  * Actual handling of events delegated to specific handlers.
  */
 class NeovimEditorSession private constructor(
-    private val client: NeovimClient,
+    private val client: NeovimRpcClient,
     private val scope: CoroutineScope,
     private val documentHandler: NeovimDocumentHandler,
     private val cursorHandler: NeovimCursorHandler,
@@ -39,7 +39,7 @@ class NeovimEditorSession private constructor(
 
     companion object {
         suspend fun create(
-            client: NeovimClient,
+            client: NeovimRpcClient,
             scope: CoroutineScope,
             editor: Editor,
             project: Project,

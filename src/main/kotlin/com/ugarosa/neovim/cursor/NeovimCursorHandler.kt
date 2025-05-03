@@ -11,14 +11,14 @@ import com.ugarosa.neovim.common.SyncInhibitor
 import com.ugarosa.neovim.common.charOffsetToUtf8ByteOffset
 import com.ugarosa.neovim.common.utf8ByteOffsetToCharOffset
 import com.ugarosa.neovim.rpc.NeovimMode
-import com.ugarosa.neovim.rpc.client.NeovimClient
+import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 import com.ugarosa.neovim.rpc.getCursor
 import com.ugarosa.neovim.rpc.setCursor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class NeovimCursorHandler(
-    private val client: NeovimClient,
+    private val client: NeovimRpcClient,
     private val editor: Editor,
 ) {
     private val logger = thisLogger()

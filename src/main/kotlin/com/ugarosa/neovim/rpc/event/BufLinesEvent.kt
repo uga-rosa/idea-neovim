@@ -1,9 +1,9 @@
 package com.ugarosa.neovim.rpc.event
 
 import com.intellij.openapi.diagnostic.Logger
-import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.asBufferId
+import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 
 private val logger = Logger.getInstance("com.ugarosa.neovim.rpc.NeovimNotifyConverter")
 
@@ -14,7 +14,7 @@ data class BufLinesEvent(
     val replacementLines: List<String>,
 )
 
-fun maybeBufLinesEvent(push: NeovimClient.PushNotification): BufLinesEvent? {
+fun maybeBufLinesEvent(push: NeovimRpcClient.PushNotification): BufLinesEvent? {
     if (push.method != "nvim_buf_lines_event") {
         return null
     }

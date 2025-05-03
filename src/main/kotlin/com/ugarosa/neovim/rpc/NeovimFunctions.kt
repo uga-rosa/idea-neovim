@@ -4,7 +4,7 @@ import arrow.core.Either
 import arrow.core.raise.either
 import com.intellij.ui.JBColor
 import com.ugarosa.neovim.common.get
-import com.ugarosa.neovim.rpc.client.NeovimClient
+import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 
 sealed interface NeovimFunctionsError {
     data object Timeout : NeovimFunctionsError
@@ -18,16 +18,16 @@ sealed interface NeovimFunctionsError {
     data object Unexpected : NeovimFunctionsError
 }
 
-private fun NeovimClient.RequestError.translate(): NeovimFunctionsError {
+private fun NeovimRpcClient.RequestError.translate(): NeovimFunctionsError {
     return when (this) {
-        is NeovimClient.RequestError.BadRequest -> NeovimFunctionsError.BadRequest
-        is NeovimClient.RequestError.IO -> NeovimFunctionsError.IO
-        is NeovimClient.RequestError.Timeout -> NeovimFunctionsError.Timeout
-        is NeovimClient.RequestError.Unexpected -> NeovimFunctionsError.Unexpected
+        is NeovimRpcClient.RequestError.BadRequest -> NeovimFunctionsError.BadRequest
+        is NeovimRpcClient.RequestError.IO -> NeovimFunctionsError.IO
+        is NeovimRpcClient.RequestError.Timeout -> NeovimFunctionsError.Timeout
+        is NeovimRpcClient.RequestError.Unexpected -> NeovimFunctionsError.Unexpected
     }
 }
 
-suspend fun createBuffer(client: NeovimClient): Either<NeovimFunctionsError, BufferId> =
+suspend fun createBuffer(client: NeovimRpcClient): Either<NeovimFunctionsError, BufferId> =
     either {
         val response =
             client.requestAsync("nvim_create_buf", listOf(true, false))
@@ -37,7 +37,7 @@ suspend fun createBuffer(client: NeovimClient): Either<NeovimFunctionsError, Buf
     }
 
 suspend fun bufferSetLines(
-    client: NeovimClient,
+    client: NeovimRpcClient,
     bufferId: BufferId,
     start: Int,
     end: Int,
@@ -52,7 +52,7 @@ suspend fun bufferSetLines(
     }
 
 suspend fun bufferAttach(
-    client: NeovimClient,
+    client: NeovimRpcClient,
     bufferId: BufferId,
 ): Either<NeovimFunctionsError, Unit> =
     either {
@@ -64,7 +64,7 @@ suspend fun bufferAttach(
     }
 
 suspend fun bufferDetach(
-    client: NeovimClient,
+    client: NeovimRpcClient,
     bufferId: BufferId,
 ): Either<NeovimFunctionsError, Unit> =
     either {
@@ -76,7 +76,7 @@ suspend fun bufferDetach(
     }
 
 suspend fun execLua(
-    client: NeovimClient,
+    client: NeovimRpcClient,
     code: String,
     args: List<Any> = emptyList(),
 ): Either<NeovimFunctionsError, Unit> =
@@ -88,7 +88,7 @@ suspend fun execLua(
             .onLeft { raise(it.translate()) }
     }
 
-suspend fun getChanId(client: NeovimClient): Either<NeovimFunctionsError, Int> =
+suspend fun getChanId(client: NeovimRpcClient): Either<NeovimFunctionsError, Int> =
     either {
         val response =
             client.requestAsync("nvim_get_chan_info", listOf(0))
@@ -100,7 +100,7 @@ suspend fun getChanId(client: NeovimClient): Either<NeovimFunctionsError, Int> =
     }
 
 suspend fun setCurrentBuffer(
-    client: NeovimClient,
+    client: NeovimRpcClient,
     bufferId: BufferId,
 ): Either<NeovimFunctionsError, Unit> =
     either {
@@ -109,7 +109,7 @@ suspend fun setCurrentBuffer(
     }
 
 suspend fun input(
-    client: NeovimClient,
+    client: NeovimRpcClient,
     key: String,
 ): Either<NeovimFunctionsError, Unit> =
     either {
@@ -117,7 +117,7 @@ suspend fun input(
             .onLeft { raise(it.translate()) }
     }
 
-suspend fun getCursor(client: NeovimClient): Either<NeovimFunctionsError, Pair<Int, Int>> =
+suspend fun getCursor(client: NeovimRpcClient): Either<NeovimFunctionsError, Pair<Int, Int>> =
     either {
         val response =
             client.requestAsync("nvim_win_get_cursor", listOf(0))
@@ -132,7 +132,7 @@ suspend fun getCursor(client: NeovimClient): Either<NeovimFunctionsError, Pair<I
     }
 
 suspend fun setCursor(
-    client: NeovimClient,
+    client: NeovimRpcClient,
     pos: Pair<Int, Int>,
 ): Either<NeovimFunctionsError, Unit> =
     either {
@@ -143,7 +143,7 @@ suspend fun setCursor(
             .onLeft { raise(it.translate()) }
     }
 
-suspend fun getMode(client: NeovimClient): Either<NeovimFunctionsError, NeovimMode> =
+suspend fun getMode(client: NeovimRpcClient): Either<NeovimFunctionsError, NeovimMode> =
     either {
         val response =
             client.requestAsync("nvim_get_mode")

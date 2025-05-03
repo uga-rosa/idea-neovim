@@ -18,7 +18,7 @@ import com.ugarosa.neovim.common.CARET_LISTENER_GUARD_KEY
 import com.ugarosa.neovim.common.ListenerGuard
 import com.ugarosa.neovim.cursor.NeovimCaretListener
 import com.ugarosa.neovim.keymap.NeovimTypedActionHandler
-import com.ugarosa.neovim.rpc.client.NeovimRpcClient
+import com.ugarosa.neovim.rpc.client.NeovimRpcClientImpl
 import com.ugarosa.neovim.session.NEOVIM_SESSION_KEY
 import com.ugarosa.neovim.session.NeovimEditorSession
 import kotlinx.coroutines.CoroutineScope
@@ -28,7 +28,7 @@ class NeovimProjectActivity(
     private val scope: CoroutineScope,
 ) : ProjectActivity {
     override suspend fun execute(project: Project) {
-        val client = ApplicationManager.getApplication().service<NeovimRpcClient>()
+        val client = ApplicationManager.getApplication().service<NeovimRpcClientImpl>()
         val disposable = project.service<PluginDisposable>()
 
         installNeovimTypedActionHandler()
@@ -45,7 +45,7 @@ class NeovimProjectActivity(
 
     private fun setupEditorFactoryListener(
         project: Project,
-        client: NeovimRpcClient,
+        client: NeovimRpcClientImpl,
         disposable: Disposable,
     ) {
         EditorFactory.getInstance().addEditorFactoryListener(
@@ -62,7 +62,7 @@ class NeovimProjectActivity(
 
     private suspend fun initializeExistingEditors(
         project: Project,
-        client: NeovimRpcClient,
+        client: NeovimRpcClientImpl,
         disposable: Disposable,
     ) {
         EditorFactory.getInstance().allEditors.forEach { editor ->
@@ -73,7 +73,7 @@ class NeovimProjectActivity(
     private suspend fun initializeEditor(
         editor: Editor,
         project: Project,
-        client: NeovimRpcClient,
+        client: NeovimRpcClientImpl,
         disposable: Disposable,
     ) {
         ListenerGuard(
