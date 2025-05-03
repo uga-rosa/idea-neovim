@@ -101,7 +101,7 @@ class NeovimRpcClient(
                 raise(NeovimClient.RequestError.BadRequest)
             }
 
-            logger.debug("Sending request: $msgId, method: $method, params: $params")
+            logger.trace("Sending request: $msgId, method: $method, params: $params")
 
             if (timeoutMills == null) {
                 deferred.await()
