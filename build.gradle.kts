@@ -1,3 +1,4 @@
+import org.jetbrains.intellij.platform.gradle.tasks.RunIdeTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -56,4 +57,10 @@ tasks {
             jvmTarget.set(JvmTarget.JVM_21)
         }
     }
+}
+
+tasks.named<RunIdeTask>("runIde") {
+    jvmArgs = listOf(
+        "-Dnvim.listen.address=127.0.0.1:6666",
+    )
 }
