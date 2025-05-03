@@ -5,10 +5,10 @@ import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.ugarosa.neovim.rpc.BufLinesEvent
-import com.ugarosa.neovim.rpc.NeovimClient
 import com.ugarosa.neovim.rpc.bufferAttach
 import com.ugarosa.neovim.rpc.bufferDetach
 import com.ugarosa.neovim.rpc.bufferSetLines
+import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.msgpack.BufferId
 import com.ugarosa.neovim.rpc.setCurrentBuffer
 

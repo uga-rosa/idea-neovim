@@ -1,4 +1,4 @@
-package com.ugarosa.neovim.rpc
+package com.ugarosa.neovim.rpc.client
 
 import arrow.core.Either
 import org.msgpack.value.Value

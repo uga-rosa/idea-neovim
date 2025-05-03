@@ -6,8 +6,8 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.ugarosa.neovim.rpc.BufLinesEvent
-import com.ugarosa.neovim.rpc.NeovimClient
 import com.ugarosa.neovim.rpc.NeovimMode
+import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.createBuffer
 import com.ugarosa.neovim.rpc.getMode
 import com.ugarosa.neovim.rpc.input

@@ -1,4 +1,4 @@
-package com.ugarosa.neovim.rpc
+package com.ugarosa.neovim.rpc.client
 
 import arrow.core.Either
 import arrow.core.raise.either
@@ -8,6 +8,7 @@ import com.jetbrains.rd.util.concurrentMapOf
 import com.ugarosa.neovim.rpc.msgpack.BufferId
 import com.ugarosa.neovim.rpc.msgpack.TabPageId
 import com.ugarosa.neovim.rpc.msgpack.WindowId
+import com.ugarosa.neovim.rpc.process.AutoNeovimProcessManager
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -23,7 +24,7 @@ import org.msgpack.core.MessageUnpacker
 import java.util.concurrent.atomic.AtomicInteger
 
 @Service(Service.Level.APP)
-class NeovimRpcClientImpl(
+class NeovimRpcClient(
     scope: CoroutineScope,
 ) : NeovimClient {
     private val logger = thisLogger()
@@ -39,7 +40,7 @@ class NeovimRpcClientImpl(
     }
 
     init {
-        val processManager = NeovimProcessManagerImpl()
+        val processManager = AutoNeovimProcessManager()
         packer = MessagePack.newDefaultPacker(processManager.getOutputStream())
         unpacker = MessagePack.newDefaultUnpacker(processManager.getInputStream())
 
@@ -100,7 +101,7 @@ class NeovimRpcClientImpl(
                 raise(NeovimClient.RequestError.BadRequest)
             }
 
-            logger.trace("Sending request: $msgId, method: $method, params: $params")
+            logger.debug("Sending request: $msgId, method: $method, params: $params")
 
             if (timeoutMills == null) {
                 deferred.await()

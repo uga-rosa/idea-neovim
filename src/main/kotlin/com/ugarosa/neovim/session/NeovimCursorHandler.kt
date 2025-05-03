@@ -6,8 +6,8 @@ import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.LogicalPosition
 import com.ugarosa.neovim.common.utf8ByteOffsetToCharOffset
-import com.ugarosa.neovim.rpc.NeovimClient
 import com.ugarosa.neovim.rpc.NeovimMode
+import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.getCursor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

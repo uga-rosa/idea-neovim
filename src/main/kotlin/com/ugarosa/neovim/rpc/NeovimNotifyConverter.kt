@@ -1,6 +1,7 @@
 package com.ugarosa.neovim.rpc
 
 import com.intellij.openapi.diagnostic.Logger
+import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.msgpack.BufferId
 import com.ugarosa.neovim.rpc.msgpack.asBufferId
 

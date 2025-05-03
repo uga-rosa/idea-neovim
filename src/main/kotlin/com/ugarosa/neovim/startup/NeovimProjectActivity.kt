@@ -13,7 +13,7 @@ import com.intellij.openapi.fileEditor.TextEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
 import com.ugarosa.neovim.keymap.NeovimTypedActionHandler
-import com.ugarosa.neovim.rpc.NeovimRpcClientImpl
+import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 import com.ugarosa.neovim.session.NEOVIM_SESSION_KEY
 import com.ugarosa.neovim.session.NeovimEditorSession
 import kotlinx.coroutines.launch
@@ -32,7 +32,7 @@ class NeovimProjectActivity : ProjectActivity {
     }
 
     private suspend fun initializeEditorSessions(project: Project) {
-        val client = ApplicationManager.getApplication().service<NeovimRpcClientImpl>()
+        val client = ApplicationManager.getApplication().service<NeovimRpcClient>()
         val scope = project.service<CoroutineService>().scope
         // Initialize all existing editors
         EditorFactory.getInstance().allEditors.forEach { editor ->
