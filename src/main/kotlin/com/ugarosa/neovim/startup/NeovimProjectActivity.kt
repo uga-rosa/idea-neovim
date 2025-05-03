@@ -3,8 +3,11 @@ package com.ugarosa.neovim.startup
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
+import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.actionSystem.TypedAction
+import com.intellij.openapi.editor.event.CaretEvent
+import com.intellij.openapi.editor.event.CaretListener
 import com.intellij.openapi.editor.event.EditorFactoryEvent
 import com.intellij.openapi.editor.event.EditorFactoryListener
 import com.intellij.openapi.fileEditor.FileEditorManager
@@ -24,9 +27,12 @@ class NeovimProjectActivity(
     private val scope: CoroutineScope,
 ) : ProjectActivity {
     override suspend fun execute(project: Project) {
+        val client = ApplicationManager.getApplication().service<NeovimRpcClient>()
         val disposable = project.service<PluginDisposable>()
+
         installNeovimTypedActionHandler()
-        initializeEditorSessions(project, disposable)
+        setupEditorFactoryListener(project, client, disposable)
+        initializeExistingEditors(project, client, disposable)
         setupBufferActivationOnEditorSwitch(project, disposable)
     }
 
@@ -36,22 +42,45 @@ class NeovimProjectActivity(
         typedAction.setupRawHandler(NeovimTypedActionHandler(originalHandler))
     }
 
-    private suspend fun initializeEditorSessions(
+    private fun setupEditorFactoryListener(
         project: Project,
+        client: NeovimRpcClient,
         disposable: Disposable,
     ) {
-        val client = ApplicationManager.getApplication().service<NeovimRpcClient>()
-        // Initialize all existing editors
-        EditorFactory.getInstance().allEditors.forEach { editor ->
-            NeovimEditorSession.create(client, scope, editor, project)
-        }
-        // Initialize when a new editor is created
         EditorFactory.getInstance().addEditorFactoryListener(
             object : EditorFactoryListener {
                 override fun editorCreated(event: EditorFactoryEvent) {
                     scope.launch {
-                        NeovimEditorSession.create(client, scope, event.editor, project)
+                        initializeEditor(event.editor, project, client, disposable)
                     }
+                }
+            },
+            disposable,
+        )
+    }
+
+    private suspend fun initializeExistingEditors(
+        project: Project,
+        client: NeovimRpcClient,
+        disposable: Disposable,
+    ) {
+        EditorFactory.getInstance().allEditors.forEach { editor ->
+            initializeEditor(editor, project, client, disposable)
+        }
+    }
+
+    private suspend fun initializeEditor(
+        editor: Editor,
+        project: Project,
+        client: NeovimRpcClient,
+        disposable: Disposable,
+    ) {
+        NeovimEditorSession.create(client, scope, editor, project)
+        editor.caretModel.addCaretListener(
+            object : CaretListener {
+                override fun caretPositionChanged(event: CaretEvent) {
+                    editor.getUserData(NEOVIM_SESSION_KEY)
+                        ?.syncCursorFromIdeaToNeovim()
                 }
             },
             disposable,

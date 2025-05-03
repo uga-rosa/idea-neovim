@@ -60,7 +60,8 @@ tasks {
 }
 
 tasks.named<RunIdeTask>("runIde") {
-    jvmArgs = listOf(
-        "-Dnvim.listen.address=127.0.0.1:6666",
-    )
+    jvmArgs =
+        listOf(
+            "-Dnvim.listen.address=127.0.0.1:6666",
+        )
 }

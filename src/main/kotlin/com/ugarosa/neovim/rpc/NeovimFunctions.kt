@@ -109,6 +109,18 @@ suspend fun getCursor(client: NeovimClient): Either<NeovimFunctionsError, Pair<I
             .mapLeft { NeovimFunctionsError.ResponseTypeMismatch }.bind()
     }
 
+suspend fun setCursor(
+    client: NeovimClient,
+    pos: Pair<Int, Int>,
+): Either<NeovimFunctionsError, Unit> =
+    either {
+        client.requestAsync(
+            "nvim_win_set_cursor",
+            listOf(0, listOf(pos.first, pos.second)),
+        )
+            .onLeft { raise(it.translate()) }
+    }
+
 suspend fun getMode(client: NeovimClient): Either<NeovimFunctionsError, NeovimMode> =
     either {
         val response =

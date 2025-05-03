@@ -8,17 +8,21 @@ fun utf8ByteOffsetToCharOffset(
     text: String,
     byteOffset: Int,
 ): Int {
-    var bytes = 0
-    var index = 0
-    for (ch in text) {
-        val utf8Bytes = ch.toString().toByteArray(Charsets.UTF_8)
-        bytes += utf8Bytes.size
-        if (bytes > byteOffset) {
-            break
-        }
-        index++
+    var acc = 0
+    text.forEachIndexed { i, c ->
+        val bytes = c.toString().toByteArray(Charsets.UTF_8).size
+        if (acc + bytes > byteOffset) return i
+        acc += bytes
     }
-    return index
+    return text.length
+}
+
+fun charOffsetToUtf8ByteOffset(
+    text: String,
+    charOffset: Int,
+): Int {
+    val safeOffset = charOffset.coerceAtMost(text.length)
+    return text.substring(0, safeOffset).toByteArray(Charsets.UTF_8).size
 }
 
 fun neovimNotation(e: KeyEvent): String {

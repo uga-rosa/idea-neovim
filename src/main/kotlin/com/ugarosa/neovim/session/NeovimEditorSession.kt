@@ -82,6 +82,12 @@ class NeovimEditorSession private constructor(
         }
     }
 
+    fun syncCursorFromIdeaToNeovim() {
+        scope.launch {
+            cursorHandler.syncCursorFromIdeaToNeovim()
+        }
+    }
+
     private suspend fun handleBufferLinesEvent(e: BufLinesEvent) {
         documentHandler.applyBufferLinesEvent(e)
         cursorHandler.syncCursorFromNeovimToIdea()
