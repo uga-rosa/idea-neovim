@@ -1,17 +1,16 @@
 package com.ugarosa.neovim.rpc.event
 
 import com.intellij.openapi.diagnostic.Logger
-import com.ugarosa.neovim.common.get
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 
 private val logger = Logger.getInstance("com.ugarosa.neovim.rpc.event")
 
 data class OptionSetEvent(
-    val name: String,
-    val scope: OptionScope,
-    val value: Any,
     val bufferId: BufferId,
+    val scope: OptionScope,
+    val name: String,
+    val value: Any,
 )
 
 enum class OptionScope {
@@ -35,22 +34,12 @@ fun maybeOptionSetEvent(push: NeovimRpcClient.PushNotification): OptionSetEvent?
         return null
     }
     try {
-        val params = push.params.asMapValue()
-        val name =
-            params.get("name")?.asStringValue()?.asString()
-                ?: throw IllegalArgumentException("Invalid name: ${params.get("name")}")
-        val scope =
-            params.get("scope")?.asStringValue()?.asString()
-                ?.let { OptionScope.fromRaw(it) }
-                ?: throw IllegalArgumentException("Invalid scope: ${params.get("scope")}")
-        val value =
-            params.get("value")?.asAny()
-                ?: throw IllegalArgumentException("Invalid value: ${params.get("value")}")
-        val bufferId =
-            params.get("buffer")?.asIntegerValue()?.toInt()
-                ?.let { BufferId(it) }
-                ?: throw IllegalArgumentException("Invalid buffer ID: ${params.get("buffer")}")
-        return OptionSetEvent(name, scope, value, bufferId)
+        val params = push.params.asArrayValue().list()
+        val bufferId = params[0].asIntegerValue().toInt().let { BufferId(it) }
+        val scope = params[1].asStringValue().asString().let { OptionScope.fromRaw(it) }
+        val name = params[2].asStringValue().asString()
+        val value = params[3].asAny()
+        return OptionSetEvent(bufferId, scope, name, value)
     } catch (e: Exception) {
         logger.warn(e)
         return null

@@ -7,12 +7,7 @@ vim.api.nvim_create_autocmd("OptionSet", {
         if (vim.v.option_type ~= "local") then
             return
         end
-        local payload = {
-            name = event.match,
-            scope = "local",
-            value = vim.v.option_new,
-            buffer = bufferId,
-        }
-        vim.rpcnotify(chatId, "nvim_option_set", payload)
+        -- [bufferId, scope, name, value]
+        vim.rpcnotify(chatId, "nvim_option_set", bufferId, "local", event.match, vim.v.option_new)
     end,
 })

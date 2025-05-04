@@ -4,6 +4,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
+import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.LogicalPosition
 import com.intellij.openapi.editor.colors.EditorFontType
@@ -28,6 +29,7 @@ class NeovimCursorHandler(
     private val bufferId: BufferId,
     private val disposable: Disposable,
 ) {
+    private val logger = thisLogger()
     private val syncInhibitor = SyncInhibitor()
     private val caretListenerGuard =
         ListenerGuard(
@@ -56,6 +58,7 @@ class NeovimCursorHandler(
 
     private suspend fun getScrollOptions(): Pair<Scrolloff, Sidescrolloff> {
         val options = optionManager.getLocal(bufferId)
+        logger.trace("Got current local options: $options")
         return options.scrolloff to options.sidescrolloff
     }
 
@@ -128,15 +131,17 @@ class NeovimCursorHandler(
         }
     }
 
-    fun changeCursorShape(mode: NeovimMode) {
-        editor.settings.isBlockCursor = mode in
-            setOf(
-                NeovimMode.NORMAL,
-                NeovimMode.VISUAL,
-                NeovimMode.VISUAL_LINE,
-                NeovimMode.VISUAL_BLOCK,
-                NeovimMode.SELECT,
-            )
+    suspend fun changeCursorShape(mode: NeovimMode) {
+        withContext(Dispatchers.EDT) {
+            editor.settings.isBlockCursor = mode in
+                setOf(
+                    NeovimMode.NORMAL,
+                    NeovimMode.VISUAL,
+                    NeovimMode.VISUAL_LINE,
+                    NeovimMode.VISUAL_BLOCK,
+                    NeovimMode.SELECT,
+                )
+        }
     }
 
     private fun CursorMoveEvent.toLogicalPosition(): LogicalPosition {

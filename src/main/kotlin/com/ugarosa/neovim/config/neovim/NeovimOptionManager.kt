@@ -31,16 +31,16 @@ class NeovimOptionManager(
 ) {
     private val logger = thisLogger()
     private val client = ApplicationManager.getApplication().service<NeovimRpcClientImpl>()
-    private val deferredGlobalOptionsManager by lazy {
+    private val deferredGlobalOptionsManager =
         scope.async {
             NeovimGlobalOptionsManager.create()
         }
-    }
     private val deferredLocalOptionsManagers = ConcurrentHashMap<BufferId, Deferred<NeovimLocalOptionsManager>>()
 
     init {
         client.registerPushHandler { push ->
             maybeOptionSetEvent(push)?.let { event ->
+                logger.debug("Received an option set event: $event")
                 when (event.scope) {
                     OptionScope.LOCAL -> putLocal(event.bufferId, event.name, event.value)
                     OptionScope.GLOBAL -> putGlobal(event.name, event.value)
