@@ -5,12 +5,12 @@ import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.ugarosa.neovim.rpc.BufferId
-import com.ugarosa.neovim.rpc.bufferAttach
-import com.ugarosa.neovim.rpc.bufferDetach
-import com.ugarosa.neovim.rpc.bufferSetLines
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 import com.ugarosa.neovim.rpc.event.BufLinesEvent
-import com.ugarosa.neovim.rpc.setCurrentBuffer
+import com.ugarosa.neovim.rpc.function.bufferAttach
+import com.ugarosa.neovim.rpc.function.bufferDetach
+import com.ugarosa.neovim.rpc.function.bufferSetLines
+import com.ugarosa.neovim.rpc.function.setCurrentBuffer
 
 class NeovimDocumentHandler private constructor(
     private val client: NeovimRpcClient,
@@ -50,7 +50,7 @@ class NeovimDocumentHandler private constructor(
 
     suspend fun activateBuffer() {
         setCurrentBuffer(client, bufferId)
-            .onLeft { logger.warn("Failed to activate buffer") }
+            .onLeft { logger.warn("Failed to set current buffer to window") }
     }
 
     fun applyBufferLinesEvent(e: BufLinesEvent) {

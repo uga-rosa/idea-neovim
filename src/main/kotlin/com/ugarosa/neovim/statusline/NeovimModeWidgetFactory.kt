@@ -7,7 +7,7 @@ import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.openapi.wm.StatusBarWidgetFactory
 import com.intellij.ui.JBColor
 import com.intellij.util.ui.JBUI
-import com.ugarosa.neovim.rpc.NeovimMode
+import com.ugarosa.neovim.rpc.function.NeovimMode
 import javax.swing.JLabel
 
 const val NEOVIM_MODE_ID = "NeovimModeWidgetId"
@@ -39,7 +39,7 @@ class NeovimModeWidget : CustomStatusBarWidget {
             border = JBUI.Borders.empty(0, 6)
             isOpaque = true
             foreground = JBColor.foreground()
-            background = NeovimMode.NORMAL.color
+            background = modeToColor(NeovimMode.NORMAL)
         }
 
     override fun ID(): String = NEOVIM_MODE_ID
@@ -56,8 +56,22 @@ class NeovimModeWidget : CustomStatusBarWidget {
         if (mode != newMode.name) {
             mode = newMode.name
             label.text = newMode.name
-            label.background = newMode.color
+            label.background = modeToColor(newMode)
             statusBar?.updateWidget(ID())
+        }
+    }
+
+    private fun modeToColor(mode: NeovimMode): JBColor {
+        return when (mode) {
+            NeovimMode.NORMAL -> JBColor.GREEN
+            NeovimMode.VISUAL -> JBColor.BLUE
+            NeovimMode.VISUAL_LINE -> JBColor.BLUE
+            NeovimMode.VISUAL_BLOCK -> JBColor.BLUE
+            NeovimMode.SELECT -> JBColor.BLUE
+            NeovimMode.INSERT -> JBColor.YELLOW
+            NeovimMode.REPLACE -> JBColor.ORANGE
+            NeovimMode.COMMAND -> JBColor.GREEN
+            else -> JBColor.RED
         }
     }
 }

@@ -23,7 +23,5 @@ class SocketProcessManager(
 
     override fun getOutputStream() = outputStream
 
-    override fun close() {
-        socket.close()
-    }
+    override fun close() = socket.close()
 }

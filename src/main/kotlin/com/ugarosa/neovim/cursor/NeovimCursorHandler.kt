@@ -10,10 +10,10 @@ import com.ugarosa.neovim.common.ListenerGuard
 import com.ugarosa.neovim.common.SyncInhibitor
 import com.ugarosa.neovim.common.charOffsetToUtf8ByteOffset
 import com.ugarosa.neovim.common.utf8ByteOffsetToCharOffset
-import com.ugarosa.neovim.rpc.NeovimMode
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
-import com.ugarosa.neovim.rpc.getCursor
-import com.ugarosa.neovim.rpc.setCursor
+import com.ugarosa.neovim.rpc.function.NeovimMode
+import com.ugarosa.neovim.rpc.function.getCursor
+import com.ugarosa.neovim.rpc.function.setCursor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

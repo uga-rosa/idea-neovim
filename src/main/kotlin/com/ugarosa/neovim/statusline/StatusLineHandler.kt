@@ -3,7 +3,7 @@ package com.ugarosa.neovim.statusline
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.WindowManager
-import com.ugarosa.neovim.rpc.NeovimMode
+import com.ugarosa.neovim.rpc.function.NeovimMode
 
 class StatusLineHandler(
     private val project: Project,

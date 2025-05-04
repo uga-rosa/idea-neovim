@@ -7,13 +7,13 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.ugarosa.neovim.cursor.NeovimCursorHandler
 import com.ugarosa.neovim.document.NeovimDocumentHandler
-import com.ugarosa.neovim.rpc.NeovimMode
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
-import com.ugarosa.neovim.rpc.createBuffer
 import com.ugarosa.neovim.rpc.event.BufLinesEvent
 import com.ugarosa.neovim.rpc.event.maybeBufLinesEvent
-import com.ugarosa.neovim.rpc.getMode
-import com.ugarosa.neovim.rpc.input
+import com.ugarosa.neovim.rpc.function.NeovimMode
+import com.ugarosa.neovim.rpc.function.createBuffer
+import com.ugarosa.neovim.rpc.function.getMode
+import com.ugarosa.neovim.rpc.function.input
 import com.ugarosa.neovim.statusline.StatusLineHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -77,6 +77,7 @@ class NeovimEditorSession private constructor(
     fun activateBuffer() {
         scope.launch {
             documentHandler.activateBuffer()
+            syncNeovimMode()
         }
     }
 
