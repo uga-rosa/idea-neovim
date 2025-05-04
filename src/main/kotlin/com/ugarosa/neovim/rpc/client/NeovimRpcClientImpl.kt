@@ -142,9 +142,9 @@ class NeovimRpcClientImpl(
 
             null -> packer.packNil()
 
-            is BufferId -> packer.packLong(param.value)
-            is WindowId -> packer.packLong(param.value)
-            is TabPageId -> packer.packLong(param.value)
+            is BufferId -> packer.packInt(param.value)
+            is WindowId -> packer.packInt(param.value)
+            is TabPageId -> packer.packInt(param.value)
 
             else -> throw IllegalArgumentException("Unsupported param type: ${param::class}")
         }

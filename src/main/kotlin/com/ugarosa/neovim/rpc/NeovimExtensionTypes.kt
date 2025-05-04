@@ -8,11 +8,11 @@ import org.msgpack.value.Value
 
 // :h api-definitions
 // Special types (msgpack EXT)
-data class BufferId(val value: Long)
+data class BufferId(val value: Int)
 
-data class WindowId(val value: Long)
+data class WindowId(val value: Int)
 
-data class TabPageId(val value: Long)
+data class TabPageId(val value: Int)
 
 sealed interface DecodeError {
     data object ValueTypeMismatch : DecodeError
@@ -30,19 +30,19 @@ fun Value.asTabPageId(): Either<DecodeError, TabPageId> = toTypedId(2, ::TabPage
 
 private inline fun <A> Value.toTypedId(
     expectedType: Byte,
-    constructor: (Long) -> A,
+    constructor: (Int) -> A,
 ): Either<DecodeError, A> =
     either {
         ensure(isExtensionValue) { DecodeError.ValueTypeMismatch }
         val ext = asExtensionValue()
         ensure(ext.type == expectedType) { DecodeError.NvimTypeMismatch }
         val value =
-            Either.catch { ext.data.toLongFromMsgpack() }
+            Either.catch { ext.data.toIntFromMsgpack() }
                 .mapLeft { DecodeError.InvalidData }
                 .bind()
         constructor(value)
     }
 
-private fun ByteArray.toLongFromMsgpack(): Long {
-    return MessagePack.newDefaultUnpacker(this).unpackLong()
+private fun ByteArray.toIntFromMsgpack(): Int {
+    return MessagePack.newDefaultUnpacker(this).unpackInt()
 }
