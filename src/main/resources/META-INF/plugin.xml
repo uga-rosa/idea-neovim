@@ -33,11 +33,6 @@
         <actionPromoter implementation="com.ugarosa.neovim.keymap.NeovimActionPromoter"/>
     </extensions>
 
-    <applicationListeners>
-        <listener class="com.ugarosa.neovim.keymap.NeovimKeymapInitializer"
-                  topic="com.intellij.ide.AppLifecycleListener"/>
-    </applicationListeners>
-
     <actions>
         <action id="NeovimKeyAction" class="com.ugarosa.neovim.keymap.NeovimKeyAction"/>
     </actions>

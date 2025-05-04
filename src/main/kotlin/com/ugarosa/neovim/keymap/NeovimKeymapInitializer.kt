@@ -1,19 +1,23 @@
 package com.ugarosa.neovim.keymap
 
-import com.intellij.ide.AppLifecycleListener
 import com.intellij.openapi.actionSystem.KeyboardShortcut
 import com.intellij.openapi.keymap.KeymapManager
 import javax.swing.KeyStroke
 
-class NeovimKeymapInitializer : AppLifecycleListener {
-    override fun appFrameCreated(commandLineArgs: MutableList<String>) {
-        super.appFrameCreated(commandLineArgs)
+// TODO: Get keymaps from user settings
+fun initializeKeymap() {
+    val keymapManager = KeymapManager.getInstance()
+    val keymap = keymapManager.activeKeymap
 
-        // Initialize the keymap for Neovim
-        val keymapManager = KeymapManager.getInstance()
-        val keymap = keymapManager.activeKeymap
-
-        val shortcut = KeyboardShortcut(KeyStroke.getKeyStroke("ctrl R"), null)
+    keys.forEach { key ->
+        val shortcut = KeyboardShortcut(KeyStroke.getKeyStroke(key), null)
         keymap.addShortcut(NEOVIM_KEY_ACTION_ID, shortcut)
     }
 }
+
+private val keys =
+    listOf(
+        "ctrl R",
+        "ESCAPE",
+        "ENTER",
+    )

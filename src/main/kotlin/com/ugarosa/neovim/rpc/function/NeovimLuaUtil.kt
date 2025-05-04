@@ -110,3 +110,15 @@ suspend fun hookLocalOptionSet(
                 }
         execLua(client, luaCode, listOf(chanId, bufferId)).bind()
     }
+
+suspend fun hookCursorMove(client: NeovimRpcClient): Either<NeovimFunctionsError, Unit> =
+    either {
+        val chanId = getChanId(client).bind()
+        val luaCode =
+            object {}.javaClass.getResource("/lua/hookCursorMove.lua")?.readText()
+                ?: run {
+                    logger.warn("Lua script not found: /hookCursorMove.lua")
+                    raise(NeovimFunctionsError.Unexpected)
+                }
+        execLua(client, luaCode, listOf(chanId)).bind()
+    }

@@ -5,10 +5,12 @@ import arrow.core.raise.either
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.jetbrains.rd.util.concurrentMapOf
+import com.ugarosa.neovim.keymap.initializeKeymap
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.TabPageId
 import com.ugarosa.neovim.rpc.WindowId
 import com.ugarosa.neovim.rpc.function.enforceSingleWindow
+import com.ugarosa.neovim.rpc.function.hookCursorMove
 import com.ugarosa.neovim.rpc.process.AutoNeovimProcessManager
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -82,8 +84,21 @@ class NeovimRpcClientImpl(
         }
     }
 
+    // Hooks that should be called only once at application startup.
     private suspend fun initialize() {
-        enforceSingleWindow(this)
+        initializeKeymap()
+
+        enforceSingleWindow(this).onLeft {
+            logger.warn("Failed to enforce single window: $it")
+        }.onRight {
+            logger.debug("Enforced single window")
+        }
+
+        hookCursorMove(this).onLeft {
+            logger.warn("Failed to hook cursor move: $it")
+        }.onRight {
+            logger.debug("Hooked cursor move")
+        }
     }
 
     override suspend fun requestAsync(
