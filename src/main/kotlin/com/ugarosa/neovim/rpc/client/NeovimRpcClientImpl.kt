@@ -49,8 +49,6 @@ class NeovimRpcClientImpl(
         unpacker = MessagePack.newDefaultUnpacker(processManager.getInputStream())
 
         scope.launch(Dispatchers.IO) {
-            initialize()
-
             while (isActive) {
                 unpacker.unpackArrayHeader()
                 when (val type = unpacker.unpackInt()) {
@@ -78,6 +76,10 @@ class NeovimRpcClientImpl(
                 }
             }
         }
+
+        scope.launch {
+            initialize()
+        }
     }
 
     private suspend fun initialize() {
@@ -96,33 +98,45 @@ class NeovimRpcClientImpl(
 
             logger.trace("Sending request: $msgId, method: $method, params: $params")
 
-            try {
-                withContext(Dispatchers.IO) {
-                    sendMutex.withLock {
+            withContext(Dispatchers.IO) {
+                sendMutex.withLock {
+                    try {
                         packer.packArrayHeader(4)
                         packer.packInt(0) // 0 = Request
                         packer.packInt(msgId)
                         packer.packString(method)
                         packParams(params)
                         packer.flush()
+                    } catch (e: Exception) {
+                        packer.clear()
+                        waitingResponses.remove(msgId)?.cancel()
+                        raise(
+                            when (e) {
+                                is IOException -> NeovimRpcClient.RequestError.IO
+                                is IllegalArgumentException -> NeovimRpcClient.RequestError.BadRequest
+                                else -> NeovimRpcClient.RequestError.Unexpected
+                            },
+                        )
                     }
                 }
-            } catch (_: IOException) {
-                raise(NeovimRpcClient.RequestError.IO)
-            } catch (_: IllegalStateException) {
-                raise(NeovimRpcClient.RequestError.BadRequest)
             }
 
-            if (timeoutMills == null) {
-                deferred.await()
-            } else {
-                try {
+            try {
+                if (timeoutMills == null) {
+                    deferred.await()
+                } else {
                     withTimeout(timeoutMills) {
                         deferred.await()
                     }
-                } catch (_: TimeoutCancellationException) {
-                    waitingResponses.remove(msgId)
-                    raise(NeovimRpcClient.RequestError.Timeout)
+                }
+            } catch (e: Exception) {
+                waitingResponses.remove(msgId)?.cancel()
+                when (e) {
+                    is TimeoutCancellationException -> raise(NeovimRpcClient.RequestError.Timeout)
+                    else -> {
+                        logger.warn("Unexpected error during response await", e)
+                        raise(NeovimRpcClient.RequestError.Unexpected)
+                    }
                 }
             }
         }
