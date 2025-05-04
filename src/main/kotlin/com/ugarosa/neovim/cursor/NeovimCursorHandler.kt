@@ -5,6 +5,7 @@ import com.intellij.openapi.application.EDT
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.LogicalPosition
+import com.intellij.openapi.editor.colors.EditorFontType
 import com.ugarosa.neovim.common.CARET_LISTENER_GUARD_KEY
 import com.ugarosa.neovim.common.ListenerGuard
 import com.ugarosa.neovim.common.SyncInhibitor
@@ -27,8 +28,9 @@ class NeovimCursorHandler(
         editor.getUserData(CARET_LISTENER_GUARD_KEY)
             ?: throw IllegalStateException("NeovimCaretListener not found in editor user data")
 
-    // TODO: Make this configurable
+    // TODO: Make these configurable
     private val scrolloff = 3
+    private val sidescrolloff = 5
 
     suspend fun syncCursorFromNeovimToIdea() {
         syncInhibitor.runIfAllowedSuspend {
@@ -42,6 +44,7 @@ class NeovimCursorHandler(
                 withContext(Dispatchers.EDT) {
                     editor.caretModel.moveToLogicalPosition(pos)
                     scrollLineIntoView(pos.line)
+                    scrollColumnIntoView(pos.column)
                 }
             }
         }
@@ -68,7 +71,33 @@ class NeovimCursorHandler(
                 val linesToScroll = targetBottom - lastVisibleLine
                 scrollingModel.scrollVertically(visibleArea.y + linesToScroll * lineHeight)
             }
-            // Do nothing if the line is already in view
+            // already in view
+        }
+    }
+
+    private fun scrollColumnIntoView(column: Int) {
+        val scrollingModel = editor.scrollingModel
+        val visibleArea = scrollingModel.visibleArea
+        val font = editor.colorsScheme.getFont(EditorFontType.PLAIN)
+        val metrics = editor.contentComponent.getFontMetrics(font)
+        val charWidth = metrics.charWidth('W')
+
+        val firstVisibleColumn = visibleArea.x / charWidth
+        val lastVisibleColumn = (visibleArea.x + visibleArea.width) / charWidth
+
+        val targetLeft = column - sidescrolloff
+        val targetRight = column + sidescrolloff
+
+        when {
+            targetLeft < firstVisibleColumn -> {
+                val scrollToX = (targetLeft.coerceAtLeast(0) * charWidth)
+                scrollingModel.scrollHorizontally(scrollToX)
+            }
+            targetRight > lastVisibleColumn -> {
+                val colsToScroll = targetRight - lastVisibleColumn
+                scrollingModel.scrollHorizontally(visibleArea.x + colsToScroll * charWidth)
+            }
+            // already in view
         }
     }
 
