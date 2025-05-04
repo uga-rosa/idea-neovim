@@ -8,6 +8,7 @@ import com.jetbrains.rd.util.concurrentMapOf
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.TabPageId
 import com.ugarosa.neovim.rpc.WindowId
+import com.ugarosa.neovim.rpc.function.enforceSingleWindow
 import com.ugarosa.neovim.rpc.process.AutoNeovimProcessManager
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -48,6 +49,8 @@ class NeovimRpcClientImpl(
         unpacker = MessagePack.newDefaultUnpacker(processManager.getInputStream())
 
         scope.launch(Dispatchers.IO) {
+            initialize()
+
             while (isActive) {
                 unpacker.unpackArrayHeader()
                 when (val type = unpacker.unpackInt()) {
@@ -75,6 +78,10 @@ class NeovimRpcClientImpl(
                 }
             }
         }
+    }
+
+    private suspend fun initialize() {
+        enforceSingleWindow(this)
     }
 
     override suspend fun requestAsync(
