@@ -14,9 +14,6 @@ import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.fileEditor.TextEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
-import com.ugarosa.neovim.common.CARET_LISTENER_GUARD_KEY
-import com.ugarosa.neovim.common.ListenerGuard
-import com.ugarosa.neovim.cursor.NeovimCaretListener
 import com.ugarosa.neovim.keymap.NeovimTypedActionHandler
 import com.ugarosa.neovim.rpc.client.NeovimRpcClientImpl
 import com.ugarosa.neovim.session.NEOVIM_SESSION_KEY
@@ -76,12 +73,7 @@ class NeovimProjectActivity(
         client: NeovimRpcClientImpl,
         disposable: Disposable,
     ) {
-        ListenerGuard(
-            NeovimCaretListener(editor),
-            { editor.caretModel.addCaretListener(it, disposable) },
-            { editor.caretModel.removeCaretListener(it) },
-        ).let { editor.putUserData(CARET_LISTENER_GUARD_KEY, it) }
-        NeovimEditorSession.create(client, scope, editor, project)
+        NeovimEditorSession.create(client, scope, editor, project, disposable)
             ?.let { editor.putUserData(NEOVIM_SESSION_KEY, it) }
             ?: throw IllegalStateException("Failed to create Neovim session")
     }

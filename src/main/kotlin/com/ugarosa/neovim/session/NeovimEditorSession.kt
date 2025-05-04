@@ -1,6 +1,7 @@
 package com.ugarosa.neovim.session
 
 import arrow.core.getOrElse
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
@@ -36,19 +37,22 @@ class NeovimEditorSession private constructor(
     private var currentMode = NeovimMode.NORMAL
 
     companion object {
+        private val logger = thisLogger()
+
         suspend fun create(
             client: NeovimRpcClient,
             scope: CoroutineScope,
             editor: Editor,
             project: Project,
+            disposable: Disposable,
         ): NeovimEditorSession? {
             val bufferId =
                 createBuffer(client).getOrElse {
-                    thisLogger().error("Failed to create buffer: $it")
+                    logger.warn("Failed to create buffer: $it")
                     return null
                 }
             val documentHandler = NeovimDocumentHandler.create(client, editor, bufferId)
-            val cursorHandler = NeovimCursorHandler(client, editor, bufferId)
+            val cursorHandler = NeovimCursorHandler(client, editor, bufferId, disposable)
             val statusLineHandler = StatusLineHandler(project)
             val session =
                 NeovimEditorSession(

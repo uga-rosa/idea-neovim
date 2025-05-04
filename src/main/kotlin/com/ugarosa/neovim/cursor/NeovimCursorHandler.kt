@@ -1,6 +1,7 @@
 package com.ugarosa.neovim.cursor
 
 import arrow.core.getOrElse
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
@@ -8,7 +9,6 @@ import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.LogicalPosition
 import com.intellij.openapi.editor.colors.EditorFontType
-import com.ugarosa.neovim.common.CARET_LISTENER_GUARD_KEY
 import com.ugarosa.neovim.common.ListenerGuard
 import com.ugarosa.neovim.common.SyncInhibitor
 import com.ugarosa.neovim.common.charOffsetToUtf8ByteOffset
@@ -28,12 +28,18 @@ class NeovimCursorHandler(
     private val client: NeovimRpcClient,
     private val editor: Editor,
     private val bufferId: BufferId,
+    private val disposable: Disposable,
 ) {
     private val logger = thisLogger()
     private val syncInhibitor = SyncInhibitor()
-    private val caretListenerGuard: ListenerGuard<NeovimCaretListener> =
-        editor.getUserData(CARET_LISTENER_GUARD_KEY)
-            ?: throw IllegalStateException("NeovimCaretListener not found in editor user data")
+    private val caretListenerGuard =
+        ListenerGuard(
+            NeovimCaretListener(editor),
+            { editor.caretModel.addCaretListener(it, disposable) },
+            { editor.caretModel.removeCaretListener(it) },
+        ).apply {
+            register()
+        }
 
     private val optionManager = ApplicationManager.getApplication().service<NeovimOptionManager>()
 
