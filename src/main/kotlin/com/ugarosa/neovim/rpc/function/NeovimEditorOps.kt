@@ -13,20 +13,6 @@ suspend fun input(
             .translate().bind()
     }
 
-suspend fun getCursor(client: NeovimRpcClient): Either<NeovimFunctionsError, Pair<Int, Int>> =
-    either {
-        val result =
-            client.requestAsync("nvim_win_get_cursor", listOf(0))
-                .translate().bind()
-        Either.catch {
-            val cursorArray = result.asArrayValue().list()
-            val row = cursorArray[0].asIntegerValue().toInt()
-            val col = cursorArray[1].asIntegerValue().toInt()
-            row to col
-        }
-            .mapLeft { NeovimFunctionsError.ResponseTypeMismatch }.bind()
-    }
-
 suspend fun setCursor(
     client: NeovimRpcClient,
     pos: Pair<Int, Int>,

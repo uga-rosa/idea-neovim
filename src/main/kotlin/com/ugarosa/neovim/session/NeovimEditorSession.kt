@@ -8,9 +8,10 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.ugarosa.neovim.cursor.NeovimCursorHandler
 import com.ugarosa.neovim.document.NeovimDocumentHandler
+import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
-import com.ugarosa.neovim.rpc.event.BufLinesEvent
 import com.ugarosa.neovim.rpc.event.maybeBufLinesEvent
+import com.ugarosa.neovim.rpc.event.maybeCursorMoveEvent
 import com.ugarosa.neovim.rpc.function.NeovimMode
 import com.ugarosa.neovim.rpc.function.createBuffer
 import com.ugarosa.neovim.rpc.function.getMode
@@ -29,6 +30,7 @@ val NEOVIM_SESSION_KEY = Key.create<NeovimEditorSession>("NEOVIM_SESSION_KEY")
 class NeovimEditorSession private constructor(
     private val client: NeovimRpcClient,
     private val scope: CoroutineScope,
+    private val bufferId: BufferId,
     private val documentHandler: NeovimDocumentHandler,
     private val cursorHandler: NeovimCursorHandler,
     private val statusLineHandler: StatusLineHandler,
@@ -58,19 +60,33 @@ class NeovimEditorSession private constructor(
                 NeovimEditorSession(
                     client,
                     scope,
+                    bufferId,
                     documentHandler,
                     cursorHandler,
                     statusLineHandler,
                 )
 
-            client.registerPushHandler { push ->
-                val event = maybeBufLinesEvent(push)
-                if (event?.bufferId == bufferId) {
-                    session.handleBufferLinesEvent(event)
-                }
-            }
+            session.initializePushHandler()
 
             return session
+        }
+    }
+
+    private fun initializePushHandler() {
+        client.registerPushHandler { push ->
+            val event = maybeBufLinesEvent(push)
+            if (event?.bufferId == bufferId) {
+                logger.trace("Apply buffer lines event: $event")
+                documentHandler.applyBufferLinesEvent(event)
+            }
+        }
+
+        client.registerPushHandler { push ->
+            val event = maybeCursorMoveEvent(push)
+            if (event?.bufferId == bufferId) {
+                logger.trace("Move cursor to $event")
+                cursorHandler.syncCursorFromNeovimToIdea(event)
+            }
         }
     }
 
@@ -84,7 +100,6 @@ class NeovimEditorSession private constructor(
     fun sendKeyAndSyncStatus(key: String) {
         scope.launch {
             input(client, key)
-            cursorHandler.syncCursorFromNeovimToIdea()
             syncNeovimMode()
         }
     }
@@ -93,11 +108,6 @@ class NeovimEditorSession private constructor(
         scope.launch {
             cursorHandler.syncCursorFromIdeaToNeovim()
         }
-    }
-
-    private suspend fun handleBufferLinesEvent(e: BufLinesEvent) {
-        documentHandler.applyBufferLinesEvent(e)
-        cursorHandler.syncCursorFromNeovimToIdea()
     }
 
     private suspend fun syncNeovimMode() {

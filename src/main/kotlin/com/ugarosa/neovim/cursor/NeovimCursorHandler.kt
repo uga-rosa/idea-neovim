@@ -1,11 +1,9 @@
 package com.ugarosa.neovim.cursor
 
-import arrow.core.getOrElse
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
-import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.LogicalPosition
 import com.intellij.openapi.editor.colors.EditorFontType
@@ -18,8 +16,8 @@ import com.ugarosa.neovim.config.neovim.option.Scrolloff
 import com.ugarosa.neovim.config.neovim.option.Sidescrolloff
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
+import com.ugarosa.neovim.rpc.event.CursorMoveEvent
 import com.ugarosa.neovim.rpc.function.NeovimMode
-import com.ugarosa.neovim.rpc.function.getCursor
 import com.ugarosa.neovim.rpc.function.setCursor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -30,7 +28,6 @@ class NeovimCursorHandler(
     private val bufferId: BufferId,
     private val disposable: Disposable,
 ) {
-    private val logger = thisLogger()
     private val syncInhibitor = SyncInhibitor()
     private val caretListenerGuard =
         ListenerGuard(
@@ -43,19 +40,9 @@ class NeovimCursorHandler(
 
     private val optionManager = ApplicationManager.getApplication().service<NeovimOptionManager>()
 
-    suspend fun getScrollOptions(): Pair<Scrolloff, Sidescrolloff> {
-        val options = optionManager.getLocal(bufferId)
-        return options.scrolloff to options.sidescrolloff
-    }
-
-    suspend fun syncCursorFromNeovimToIdea() {
+    suspend fun syncCursorFromNeovimToIdea(event: CursorMoveEvent) {
         syncInhibitor.runIfAllowedSuspend {
-            val nvimCursor =
-                getCursor(client).getOrElse {
-                    logger.warn("Failed to get Neovim cursor: $it")
-                    return@runIfAllowedSuspend
-                }
-            val pos = nvimCursor.toLogicalPosition()
+            val pos = event.toLogicalPosition()
             caretListenerGuard.runWithoutListenerSuspend {
                 withContext(Dispatchers.EDT) {
                     editor.caretModel.moveToLogicalPosition(pos)
@@ -65,6 +52,11 @@ class NeovimCursorHandler(
                 }
             }
         }
+    }
+
+    private suspend fun getScrollOptions(): Pair<Scrolloff, Sidescrolloff> {
+        val options = optionManager.getLocal(bufferId)
+        return options.scrolloff to options.sidescrolloff
     }
 
     private fun scrollLineIntoView(
@@ -147,11 +139,11 @@ class NeovimCursorHandler(
             )
     }
 
-    private fun Pair<Int, Int>.toLogicalPosition(): LogicalPosition {
+    private fun CursorMoveEvent.toLogicalPosition(): LogicalPosition {
         // Neovim uses (1, 0) byte-based indexing
         // IntelliJ uses 0-based line indexing
         val document = editor.document
-        val lineIndex = this.first - 1
+        val lineIndex = this.line - 1
         if (lineIndex < 0 || lineIndex >= document.lineCount) {
             return LogicalPosition(0, 0)
         }
@@ -159,7 +151,7 @@ class NeovimCursorHandler(
         val lineStartOffset = document.getLineStartOffset(lineIndex)
         val lineEndOffset = document.getLineEndOffset(lineIndex)
         val lineText = document.text.substring(lineStartOffset, lineEndOffset)
-        val correctedCol = utf8ByteOffsetToCharOffset(lineText, this.second)
+        val correctedCol = utf8ByteOffsetToCharOffset(lineText, this.column)
 
         return LogicalPosition(lineIndex, correctedCol)
     }
