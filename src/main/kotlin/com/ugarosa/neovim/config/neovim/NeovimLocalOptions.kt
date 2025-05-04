@@ -9,6 +9,7 @@ import com.ugarosa.neovim.config.neovim.option.Sidescrolloff
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.client.NeovimRpcClientImpl
 import com.ugarosa.neovim.rpc.function.getLocalOptions
+import com.ugarosa.neovim.rpc.function.hookLocalOptionSet
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -36,6 +37,9 @@ class NeovimLocalOptionsManager private constructor() {
                         logger.warn("Failed to get local options for buffer $bufferId")
                         mapOf()
                     }
+            hookLocalOptionSet(client, bufferId).onLeft {
+                logger.warn("Failed to hook local option set for buffer $bufferId: $it")
+            }
             return NeovimLocalOptionsManager().apply {
                 putAll(options)
             }

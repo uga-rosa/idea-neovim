@@ -1,0 +1,20 @@
+local chanId = ...
+
+local global_group = vim.api.nvim_create_augroup("IdeaNeovim:GlobalOptionSet", { clear = true })
+vim.api.nvim_create_augroup("IdeaNeovim:LocalOptionSet", { clear = true })
+
+vim.api.nvim_create_autocmd("OptionSet", {
+    group = global_group,
+    callback = function(event)
+        if (vim.v.option_type ~= "global") then
+            return
+        end
+        local payload = {
+            name = event.match,
+            scope = "global",
+            value = vim.v.option_new,
+            buffer = -1,
+        }
+        vim.rpcnotify(chanId, "nvim_option_set", payload)
+    end,
+})

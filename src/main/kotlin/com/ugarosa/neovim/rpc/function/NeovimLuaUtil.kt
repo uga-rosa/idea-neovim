@@ -83,3 +83,30 @@ private suspend fun getChanId(client: NeovimRpcClient): Either<NeovimFunctionsEr
         }
             .mapLeft { NeovimFunctionsError.ResponseTypeMismatch }.bind()
     }
+
+suspend fun hookGlobalOptionSet(client: NeovimRpcClient): Either<NeovimFunctionsError, Unit> =
+    either {
+        val chanId = getChanId(client).bind()
+        val luaCode =
+            object {}.javaClass.getResource("/lua/hookGlobalOptionSet.lua")?.readText()
+                ?: run {
+                    logger.warn("Lua script not found: /hookGlobalOptionSet.lua")
+                    raise(NeovimFunctionsError.Unexpected)
+                }
+        execLua(client, luaCode, listOf(chanId)).bind()
+    }
+
+suspend fun hookLocalOptionSet(
+    client: NeovimRpcClient,
+    bufferId: BufferId,
+): Either<NeovimFunctionsError, Unit> =
+    either {
+        val chanId = getChanId(client).bind()
+        val luaCode =
+            object {}.javaClass.getResource("/lua/hookLocalOptionSet.lua")?.readText()
+                ?: run {
+                    logger.warn("Lua script not found: /hookLocalOptionSet.lua")
+                    raise(NeovimFunctionsError.Unexpected)
+                }
+        execLua(client, luaCode, listOf(chanId, bufferId)).bind()
+    }

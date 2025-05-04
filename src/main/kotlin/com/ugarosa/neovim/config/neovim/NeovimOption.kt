@@ -14,6 +14,7 @@ import com.ugarosa.neovim.rpc.client.NeovimRpcClientImpl
 import com.ugarosa.neovim.rpc.event.OptionScope
 import com.ugarosa.neovim.rpc.event.maybeOptionSetEvent
 import com.ugarosa.neovim.rpc.function.getGlobalOptions
+import com.ugarosa.neovim.rpc.function.hookGlobalOptionSet
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
@@ -54,6 +55,10 @@ class NeovimOptionManager(
                         return@launch
                     }
             globalOptionsManager.putAll(globalOptions)
+
+            hookGlobalOptionSet(client).onLeft {
+                logger.warn("Failed to hook global option set: $it")
+            }
         }
     }
 
