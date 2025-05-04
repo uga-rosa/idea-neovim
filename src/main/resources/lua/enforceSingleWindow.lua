@@ -5,6 +5,5 @@ vim.api.nvim_create_autocmd("WinNew", {
         if #vim.api.nvim_list_wins() > 1 then
             vim.api.nvim_win_close(current, true)
         end
-        vim.notify("Neovim is restricted to a single window under IDEA integration.", vim.log.levels.WARN)
     end)
 })
