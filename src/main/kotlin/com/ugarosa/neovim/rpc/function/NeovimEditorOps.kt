@@ -13,6 +13,13 @@ suspend fun input(
             .translate().bind()
     }
 
+suspend fun hookCursorMove(client: NeovimRpcClient): Either<NeovimFunctionsError, Unit> =
+    either {
+        val chanId = getChanId(client).bind()
+        val luaCode = readLuaCode("/lua/hookCursorMove.lua")
+        execLua(client, luaCode, listOf(chanId)).bind()
+    }
+
 suspend fun setCursor(
     client: NeovimRpcClient,
     pos: Pair<Int, Int>,
