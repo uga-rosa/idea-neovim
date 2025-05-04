@@ -1,7 +1,9 @@
 package com.ugarosa.neovim.cursor
 
 import arrow.core.getOrElse
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.EDT
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.LogicalPosition
@@ -11,6 +13,10 @@ import com.ugarosa.neovim.common.ListenerGuard
 import com.ugarosa.neovim.common.SyncInhibitor
 import com.ugarosa.neovim.common.charOffsetToUtf8ByteOffset
 import com.ugarosa.neovim.common.utf8ByteOffsetToCharOffset
+import com.ugarosa.neovim.config.neovim.NeovimOptionManager
+import com.ugarosa.neovim.config.neovim.option.Scrolloff
+import com.ugarosa.neovim.config.neovim.option.Sidescrolloff
+import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 import com.ugarosa.neovim.rpc.function.NeovimMode
 import com.ugarosa.neovim.rpc.function.getCursor
@@ -21,6 +27,7 @@ import kotlinx.coroutines.withContext
 class NeovimCursorHandler(
     private val client: NeovimRpcClient,
     private val editor: Editor,
+    private val bufferId: BufferId,
 ) {
     private val logger = thisLogger()
     private val syncInhibitor = SyncInhibitor()
@@ -28,9 +35,12 @@ class NeovimCursorHandler(
         editor.getUserData(CARET_LISTENER_GUARD_KEY)
             ?: throw IllegalStateException("NeovimCaretListener not found in editor user data")
 
-    // TODO: Make these configurable
-    private val scrolloff = 3
-    private val sidescrolloff = 5
+    private val optionManager = ApplicationManager.getApplication().service<NeovimOptionManager>()
+
+    suspend fun getScrollOptions(): Pair<Scrolloff, Sidescrolloff> {
+        val options = optionManager.getLocal(bufferId)
+        return options.scrolloff to options.sidescrolloff
+    }
 
     suspend fun syncCursorFromNeovimToIdea() {
         syncInhibitor.runIfAllowedSuspend {
@@ -43,14 +53,18 @@ class NeovimCursorHandler(
             caretListenerGuard.runWithoutListenerSuspend {
                 withContext(Dispatchers.EDT) {
                     editor.caretModel.moveToLogicalPosition(pos)
-                    scrollLineIntoView(pos.line)
-                    scrollColumnIntoView(pos.column)
+                    val (scrolloff, sidescrolloff) = getScrollOptions()
+                    scrollLineIntoView(pos.line, scrolloff)
+                    scrollColumnIntoView(pos.column, sidescrolloff)
                 }
             }
         }
     }
 
-    private fun scrollLineIntoView(line: Int) {
+    private fun scrollLineIntoView(
+        line: Int,
+        scrolloff: Scrolloff,
+    ) {
         val scrollingModel = editor.scrollingModel
         val visibleArea = scrollingModel.visibleArea
         val lineHeight = editor.lineHeight
@@ -58,8 +72,8 @@ class NeovimCursorHandler(
         val firstVisibleLine = editor.yToVisualLine(visibleArea.y)
         val lastVisibleLine = editor.yToVisualLine(visibleArea.y + visibleArea.height)
 
-        val targetTop = line - scrolloff
-        val targetBottom = line + scrolloff
+        val targetTop = line - scrolloff.value
+        val targetBottom = line + scrolloff.value
 
         when {
             targetTop < firstVisibleLine -> {
@@ -75,24 +89,31 @@ class NeovimCursorHandler(
         }
     }
 
-    private fun scrollColumnIntoView(column: Int) {
+    private val charWidth: Int by lazy {
+        val font = editor.colorsScheme.getFont(EditorFontType.PLAIN)
+        editor.contentComponent.getFontMetrics(font)
+            .charWidth('W')
+    }
+
+    private fun scrollColumnIntoView(
+        column: Int,
+        sidescrolloff: Sidescrolloff,
+    ) {
         val scrollingModel = editor.scrollingModel
         val visibleArea = scrollingModel.visibleArea
-        val font = editor.colorsScheme.getFont(EditorFontType.PLAIN)
-        val metrics = editor.contentComponent.getFontMetrics(font)
-        val charWidth = metrics.charWidth('W')
 
         val firstVisibleColumn = visibleArea.x / charWidth
         val lastVisibleColumn = (visibleArea.x + visibleArea.width) / charWidth
 
-        val targetLeft = column - sidescrolloff
-        val targetRight = column + sidescrolloff
+        val targetLeft = column - sidescrolloff.value
+        val targetRight = column + sidescrolloff.value
 
         when {
             targetLeft < firstVisibleColumn -> {
                 val scrollToX = (targetLeft.coerceAtLeast(0) * charWidth)
                 scrollingModel.scrollHorizontally(scrollToX)
             }
+
             targetRight > lastVisibleColumn -> {
                 val colsToScroll = targetRight - lastVisibleColumn
                 scrollingModel.scrollHorizontally(visibleArea.x + colsToScroll * charWidth)
