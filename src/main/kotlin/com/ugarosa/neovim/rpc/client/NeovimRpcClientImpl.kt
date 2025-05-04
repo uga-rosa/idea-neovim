@@ -15,6 +15,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.io.IOException
@@ -31,6 +33,7 @@ class NeovimRpcClientImpl(
     private val messageIdGenerator = AtomicInteger(0)
     private val packer: MessagePacker
     private val unpacker: MessageUnpacker
+    private val sendMutex = Mutex()
     private val waitingResponses = concurrentMapOf<Int, CompletableDeferred<NeovimRpcClient.Response>>()
 
     private val pushHandlers = mutableListOf<suspend (NeovimRpcClient.PushNotification) -> Unit>()
@@ -84,9 +87,11 @@ class NeovimRpcClientImpl(
             val deferred = CompletableDeferred<NeovimRpcClient.Response>()
             waitingResponses[msgId] = deferred
 
+            logger.trace("Sending request: $msgId, method: $method, params: $params")
+
             try {
                 withContext(Dispatchers.IO) {
-                    synchronized(packer) {
+                    sendMutex.withLock {
                         packer.packArrayHeader(4)
                         packer.packInt(0) // 0 = Request
                         packer.packInt(msgId)
@@ -100,8 +105,6 @@ class NeovimRpcClientImpl(
             } catch (_: IllegalStateException) {
                 raise(NeovimRpcClient.RequestError.BadRequest)
             }
-
-            logger.trace("Sending request: $msgId, method: $method, params: $params")
 
             if (timeoutMills == null) {
                 deferred.await()
