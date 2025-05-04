@@ -9,7 +9,6 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.LogicalPosition
 import com.intellij.openapi.editor.colors.EditorFontType
 import com.ugarosa.neovim.common.ListenerGuard
-import com.ugarosa.neovim.common.SyncInhibitor
 import com.ugarosa.neovim.common.charOffsetToUtf8ByteOffset
 import com.ugarosa.neovim.common.utf8ByteOffsetToCharOffset
 import com.ugarosa.neovim.config.neovim.NeovimOptionManager
@@ -30,7 +29,6 @@ class NeovimCursorHandler(
     private val disposable: Disposable,
 ) {
     private val logger = thisLogger()
-    private val syncInhibitor = SyncInhibitor()
     private val caretListenerGuard =
         ListenerGuard(
             NeovimCaretListener(editor),
@@ -43,15 +41,13 @@ class NeovimCursorHandler(
     private val optionManager = ApplicationManager.getApplication().service<NeovimOptionManager>()
 
     suspend fun syncCursorFromNeovimToIdea(event: CursorMoveEvent) {
-        syncInhibitor.runIfAllowedSuspend {
-            val pos = event.toLogicalPosition()
-            caretListenerGuard.runWithoutListenerSuspend {
-                withContext(Dispatchers.EDT) {
-                    editor.caretModel.moveToLogicalPosition(pos)
-                    val (scrolloff, sidescrolloff) = getScrollOptions()
-                    scrollLineIntoView(pos.line, scrolloff)
-                    scrollColumnIntoView(pos.column, sidescrolloff)
-                }
+        val pos = event.toLogicalPosition()
+        caretListenerGuard.runWithoutListenerSuspend {
+            withContext(Dispatchers.EDT) {
+                editor.caretModel.moveToLogicalPosition(pos)
+                val (scrolloff, sidescrolloff) = getScrollOptions()
+                scrollLineIntoView(pos.line, scrolloff)
+                scrollColumnIntoView(pos.column, sidescrolloff)
             }
         }
     }
@@ -124,25 +120,25 @@ class NeovimCursorHandler(
     }
 
     suspend fun syncCursorFromIdeaToNeovim() {
-        syncInhibitor.runIfAllowedSuspend {
-            val logicalPosition = editor.caretModel.logicalPosition
-            val nvimCursor = logicalPosition.toNeovimPosition()
-            setCursor(client, nvimCursor)
-        }
+        val logicalPosition = editor.caretModel.logicalPosition
+        val (row, col) = logicalPosition.toNeovimPosition()
+        setCursor(client, row, col)
     }
 
     suspend fun changeCursorShape(mode: NeovimMode) {
         withContext(Dispatchers.EDT) {
-            editor.settings.isBlockCursor = mode in
-                setOf(
-                    NeovimMode.NORMAL,
-                    NeovimMode.VISUAL,
-                    NeovimMode.VISUAL_LINE,
-                    NeovimMode.VISUAL_BLOCK,
-                    NeovimMode.SELECT,
-                )
+            editor.settings.isBlockCursor = mode in blockModes
         }
     }
+
+    private val blockModes =
+        setOf(
+            NeovimMode.NORMAL,
+            NeovimMode.VISUAL,
+            NeovimMode.VISUAL_LINE,
+            NeovimMode.VISUAL_BLOCK,
+            NeovimMode.SELECT,
+        )
 
     private fun CursorMoveEvent.toLogicalPosition(): LogicalPosition {
         // Neovim uses (1, 0) byte-based indexing

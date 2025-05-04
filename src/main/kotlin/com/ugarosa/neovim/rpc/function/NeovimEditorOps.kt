@@ -22,12 +22,10 @@ suspend fun hookCursorMove(client: NeovimRpcClient): Either<NeovimFunctionsError
 
 suspend fun setCursor(
     client: NeovimRpcClient,
-    pos: Pair<Int, Int>,
+    row: Int,
+    col: Int,
 ): Either<NeovimFunctionsError, Unit> =
     either {
-        client.requestAsync(
-            "nvim_win_set_cursor",
-            listOf(0, listOf(pos.first, pos.second)),
-        )
-            .translate().bind()
+        val luaCode = readLuaCode("/lua/setCursorWithoutEvent.lua")
+        execLua(client, luaCode, listOf(row, col)).bind()
     }
