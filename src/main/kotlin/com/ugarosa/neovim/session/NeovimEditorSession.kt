@@ -16,8 +16,6 @@ import com.ugarosa.neovim.rpc.function.getMode
 import com.ugarosa.neovim.rpc.function.input
 import com.ugarosa.neovim.statusline.StatusLineHandler
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 
 val NEOVIM_SESSION_KEY = Key.create<NeovimEditorSession>("NEOVIM_SESSION_KEY")
@@ -44,33 +42,31 @@ class NeovimEditorSession private constructor(
             editor: Editor,
             project: Project,
         ): NeovimEditorSession? {
-            return scope.async(Dispatchers.IO) {
-                val bufferId =
-                    createBuffer(client).getOrElse {
-                        thisLogger().error("Failed to create buffer: $it")
-                        return@async null
-                    }
-                val documentHandler = NeovimDocumentHandler.create(client, editor, bufferId)
-                val cursorHandler = NeovimCursorHandler(client, editor)
-                val statusLineHandler = StatusLineHandler(project)
-                val session =
-                    NeovimEditorSession(
-                        client,
-                        scope,
-                        documentHandler,
-                        cursorHandler,
-                        statusLineHandler,
-                    )
-
-                client.registerPushHandler { push ->
-                    val event = maybeBufLinesEvent(push)
-                    if (event?.bufferId == bufferId) {
-                        session.handleBufferLinesEvent(event)
-                    }
+            val bufferId =
+                createBuffer(client).getOrElse {
+                    thisLogger().error("Failed to create buffer: $it")
+                    return null
                 }
+            val documentHandler = NeovimDocumentHandler.create(client, editor, bufferId)
+            val cursorHandler = NeovimCursorHandler(client, editor, bufferId)
+            val statusLineHandler = StatusLineHandler(project)
+            val session =
+                NeovimEditorSession(
+                    client,
+                    scope,
+                    documentHandler,
+                    cursorHandler,
+                    statusLineHandler,
+                )
 
-                session
-            }.await()
+            client.registerPushHandler { push ->
+                val event = maybeBufLinesEvent(push)
+                if (event?.bufferId == bufferId) {
+                    session.handleBufferLinesEvent(event)
+                }
+            }
+
+            return session
         }
     }
 

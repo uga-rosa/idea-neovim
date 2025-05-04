@@ -5,7 +5,7 @@ import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.asBufferId
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 
-private val logger = Logger.getInstance("com.ugarosa.neovim.rpc.NeovimNotifyConverter")
+private val logger = Logger.getInstance("com.ugarosa.neovim.rpc.event")
 
 data class BufLinesEvent(
     val bufferId: BufferId,
