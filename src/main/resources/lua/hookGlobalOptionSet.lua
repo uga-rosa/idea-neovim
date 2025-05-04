@@ -5,6 +5,7 @@ vim.api.nvim_create_augroup("IdeaNeovim:LocalOptionSet", { clear = true })
 
 vim.api.nvim_create_autocmd("OptionSet", {
     group = global_group,
+    pattern = { "filetype", "selection", "scrolloff", "sidescrolloff" },
     callback = function(event)
         if (vim.v.option_type ~= "global") then
             return
