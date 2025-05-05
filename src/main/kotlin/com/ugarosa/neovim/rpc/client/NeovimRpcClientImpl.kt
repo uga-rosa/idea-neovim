@@ -108,7 +108,7 @@ class NeovimRpcClientImpl(
         }
     }
 
-    override suspend fun requestAsync(
+    override suspend fun request(
         method: String,
         params: List<Any?>,
         timeoutMills: Long?,
@@ -132,13 +132,11 @@ class NeovimRpcClientImpl(
                     } catch (e: Exception) {
                         packer.clear()
                         waitingResponses.remove(msgId)?.cancel()
-                        raise(
-                            when (e) {
-                                is IOException -> NeovimRpcClient.RequestError.IO
-                                is IllegalArgumentException -> NeovimRpcClient.RequestError.BadRequest
-                                else -> NeovimRpcClient.RequestError.Unexpected
-                            },
-                        )
+                        when (e) {
+                            is IOException -> raise(NeovimRpcClient.RequestError.IO)
+                            is IllegalArgumentException -> raise(NeovimRpcClient.RequestError.BadRequest)
+                            else -> raise(NeovimRpcClient.RequestError.Unexpected)
+                        }
                     }
                 }
             }
@@ -158,6 +156,31 @@ class NeovimRpcClientImpl(
                     else -> {
                         logger.warn("Unexpected error during response await", e)
                         raise(NeovimRpcClient.RequestError.Unexpected)
+                    }
+                }
+            }
+        }
+
+    override suspend fun notify(
+        method: String,
+        params: List<Any?>,
+    ): Either<NeovimRpcClient.NotifyError, Unit> =
+        either {
+            withContext(Dispatchers.IO) {
+                sendMutex.withLock {
+                    try {
+                        packer.packArrayHeader(3)
+                        packer.packInt(2) // 2 = Notification
+                        packer.packString(method)
+                        packParams(params)
+                        packer.flush()
+                    } catch (e: Exception) {
+                        packer.clear()
+                        when (e) {
+                            is IOException -> raise(NeovimRpcClient.NotifyError.IO)
+                            is IllegalArgumentException -> raise(NeovimRpcClient.NotifyError.BadRequest)
+                            else -> raise(NeovimRpcClient.NotifyError.Unexpected)
+                        }
                     }
                 }
             }

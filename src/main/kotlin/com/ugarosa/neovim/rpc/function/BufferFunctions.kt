@@ -6,20 +6,20 @@ import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.asBufferId
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 
-suspend fun createBuffer(client: NeovimRpcClient): Either<NeovimFunctionsError, BufferId> =
+suspend fun createBuffer(client: NeovimRpcClient): Either<NeovimFunctionError, BufferId> =
     either {
-        client.requestAsync("nvim_create_buf", listOf(true, false))
+        client.request("nvim_create_buf", listOf(true, false))
             .translate().bind()
             .asBufferId()
-            .mapLeft { NeovimFunctionsError.ResponseTypeMismatch }.bind()
+            .mapLeft { NeovimFunctionError.ResponseTypeMismatch }.bind()
     }
 
 suspend fun setCurrentBuffer(
     client: NeovimRpcClient,
     bufferId: BufferId,
-): Either<NeovimFunctionsError, Unit> =
+): Either<NeovimFunctionError, Unit> =
     either {
-        client.requestAsync("nvim_set_current_buf", listOf(bufferId))
+        client.notify("nvim_set_current_buf", listOf(bufferId))
             .translate().bind()
     }
 
@@ -29,9 +29,9 @@ suspend fun bufferSetLines(
     start: Int,
     end: Int,
     lines: List<String>,
-): Either<NeovimFunctionsError, Unit> =
+): Either<NeovimFunctionError, Unit> =
     either {
-        client.requestAsync(
+        client.notify(
             "nvim_buf_set_lines",
             listOf(bufferId, start, end, false, lines),
         )
@@ -41,9 +41,9 @@ suspend fun bufferSetLines(
 suspend fun bufferAttach(
     client: NeovimRpcClient,
     bufferId: BufferId,
-): Either<NeovimFunctionsError, Unit> =
+): Either<NeovimFunctionError, Unit> =
     either {
-        client.requestAsync(
+        client.notify(
             "nvim_buf_attach",
             listOf(bufferId, false, emptyMap<String, Any>()),
         )
@@ -53,9 +53,9 @@ suspend fun bufferAttach(
 suspend fun bufferDetach(
     client: NeovimRpcClient,
     bufferId: BufferId,
-): Either<NeovimFunctionsError, Unit> =
+): Either<NeovimFunctionError, Unit> =
     either {
-        client.requestAsync(
+        client.notify(
             "nvim_buf_detach",
             listOf(bufferId),
         )

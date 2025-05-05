@@ -7,25 +7,23 @@ import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 suspend fun input(
     client: NeovimRpcClient,
     key: String,
-): Either<NeovimFunctionsError, Unit> =
-    either {
-        client.requestAsync("nvim_input", listOf(key))
-            .translate().bind()
-    }
+): Either<NeovimFunctionError, Unit> =
+    client.notify("nvim_input", listOf(key))
+        .translate()
 
-suspend fun hookCursorMove(client: NeovimRpcClient): Either<NeovimFunctionsError, Unit> =
+suspend fun hookCursorMove(client: NeovimRpcClient): Either<NeovimFunctionError, Unit> =
     either {
         val chanId = getChanId(client).bind()
         val luaCode = readLuaCode("/lua/hookCursorMove.lua")
-        execLua(client, luaCode, listOf(chanId)).bind()
+        execLuaNotify(client, luaCode, listOf(chanId)).bind()
     }
 
 suspend fun setCursor(
     client: NeovimRpcClient,
     row: Int,
     col: Int,
-): Either<NeovimFunctionsError, Unit> =
+): Either<NeovimFunctionError, Unit> =
     either {
         val luaCode = readLuaCode("/lua/setCursorWithoutEvent.lua")
-        execLua(client, luaCode, listOf(row, col)).bind()
+        execLuaNotify(client, luaCode, listOf(row, col)).bind()
     }

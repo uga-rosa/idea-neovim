@@ -4,7 +4,7 @@ import arrow.core.Either
 import org.msgpack.value.Value
 
 interface NeovimRpcClient {
-    suspend fun requestAsync(
+    suspend fun request(
         method: String,
         params: List<Any?> = emptyList(),
         timeoutMills: Long? = 500,
@@ -24,6 +24,19 @@ interface NeovimRpcClient {
         data object Timeout : RequestError
 
         data object Unexpected : RequestError
+    }
+
+    suspend fun notify(
+        method: String,
+        params: List<Any?> = emptyList(),
+    ): Either<NotifyError, Unit>
+
+    sealed interface NotifyError {
+        data object BadRequest : NotifyError
+
+        data object IO : NotifyError
+
+        data object Unexpected : NotifyError
     }
 
     fun registerPushHandler(handler: suspend (PushNotification) -> Unit)
