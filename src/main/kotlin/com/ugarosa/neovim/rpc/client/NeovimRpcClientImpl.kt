@@ -10,6 +10,7 @@ import com.ugarosa.neovim.rpc.TabPageId
 import com.ugarosa.neovim.rpc.WindowId
 import com.ugarosa.neovim.rpc.function.enforceSingleWindow
 import com.ugarosa.neovim.rpc.function.hookCursorMove
+import com.ugarosa.neovim.rpc.function.hookModeChange
 import com.ugarosa.neovim.rpc.process.AutoNeovimProcessManager
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -98,6 +99,12 @@ class NeovimRpcClientImpl(
             logger.warn("Failed to hook cursor move: $it")
         }.onRight {
             logger.debug("Hooked cursor move")
+        }
+
+        hookModeChange(this).onLeft {
+            logger.warn("Failed to hook mode change: $it")
+        }.onRight {
+            logger.debug("Hooked mode change")
         }
     }
 

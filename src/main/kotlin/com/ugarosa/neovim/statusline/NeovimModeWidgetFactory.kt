@@ -7,7 +7,8 @@ import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.openapi.wm.StatusBarWidgetFactory
 import com.intellij.ui.JBColor
 import com.intellij.util.ui.JBUI
-import com.ugarosa.neovim.rpc.function.NeovimMode
+import com.ugarosa.neovim.rpc.event.NeovimMode
+import com.ugarosa.neovim.rpc.event.NeovimModeKind
 import javax.swing.JLabel
 
 const val NEOVIM_MODE_ID = "NeovimModeWidgetId"
@@ -31,15 +32,15 @@ class NeovimModeWidgetFactory : StatusBarWidgetFactory {
 }
 
 class NeovimModeWidget : CustomStatusBarWidget {
-    private var mode: String = NeovimMode.NORMAL.name
+    private var mode: NeovimMode = NeovimMode.default
     private var statusBar: StatusBar? = null
     private val label =
         JLabel().apply {
-            text = mode
             border = JBUI.Borders.empty(0, 6)
             isOpaque = true
+            text = mode.kind.name
             foreground = JBColor.foreground()
-            background = modeToColor(NeovimMode.NORMAL)
+            background = modeToColor(mode)
         }
 
     override fun ID(): String = NEOVIM_MODE_ID
@@ -53,24 +54,28 @@ class NeovimModeWidget : CustomStatusBarWidget {
     override fun getComponent() = label
 
     fun updateMode(newMode: NeovimMode) {
-        if (mode != newMode.name) {
-            mode = newMode.name
-            label.text = newMode.name
+        if (mode != newMode) {
+            mode = newMode
+            label.text = newMode.kind.name
             label.background = modeToColor(newMode)
             statusBar?.updateWidget(ID())
         }
     }
 
     private fun modeToColor(mode: NeovimMode): JBColor {
-        return when (mode) {
-            NeovimMode.NORMAL -> JBColor.GREEN
-            NeovimMode.VISUAL -> JBColor.BLUE
-            NeovimMode.VISUAL_LINE -> JBColor.BLUE
-            NeovimMode.VISUAL_BLOCK -> JBColor.BLUE
-            NeovimMode.SELECT -> JBColor.BLUE
-            NeovimMode.INSERT -> JBColor.YELLOW
-            NeovimMode.REPLACE -> JBColor.ORANGE
-            NeovimMode.COMMAND -> JBColor.GREEN
+        return when (mode.kind) {
+            NeovimModeKind.NORMAL -> JBColor.GREEN
+
+            NeovimModeKind.VISUAL,
+            NeovimModeKind.VISUAL_LINE,
+            NeovimModeKind.VISUAL_BLOCK,
+            NeovimModeKind.SELECT,
+            NeovimModeKind.SELECT_LINE,
+            NeovimModeKind.SELECT_BLOCK -> JBColor.BLUE
+
+            NeovimModeKind.INSERT -> JBColor.YELLOW
+            NeovimModeKind.REPLACE -> JBColor.ORANGE
+            NeovimModeKind.COMMAND -> JBColor.GREEN
             else -> JBColor.RED
         }
     }

@@ -10,11 +10,11 @@ import com.ugarosa.neovim.cursor.NeovimCursorHandler
 import com.ugarosa.neovim.document.NeovimDocumentHandler
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
+import com.ugarosa.neovim.rpc.event.NeovimMode
 import com.ugarosa.neovim.rpc.event.maybeBufLinesEvent
 import com.ugarosa.neovim.rpc.event.maybeCursorMoveEvent
-import com.ugarosa.neovim.rpc.function.NeovimMode
+import com.ugarosa.neovim.rpc.event.maybeModeChangeEvent
 import com.ugarosa.neovim.rpc.function.createBuffer
-import com.ugarosa.neovim.rpc.function.getMode
 import com.ugarosa.neovim.rpc.function.input
 import com.ugarosa.neovim.statusline.StatusLineHandler
 import kotlinx.coroutines.CoroutineScope
@@ -36,7 +36,7 @@ class NeovimEditorSession private constructor(
     private val statusLineHandler: StatusLineHandler,
 ) {
     private val logger = thisLogger()
-    private var currentMode = NeovimMode.NORMAL
+    private var currentMode = NeovimMode.default
 
     companion object {
         private val logger = thisLogger()
@@ -88,19 +88,30 @@ class NeovimEditorSession private constructor(
                 cursorHandler.syncCursorFromNeovimToIdea(event)
             }
         }
+
+        client.registerPushHandler { push ->
+            val event = maybeModeChangeEvent(push)
+            if (event != null) {
+                logger.trace("parsed ModeChangeEvent: $event, bufferId: $bufferId")
+            }
+            if (event?.bufferId == bufferId) {
+                logger.trace("Change mode to ${event.mode}")
+                currentMode = event.mode
+                cursorHandler.changeCursorShape(event.mode)
+                statusLineHandler.updateStatusLine(event.mode)
+            }
+        }
     }
 
     fun activateBuffer() {
         scope.launch {
             documentHandler.activateBuffer()
-            syncNeovimMode()
         }
     }
 
     fun sendKeyAndSyncStatus(key: String) {
         scope.launch {
             input(client, key)
-            syncNeovimMode()
         }
     }
 
@@ -108,15 +119,5 @@ class NeovimEditorSession private constructor(
         scope.launch {
             cursorHandler.syncCursorFromIdeaToNeovim()
         }
-    }
-
-    private suspend fun syncNeovimMode() {
-        currentMode =
-            getMode(client).getOrElse {
-                logger.warn("Failed to get mode: $it")
-                return
-            }
-        cursorHandler.changeCursorShape(currentMode)
-        statusLineHandler.updateStatusLine(currentMode)
     }
 }

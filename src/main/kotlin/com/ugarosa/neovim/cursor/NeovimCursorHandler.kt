@@ -17,7 +17,8 @@ import com.ugarosa.neovim.config.neovim.option.Sidescrolloff
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 import com.ugarosa.neovim.rpc.event.CursorMoveEvent
-import com.ugarosa.neovim.rpc.function.NeovimMode
+import com.ugarosa.neovim.rpc.event.NeovimMode
+import com.ugarosa.neovim.rpc.event.NeovimModeKind
 import com.ugarosa.neovim.rpc.function.setCursor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -127,18 +128,20 @@ class NeovimCursorHandler(
 
     suspend fun changeCursorShape(mode: NeovimMode) {
         withContext(Dispatchers.EDT) {
-            editor.settings.isBlockCursor = mode in blockModes
+            editor.settings.isBlockCursor =
+                when (mode.kind) {
+                    NeovimModeKind.NORMAL,
+                    NeovimModeKind.VISUAL,
+                    NeovimModeKind.VISUAL_LINE,
+                    NeovimModeKind.VISUAL_BLOCK,
+                    NeovimModeKind.SELECT,
+                    NeovimModeKind.SELECT_LINE,
+                    NeovimModeKind.SELECT_BLOCK -> true
+
+                    else -> false
+                }
         }
     }
-
-    private val blockModes =
-        setOf(
-            NeovimMode.NORMAL,
-            NeovimMode.VISUAL,
-            NeovimMode.VISUAL_LINE,
-            NeovimMode.VISUAL_BLOCK,
-            NeovimMode.SELECT,
-        )
 
     private fun CursorMoveEvent.toLogicalPosition(): LogicalPosition {
         // Neovim uses (1, 0) byte-based indexing
