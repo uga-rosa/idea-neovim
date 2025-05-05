@@ -4,7 +4,6 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.diagnostic.thisLogger
-import com.ugarosa.neovim.common.neovimNotation
 import com.ugarosa.neovim.session.NEOVIM_SESSION_KEY
 import java.awt.event.KeyEvent
 
@@ -19,7 +18,7 @@ class NeovimKeyAction : AnAction() {
         val editor = e.getData(CommonDataKeys.EDITOR) ?: return
         val session = editor.getUserData(NEOVIM_SESSION_KEY) ?: return
 
-        val key = neovimNotation(inputEvent)
+        val key = inputEvent.toNeovimNotation()
         logger.trace("pressed key: $key")
         session.sendKeyAndSyncStatus(key)
     }

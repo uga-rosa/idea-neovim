@@ -5,8 +5,8 @@ import arrow.core.raise.Raise
 import arrow.core.raise.either
 import arrow.core.raise.ensure
 import com.intellij.openapi.diagnostic.Logger
-import com.ugarosa.neovim.common.get
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
+import org.msgpack.value.MapValue
 import org.msgpack.value.Value
 
 val logger = Logger.getInstance("com.ugarosa.neovim.rpc.function")
@@ -52,3 +52,9 @@ suspend fun getChanId(client: NeovimRpcClient): Either<NeovimFunctionsError, Int
         }
             .mapLeft { NeovimFunctionsError.ResponseTypeMismatch }.bind()
     }
+
+private fun MapValue.get(key: String): Value? {
+    return this.map().entries
+        .firstOrNull { it.key.isStringValue && it.key.asStringValue().asString() == key }
+        ?.value
+}
