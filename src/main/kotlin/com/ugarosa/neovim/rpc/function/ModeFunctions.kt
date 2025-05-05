@@ -6,7 +6,7 @@ import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 
 suspend fun hookModeChange(client: NeovimRpcClient): Either<NeovimFunctionError, Unit> =
     either {
-        val chanId = getChanId(client).bind()
+        val chanId = ChanIdManager.fetch(client).bind()
         val luaCode = readLuaCode("/lua/hookModeChange.lua")
         execLua(client, luaCode, listOf(chanId)).bind()
     }

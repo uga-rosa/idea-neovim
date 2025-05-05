@@ -36,7 +36,7 @@ private fun Value.asStringMap(): Either<NeovimFunctionError, Map<String, Any>> =
 
 suspend fun hookGlobalOptionSet(client: NeovimRpcClient): Either<NeovimFunctionError, Unit> =
     either {
-        val chanId = getChanId(client).bind()
+        val chanId = ChanIdManager.fetch(client).bind()
         val luaCode = readLuaCode("/lua/hookGlobalOptionSet.lua")
         execLua(client, luaCode, listOf(chanId)).bind()
     }
@@ -46,7 +46,7 @@ suspend fun hookLocalOptionSet(
     bufferId: BufferId,
 ): Either<NeovimFunctionError, Unit> =
     either {
-        val chanId = getChanId(client).bind()
+        val chanId = ChanIdManager.fetch(client).bind()
         val luaCode = readLuaCode("/lua/hookLocalOptionSet.lua")
         execLua(client, luaCode, listOf(chanId, bufferId)).bind()
     }

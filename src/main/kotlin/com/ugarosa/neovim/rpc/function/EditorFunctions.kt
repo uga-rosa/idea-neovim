@@ -13,7 +13,7 @@ suspend fun input(
 
 suspend fun hookCursorMove(client: NeovimRpcClient): Either<NeovimFunctionError, Unit> =
     either {
-        val chanId = getChanId(client).bind()
+        val chanId = ChanIdManager.fetch(client).bind()
         val luaCode = readLuaCode("/lua/hookCursorMove.lua")
         execLua(client, luaCode, listOf(chanId)).bind()
     }
