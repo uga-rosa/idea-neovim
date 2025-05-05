@@ -18,6 +18,7 @@ sealed interface NeovimFunctionError {
     data object Unexpected : NeovimFunctionError
 }
 
+@JvmName("translateResponse")
 fun Either<NeovimRpcClient.RequestError, NeovimRpcClient.Response>.translate(): Either<NeovimFunctionError, Value> =
     either {
         val response = this@translate.mapLeft { it.translate() }.bind()
@@ -37,6 +38,7 @@ private fun NeovimRpcClient.RequestError.translate(): NeovimFunctionError {
     }
 }
 
+@JvmName("translateNotify")
 fun Either<NeovimRpcClient.NotifyError, Unit>.translate(): Either<NeovimFunctionError, Unit> = this.mapLeft { it.translate() }
 
 private fun NeovimRpcClient.NotifyError.translate(): NeovimFunctionError {
