@@ -166,6 +166,8 @@ class NeovimRpcClientImpl(
         params: List<Any?>,
     ): Either<NeovimRpcClient.NotifyError, Unit> =
         either {
+            logger.trace("Sending notification: method: $method, params: $params")
+
             withContext(Dispatchers.IO) {
                 sendMutex.withLock {
                     try {
