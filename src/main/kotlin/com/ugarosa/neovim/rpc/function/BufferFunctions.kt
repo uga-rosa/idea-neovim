@@ -18,8 +18,10 @@ suspend fun setCurrentBuffer(
     client: NeovimRpcClient,
     bufferId: BufferId,
 ): Either<NeovimFunctionError, Unit> =
-    client.notify("nvim_set_current_buf", listOf(bufferId))
-        .translate()
+    either {
+        client.request("nvim_set_current_buf", listOf(bufferId))
+            .translate().bind()
+    }
 
 suspend fun bufferSetLines(
     client: NeovimRpcClient,
@@ -28,19 +30,25 @@ suspend fun bufferSetLines(
     end: Int,
     lines: List<String>,
 ): Either<NeovimFunctionError, Unit> =
-    client.notify("nvim_buf_set_lines", listOf(bufferId, start, end, false, lines))
-        .translate()
+    either {
+        client.request("nvim_buf_set_lines", listOf(bufferId, start, end, false, lines))
+            .translate().bind()
+    }
 
 suspend fun bufferAttach(
     client: NeovimRpcClient,
     bufferId: BufferId,
 ): Either<NeovimFunctionError, Unit> =
-    client.notify("nvim_buf_attach", listOf(bufferId, false, emptyMap<String, Any>()))
-        .translate()
+    either {
+        client.request("nvim_buf_attach", listOf(bufferId, false, emptyMap<String, Any>()))
+            .translate().bind()
+    }
 
 suspend fun bufferDetach(
     client: NeovimRpcClient,
     bufferId: BufferId,
 ): Either<NeovimFunctionError, Unit> =
-    client.notify("nvim_buf_detach", listOf(bufferId))
-        .translate()
+    either {
+        client.notify("nvim_buf_detach", listOf(bufferId))
+            .translate().bind()
+    }

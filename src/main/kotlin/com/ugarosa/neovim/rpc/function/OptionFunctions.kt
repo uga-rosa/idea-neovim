@@ -5,19 +5,13 @@ import arrow.core.raise.either
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 import com.ugarosa.neovim.rpc.event.asAny
+import org.msgpack.value.Value
 
 suspend fun getGlobalOptions(client: NeovimRpcClient): Either<NeovimFunctionError, Map<String, Any>> =
     either {
         val luaCode = readLuaCode("/lua/getGlobalOptions.lua")
-        try {
-            execLua(client, luaCode).bind()
-                .asMapValue().map()
-                .mapKeys { it.key.asStringValue().asString() }
-                .mapValues { it.value.asAny() }
-        } catch (e: Exception) {
-            logger.warn("Error executing Lua script: ${e.message}")
-            raise(NeovimFunctionError.Unexpected)
-        }
+        execLua(client, luaCode).bind()
+            .asStringMap().bind()
     }
 
 suspend fun getLocalOptions(
@@ -26,22 +20,25 @@ suspend fun getLocalOptions(
 ): Either<NeovimFunctionError, Map<String, Any>> =
     either {
         val luaCode = readLuaCode("/lua/getLocalOptions.lua")
-        try {
-            execLua(client, luaCode, listOf(bufferId)).bind()
-                .asMapValue().map()
-                .mapKeys { it.key.asStringValue().asString() }
-                .mapValues { it.value.asAny() }
-        } catch (e: Exception) {
-            logger.warn("Error executing Lua script: ${e.message}")
-            raise(NeovimFunctionError.Unexpected)
-        }
+        execLua(client, luaCode, listOf(bufferId)).bind()
+            .asStringMap().bind()
+    }
+
+private fun Value.asStringMap(): Either<NeovimFunctionError, Map<String, Any>> =
+    Either.catch {
+        this@asStringMap.asMapValue().map()
+            .mapKeys { it.key.asStringValue().asString() }
+            .mapValues { it.value.asAny() }
+    }.mapLeft {
+        logger.warn("Error converting Value to Map: ${it.message}")
+        NeovimFunctionError.Unexpected
     }
 
 suspend fun hookGlobalOptionSet(client: NeovimRpcClient): Either<NeovimFunctionError, Unit> =
     either {
         val chanId = getChanId(client).bind()
         val luaCode = readLuaCode("/lua/hookGlobalOptionSet.lua")
-        execLuaNotify(client, luaCode, listOf(chanId)).bind()
+        execLua(client, luaCode, listOf(chanId)).bind()
     }
 
 suspend fun hookLocalOptionSet(
@@ -51,5 +48,5 @@ suspend fun hookLocalOptionSet(
     either {
         val chanId = getChanId(client).bind()
         val luaCode = readLuaCode("/lua/hookLocalOptionSet.lua")
-        execLuaNotify(client, luaCode, listOf(chanId, bufferId)).bind()
+        execLua(client, luaCode, listOf(chanId, bufferId)).bind()
     }

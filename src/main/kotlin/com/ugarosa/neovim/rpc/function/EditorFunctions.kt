@@ -15,7 +15,7 @@ suspend fun hookCursorMove(client: NeovimRpcClient): Either<NeovimFunctionError,
     either {
         val chanId = getChanId(client).bind()
         val luaCode = readLuaCode("/lua/hookCursorMove.lua")
-        execLuaNotify(client, luaCode, listOf(chanId)).bind()
+        execLua(client, luaCode, listOf(chanId)).bind()
     }
 
 suspend fun setCursor(
@@ -25,5 +25,5 @@ suspend fun setCursor(
 ): Either<NeovimFunctionError, Unit> =
     either {
         val luaCode = readLuaCode("/lua/setCursorWithoutEvent.lua")
-        execLuaNotify(client, luaCode, listOf(row, col)).bind()
+        execLua(client, luaCode, listOf(row, col)).bind()
     }

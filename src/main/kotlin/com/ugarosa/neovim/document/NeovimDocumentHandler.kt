@@ -50,7 +50,7 @@ class NeovimDocumentHandler private constructor(
 
     suspend fun activateBuffer() {
         setCurrentBuffer(client, bufferId)
-            .onLeft { logger.warn("Failed to set current buffer to window") }
+            .onLeft { logger.warn("Failed to set current buffer to window: $it") }
     }
 
     fun applyBufferLinesEvent(e: BufLinesEvent) {
