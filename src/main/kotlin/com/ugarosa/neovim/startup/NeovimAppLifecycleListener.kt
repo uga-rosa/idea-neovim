@@ -3,6 +3,7 @@ package com.ugarosa.neovim.startup
 import com.intellij.ide.AppLifecycleListener
 import com.intellij.openapi.diagnostic.thisLogger
 import com.ugarosa.neovim.common.getClient
+import com.ugarosa.neovim.common.getOptionManager
 import com.ugarosa.neovim.keymap.initializeKeymap
 import com.ugarosa.neovim.rpc.function.enforceSingleWindow
 import com.ugarosa.neovim.rpc.function.hookCursorMove
@@ -15,6 +16,7 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
     // Hooks that should be called only once at application startup.
     override fun appFrameCreated(commandLineArgs: List<String>) {
         val client = getClient()
+        val optionManager = getOptionManager()
 
         initializeKeymap()
 
@@ -36,6 +38,8 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
             }.onRight {
                 logger.debug("Hooked mode change")
             }
+
+            optionManager.initializeGlobal()
         }
     }
 }

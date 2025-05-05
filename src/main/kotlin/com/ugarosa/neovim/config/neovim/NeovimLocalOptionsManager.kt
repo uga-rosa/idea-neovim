@@ -1,14 +1,12 @@
 package com.ugarosa.neovim.config.neovim
 
 import arrow.core.getOrElse
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
+import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.config.neovim.option.Filetype
 import com.ugarosa.neovim.config.neovim.option.Scrolloff
 import com.ugarosa.neovim.config.neovim.option.Sidescrolloff
 import com.ugarosa.neovim.rpc.BufferId
-import com.ugarosa.neovim.rpc.client.NeovimRpcClientImpl
 import com.ugarosa.neovim.rpc.function.getLocalOptions
 import com.ugarosa.neovim.rpc.function.hookLocalOptionSet
 import kotlinx.coroutines.sync.Mutex
@@ -26,27 +24,9 @@ private data class MutableNeovimLocalOptions(
     override var sidescrolloff: Sidescrolloff? = null,
 ) : NeovimLocalOptions
 
-class NeovimLocalOptionsManager private constructor() {
-    companion object {
-        private val logger = thisLogger()
-
-        suspend fun create(bufferId: BufferId): NeovimLocalOptionsManager {
-            val client = ApplicationManager.getApplication().service<NeovimRpcClientImpl>()
-            val options =
-                getLocalOptions(client, bufferId).getOrElse {
-                    logger.warn("Failed to get local options for buffer $bufferId")
-                    mapOf()
-                }
-            hookLocalOptionSet(client, bufferId).onLeft {
-                logger.warn("Failed to hook local option set for buffer $bufferId: $it")
-            }
-            return NeovimLocalOptionsManager().apply {
-                putAll(options)
-            }
-        }
-    }
-
+class NeovimLocalOptionsManager() {
     private val logger = thisLogger()
+    private val client = getClient()
     private val mutex = Mutex()
     private val options = MutableNeovimLocalOptions()
     private val setters: Map<String, (Any) -> Unit> =
@@ -56,19 +36,27 @@ class NeovimLocalOptionsManager private constructor() {
             "sidescrolloff" to { raw -> options.sidescrolloff = Sidescrolloff.fromRaw(raw) },
         )
 
-    suspend fun get(): NeovimLocalOptions = mutex.withLock { options.copy() }
-
-    suspend fun put(
-        name: String,
-        raw: Any,
-    ) {
-        mutex.withLock {
-            setters[name]?.invoke(raw)
-                ?: logger.warn("Invalid option name: $name")
+    suspend fun initialize(bufferId: BufferId) {
+        logger.trace("Initializing local options for buffer: $bufferId")
+        val localOptions =
+            getLocalOptions(client, bufferId).getOrElse {
+                logger.warn("Failed to get local options for buffer $bufferId")
+                mapOf()
+            }
+        putAll(localOptions)
+        hookLocalOptionSet(client, bufferId).onLeft {
+            logger.warn("Failed to hook local option set for buffer $bufferId: $it")
         }
     }
 
+    suspend fun get(): NeovimLocalOptions = mutex.withLock { options.copy() }
+
     suspend fun putAll(options: Map<String, Any>) {
-        options.forEach { (name, raw) -> put(name, raw) }
+        mutex.withLock {
+            options.forEach { (name, raw) ->
+                setters[name]?.invoke(raw)
+                    ?: logger.warn("Invalid option name: $name")
+            }
+        }
     }
 }

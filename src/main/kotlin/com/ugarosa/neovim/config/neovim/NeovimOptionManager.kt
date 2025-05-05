@@ -1,21 +1,18 @@
 package com.ugarosa.neovim.config.neovim
 
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
+import com.ugarosa.neovim.common.getClient
+import com.ugarosa.neovim.common.tryComplete
 import com.ugarosa.neovim.config.neovim.option.Filetype
 import com.ugarosa.neovim.config.neovim.option.Scrolloff
 import com.ugarosa.neovim.config.neovim.option.Selection
 import com.ugarosa.neovim.config.neovim.option.Sidescrolloff
 import com.ugarosa.neovim.config.neovim.option.getOrElse
 import com.ugarosa.neovim.rpc.BufferId
-import com.ugarosa.neovim.rpc.client.NeovimRpcClientImpl
 import com.ugarosa.neovim.rpc.event.OptionScope
 import com.ugarosa.neovim.rpc.event.maybeOptionSetEvent
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.async
+import kotlinx.coroutines.CompletableDeferred
 import java.util.concurrent.ConcurrentHashMap
 
 data class NeovimOption(
@@ -26,21 +23,20 @@ data class NeovimOption(
 )
 
 @Service(Service.Level.APP)
-class NeovimOptionManager(
-    private val scope: CoroutineScope,
-) {
+class NeovimOptionManager {
     private val logger = thisLogger()
-    private val client = ApplicationManager.getApplication().service<NeovimRpcClientImpl>()
-    private val deferredGlobalOptionsManager =
-        scope.async {
-            NeovimGlobalOptionsManager.create()
-        }
-    private val deferredLocalOptionsManagers = ConcurrentHashMap<BufferId, Deferred<NeovimLocalOptionsManager>>()
+    private val client = getClient()
+
+    private val globalOptionsManager = NeovimGlobalOptionsManager()
+    private val globalInit = CompletableDeferred<Unit>()
+
+    private val localOptionsManagers = ConcurrentHashMap<BufferId, NeovimLocalOptionsManager>()
+    private val localInits = ConcurrentHashMap<BufferId, CompletableDeferred<Unit>>()
 
     init {
         client.registerPushHandler { push ->
             maybeOptionSetEvent(push)?.let { event ->
-                logger.debug("Received an option set event: $event")
+                logger.trace("Received an option set event: $event")
                 when (event.scope) {
                     OptionScope.LOCAL -> putLocal(event.bufferId, event.name, event.value)
                     OptionScope.GLOBAL -> putGlobal(event.name, event.value)
@@ -49,24 +45,40 @@ class NeovimOptionManager(
         }
     }
 
+    suspend fun initializeGlobal() {
+        globalOptionsManager.initialize()
+        globalInit.tryComplete(Unit)
+    }
+
+    suspend fun initializeLocal(bufferId: BufferId) {
+        val initDeferred =
+            localInits.computeIfAbsent(bufferId) {
+                CompletableDeferred()
+            }
+        localOptionsManagers
+            .computeIfAbsent(bufferId) { NeovimLocalOptionsManager() }
+            .initialize(bufferId)
+        initDeferred.tryComplete(Unit)
+    }
+
     suspend fun getGlobal(): NeovimGlobalOptions {
-        return deferredGlobalOptionsManager.await().get()
+        globalInit.await()
+        return globalOptionsManager.get()
     }
 
     suspend fun getLocal(bufferId: BufferId): NeovimOption {
-        val globalOptions = getGlobal()
+        globalInit.await()
+        localInits[bufferId]?.await()
+            ?: throw IllegalStateException("Buffer $bufferId is not initialized")
 
-        val localOptionsManager =
-            deferredLocalOptionsManagers.computeIfAbsent(bufferId) {
-                scope.async { NeovimLocalOptionsManager.create(bufferId) }
-            }.await()
-        val localOptions = localOptionsManager.get()
+        val globalOptions = globalOptionsManager.get()
+        val localOptions = localOptionsManagers[bufferId]?.get()
 
         return NeovimOption(
-            filetype = localOptions.filetype,
+            filetype = localOptions?.filetype ?: Filetype.default,
             selection = globalOptions.selection,
-            scrolloff = localOptions.scrolloff.getOrElse(globalOptions.scrolloff),
-            sidescrolloff = localOptions.sidescrolloff.getOrElse(globalOptions.sidescrolloff),
+            scrolloff = localOptions?.scrolloff.getOrElse(globalOptions.scrolloff),
+            sidescrolloff = localOptions?.sidescrolloff.getOrElse(globalOptions.sidescrolloff),
         )
     }
 
@@ -74,8 +86,9 @@ class NeovimOptionManager(
         name: String,
         raw: Any,
     ) {
+        globalInit.await()
         logger.trace("Set a global option: $name = $raw")
-        deferredGlobalOptionsManager.await().put(name, raw)
+        globalOptionsManager.putAll(mapOf(name to raw))
     }
 
     suspend fun putLocal(
@@ -83,11 +96,9 @@ class NeovimOptionManager(
         name: String,
         raw: Any,
     ) {
+        localInits[bufferId]?.await()
+            ?: throw IllegalStateException("Buffer $bufferId is not initialized")
         logger.trace("Set a local option: $name = $raw")
-        val localOptionsManager =
-            deferredLocalOptionsManagers.computeIfAbsent(bufferId) {
-                scope.async { NeovimLocalOptionsManager.create(bufferId) }
-            }.await()
-        localOptionsManager.put(name, raw)
+        localOptionsManagers[bufferId]?.putAll(mapOf(name to raw))
     }
 }

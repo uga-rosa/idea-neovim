@@ -8,6 +8,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.jetbrains.rd.util.AtomicReference
 import com.ugarosa.neovim.common.getClient
+import com.ugarosa.neovim.common.getOptionManager
 import com.ugarosa.neovim.common.setIfDifferent
 import com.ugarosa.neovim.cursor.NeovimCursorHandler
 import com.ugarosa.neovim.document.NeovimDocumentHandler
@@ -67,6 +68,8 @@ class NeovimEditorSession private constructor(
                 )
 
             session.initializePushHandler()
+
+            getOptionManager().initializeLocal(bufferId)
 
             return session
         }
