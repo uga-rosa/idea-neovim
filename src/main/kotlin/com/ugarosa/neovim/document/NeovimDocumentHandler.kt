@@ -26,7 +26,7 @@ class NeovimDocumentHandler private constructor(
         ): NeovimDocumentHandler {
             val handler = NeovimDocumentHandler(editor, bufferId)
             handler.initializeBuffer()
-            handler.attachBuffer()
+            handler.enableBufLinesEvent()
             return handler
         }
     }
@@ -37,12 +37,12 @@ class NeovimDocumentHandler private constructor(
             .onLeft { logger.warn("Failed to initialize: $it") }
     }
 
-    private suspend fun attachBuffer() {
+    suspend fun enableBufLinesEvent() {
         bufferAttach(client, bufferId)
             .onLeft { logger.warn("Failed to attach buffer: $it") }
     }
 
-    suspend fun detachBuffer() {
+    suspend fun disableBufLinesEvent() {
         bufferDetach(client, bufferId)
             .onLeft { logger.warn("Failed to detach buffer: $it") }
     }

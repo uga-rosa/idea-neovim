@@ -44,8 +44,16 @@ class NeovimCursorHandler(
         editor.settings.isBlockCursor = true
     }
 
-    suspend fun syncCursorFromNeovimToIdea(event: CursorMoveEvent) {
-        val pos = event.toLogicalPosition()
+    fun enableCursorListener() {
+        caretListenerGuard.register()
+    }
+
+    fun disableCursorListener() {
+        caretListenerGuard.unregister()
+    }
+
+    suspend fun syncNeovimToIdea(event: CursorMoveEvent) {
+        val pos = toLogicalPosition(event.line, event.column)
         caretListenerGuard.runWithoutListenerSuspend {
             withContext(Dispatchers.EDT) {
                 editor.caretModel.moveToLogicalPosition(pos)
@@ -122,7 +130,7 @@ class NeovimCursorHandler(
         }
     }
 
-    suspend fun syncCursorFromIdeaToNeovim() {
+    suspend fun syncIdeaToNeovim() {
         val logicalPosition = editor.caretModel.logicalPosition
         val (row, col) = logicalPosition.toNeovimPosition()
         setCursor(client, row, col)
@@ -139,18 +147,21 @@ class NeovimCursorHandler(
                     NeovimModeKind.SELECT,
                     NeovimModeKind.SELECT_LINE,
                     NeovimModeKind.SELECT_BLOCK,
-                    -> true
+                        -> true
 
                     else -> false
                 }
         }
     }
 
-    private fun CursorMoveEvent.toLogicalPosition(): LogicalPosition {
+    private fun toLogicalPosition(
+        nvimRow: Int,
+        nvimCol: Int,
+    ): LogicalPosition {
         // Neovim uses (1, 0) byte-based indexing
         // IntelliJ uses 0-based line indexing
         val document = editor.document
-        val lineIndex = this.line - 1
+        val lineIndex = nvimRow - 1
         if (lineIndex < 0 || lineIndex >= document.lineCount) {
             return LogicalPosition(0, 0)
         }
@@ -158,7 +169,7 @@ class NeovimCursorHandler(
         val lineStartOffset = document.getLineStartOffset(lineIndex)
         val lineEndOffset = document.getLineEndOffset(lineIndex)
         val lineText = document.text.substring(lineStartOffset, lineEndOffset)
-        val correctedCol = utf8ByteOffsetToCharOffset(lineText, this.column)
+        val correctedCol = utf8ByteOffsetToCharOffset(lineText, nvimCol)
 
         return LogicalPosition(lineIndex, correctedCol)
     }

@@ -25,16 +25,16 @@ class NeovimProjectActivity(
     override suspend fun execute(project: Project) {
         val disposable = project.service<PluginDisposable>()
 
-        installNeovimTypedActionHandler()
+        installNeovimTypedActionHandler(project)
         setupEditorFactoryListener(project, disposable)
         initializeExistingEditors(project, disposable)
         setupBufferActivationOnEditorSwitch(project, disposable)
     }
 
-    private fun installNeovimTypedActionHandler() {
+    private fun installNeovimTypedActionHandler(project: Project) {
         val typedAction = TypedAction.getInstance()
         val originalHandler = typedAction.handler
-        typedAction.setupRawHandler(NeovimTypedActionHandler(originalHandler))
+        typedAction.setupRawHandler(NeovimTypedActionHandler(project, originalHandler))
     }
 
     private fun setupEditorFactoryListener(

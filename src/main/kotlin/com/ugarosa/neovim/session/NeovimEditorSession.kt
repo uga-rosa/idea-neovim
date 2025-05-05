@@ -14,6 +14,7 @@ import com.ugarosa.neovim.cursor.NeovimCursorHandler
 import com.ugarosa.neovim.document.NeovimDocumentHandler
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.event.NeovimMode
+import com.ugarosa.neovim.rpc.event.NeovimModeKind
 import com.ugarosa.neovim.rpc.event.maybeBufLinesEvent
 import com.ugarosa.neovim.rpc.event.maybeCursorMoveEvent
 import com.ugarosa.neovim.rpc.event.maybeModeChangeEvent
@@ -87,21 +88,28 @@ class NeovimEditorSession private constructor(
         client.registerPushHandler { push ->
             val event = maybeCursorMoveEvent(push)
             if (event?.bufferId == bufferId) {
-                logger.trace("Move cursor to $event")
-                cursorHandler.syncCursorFromNeovimToIdea(event)
+                logger.trace("Apply cursor move event: $event")
+                cursorHandler.syncNeovimToIdea(event)
             }
         }
 
         client.registerPushHandler { push ->
             val event = maybeModeChangeEvent(push)
-            if (event != null) {
-                logger.trace("parsed ModeChangeEvent: $event, bufferId: $bufferId")
-            }
             if (event?.bufferId == bufferId) {
                 if (mode.setIfDifferent(event.mode)) {
                     logger.trace("Change mode to ${event.mode}")
                     cursorHandler.changeCursorShape(event.mode)
                     statusLineHandler.updateStatusLine(event.mode)
+
+                    // Disable nvim_buf_lines_event if in insert mode
+                    if (event.mode.kind == NeovimModeKind.INSERT) {
+                        documentHandler.disableBufLinesEvent()
+                        cursorHandler.disableCursorListener()
+                        // CursorMoveEvent is not sent in insert mode, so I need to sync it manually
+                    } else {
+                        documentHandler.enableBufLinesEvent()
+                        cursorHandler.enableCursorListener()
+                    }
                 } else {
                     logger.debug("No mode change, already in ${event.mode}")
                 }
@@ -112,7 +120,7 @@ class NeovimEditorSession private constructor(
     fun activateBuffer() {
         scope.launch {
             documentHandler.activateBuffer()
-            cursorHandler.syncCursorFromIdeaToNeovim()
+            cursorHandler.syncIdeaToNeovim()
         }
     }
 
@@ -124,7 +132,11 @@ class NeovimEditorSession private constructor(
 
     fun syncCursorFromIdeaToNeovim() {
         scope.launch {
-            cursorHandler.syncCursorFromIdeaToNeovim()
+            cursorHandler.syncIdeaToNeovim()
         }
+    }
+
+    fun getMode(): NeovimMode {
+        return mode.get()
     }
 }
