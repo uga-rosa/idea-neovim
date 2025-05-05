@@ -7,7 +7,7 @@ interface NeovimRpcClient {
     suspend fun request(
         method: String,
         params: List<Any?> = emptyList(),
-        timeoutMills: Long? = 500,
+        timeoutMills: Long? = 5000,
     ): Either<RequestError, Response>
 
     data class Response(
