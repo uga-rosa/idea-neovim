@@ -1,11 +1,8 @@
 package com.ugarosa.neovim.rpc.event
 
-import com.intellij.openapi.diagnostic.Logger
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.asBufferId
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
-
-private val logger = Logger.getInstance("com.ugarosa.neovim.rpc.event")
 
 data class BufLinesEvent(
     val bufferId: BufferId,
