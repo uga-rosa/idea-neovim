@@ -21,6 +21,10 @@
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
     <depends>com.intellij.modules.platform</depends>
 
+    <actions>
+        <action id="NeovimKeyAction" class="com.ugarosa.neovim.keymap.NeovimKeyAction"/>
+    </actions>
+
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
@@ -33,7 +37,8 @@
         <actionPromoter implementation="com.ugarosa.neovim.keymap.NeovimActionPromoter"/>
     </extensions>
 
-    <actions>
-        <action id="NeovimKeyAction" class="com.ugarosa.neovim.keymap.NeovimKeyAction"/>
-    </actions>
+    <applicationListeners>
+        <listener class="com.ugarosa.neovim.startup.NeovimAppLifecycleListener"
+                  topic="com.intellij.ide.AppLifecycleListener"/>
+    </applicationListeners>
 </idea-plugin>

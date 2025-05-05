@@ -4,13 +4,9 @@ import arrow.core.Either
 import arrow.core.raise.either
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
-import com.ugarosa.neovim.keymap.initializeKeymap
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.TabPageId
 import com.ugarosa.neovim.rpc.WindowId
-import com.ugarosa.neovim.rpc.function.enforceSingleWindow
-import com.ugarosa.neovim.rpc.function.hookCursorMove
-import com.ugarosa.neovim.rpc.function.hookModeChange
 import com.ugarosa.neovim.rpc.process.AutoNeovimProcessManager
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -24,19 +20,18 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.io.IOException
 import org.msgpack.core.MessagePack
-import org.msgpack.core.MessagePacker
-import org.msgpack.core.MessageUnpacker
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
 @Service(Service.Level.APP)
 class NeovimRpcClientImpl(
-    scope: CoroutineScope,
+    val scope: CoroutineScope,
 ) : NeovimRpcClient {
     private val logger = thisLogger()
+    private val processManager = AutoNeovimProcessManager()
+    private val packer = MessagePack.newDefaultPacker(processManager.getOutputStream())
+    private val unpacker = MessagePack.newDefaultUnpacker(processManager.getInputStream())
     private val messageIdGenerator = AtomicInteger(0)
-    private val packer: MessagePacker
-    private val unpacker: MessageUnpacker
     private val sendMutex = Mutex()
     private val waitingResponses = ConcurrentHashMap<Int, CompletableDeferred<NeovimRpcClient.Response>>()
 
@@ -47,10 +42,6 @@ class NeovimRpcClientImpl(
     }
 
     init {
-        val processManager = AutoNeovimProcessManager()
-        packer = MessagePack.newDefaultPacker(processManager.getOutputStream())
-        unpacker = MessagePack.newDefaultUnpacker(processManager.getInputStream())
-
         scope.launch(Dispatchers.IO) {
             while (isActive) {
                 unpacker.unpackArrayHeader()
@@ -78,33 +69,6 @@ class NeovimRpcClientImpl(
                     }
                 }
             }
-        }
-
-        scope.launch {
-            initialize()
-        }
-    }
-
-    // Hooks that should be called only once at application startup.
-    private suspend fun initialize() {
-        initializeKeymap()
-
-        enforceSingleWindow(this).onLeft {
-            logger.warn("Failed to enforce single window: $it")
-        }.onRight {
-            logger.debug("Enforced single window")
-        }
-
-        hookCursorMove(this).onLeft {
-            logger.warn("Failed to hook cursor move: $it")
-        }.onRight {
-            logger.debug("Hooked cursor move")
-        }
-
-        hookModeChange(this).onLeft {
-            logger.warn("Failed to hook mode change: $it")
-        }.onRight {
-            logger.debug("Hooked mode change")
         }
     }
 
