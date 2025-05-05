@@ -7,7 +7,7 @@ class ListenerGuard<T : Any>(
     private val add: (T) -> Unit,
     private val remove: (T) -> Unit,
 ) {
-    private var isRegistered = AtomicBoolean(true)
+    private var isRegistered = AtomicBoolean(false)
 
     fun unregister() {
         if (isRegistered.compareAndSet(expected = true, new = false)) {

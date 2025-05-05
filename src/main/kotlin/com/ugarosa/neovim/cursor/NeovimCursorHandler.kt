@@ -36,6 +36,7 @@ class NeovimCursorHandler(
             { editor.caretModel.addCaretListener(it, disposable) },
             { editor.caretModel.removeCaretListener(it) },
         ).apply {
+            logger.trace("Registering caret listener for buffer: $bufferId")
             register()
         }
 
