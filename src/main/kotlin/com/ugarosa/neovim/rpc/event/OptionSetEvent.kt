@@ -27,7 +27,7 @@ enum class OptionScope {
 }
 
 fun maybeOptionSetEvent(push: NeovimRpcClient.PushNotification): OptionSetEvent? {
-    if (push.method != "nvim_option_set") {
+    if (push.method != "nvim_option_set_event") {
         return null
     }
     try {

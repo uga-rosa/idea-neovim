@@ -50,7 +50,7 @@ data class NeovimMode(
 }
 
 fun maybeModeChangeEvent(push: NeovimRpcClient.PushNotification): ModeChangeEvent? {
-    if (push.method != "nvim_mode_change") {
+    if (push.method != "nvim_mode_change_event") {
         return null
     }
     try {

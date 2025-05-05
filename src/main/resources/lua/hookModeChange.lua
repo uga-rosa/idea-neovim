@@ -5,6 +5,6 @@ vim.api.nvim_create_autocmd("ModeChanged", {
 	callback = function()
 		local bufferId = vim.api.nvim_get_current_buf()
 		-- [bufferId, mode]
-		vim.rpcnotify(chanId, "nvim_mode_change", bufferId, vim.v.event.new_mode)
+		vim.rpcnotify(chanId, "nvim_mode_change_event", bufferId, vim.v.event.new_mode)
 	end,
 })

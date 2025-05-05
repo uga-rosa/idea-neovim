@@ -11,7 +11,7 @@ data class CursorMoveEvent(
 )
 
 fun maybeCursorMoveEvent(push: NeovimRpcClient.PushNotification): CursorMoveEvent? {
-    if (push.method != "nvim_cursor_move") {
+    if (push.method != "nvim_cursor_move_event") {
         return null
     }
     try {

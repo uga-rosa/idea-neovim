@@ -11,6 +11,6 @@ vim.api.nvim_create_autocmd("OptionSet", {
 			return
 		end
 		-- [bufferId, scope, name, value]
-		vim.rpcnotify(chanId, "nvim_option_set", -1, "global", event.match, vim.v.option_new)
+		vim.rpcnotify(chanId, "nvim_option_set_event", -1, "global", event.match, vim.v.option_new)
 	end,
 })
