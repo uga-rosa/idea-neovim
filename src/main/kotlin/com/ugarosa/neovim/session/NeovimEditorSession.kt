@@ -6,6 +6,8 @@ import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
+import com.jetbrains.rd.util.AtomicReference
+import com.ugarosa.neovim.common.setIfDifferent
 import com.ugarosa.neovim.cursor.NeovimCursorHandler
 import com.ugarosa.neovim.document.NeovimDocumentHandler
 import com.ugarosa.neovim.rpc.BufferId
@@ -36,7 +38,7 @@ class NeovimEditorSession private constructor(
     private val statusLineHandler: StatusLineHandler,
 ) {
     private val logger = thisLogger()
-    private var currentMode = NeovimMode.default
+    private val mode = AtomicReference(NeovimMode.default)
 
     companion object {
         private val logger = thisLogger()
@@ -95,10 +97,13 @@ class NeovimEditorSession private constructor(
                 logger.trace("parsed ModeChangeEvent: $event, bufferId: $bufferId")
             }
             if (event?.bufferId == bufferId) {
-                logger.trace("Change mode to ${event.mode}")
-                currentMode = event.mode
-                cursorHandler.changeCursorShape(event.mode)
-                statusLineHandler.updateStatusLine(event.mode)
+                if (mode.setIfDifferent(event.mode)) {
+                    logger.trace("Change mode to ${event.mode}")
+                    cursorHandler.changeCursorShape(event.mode)
+                    statusLineHandler.updateStatusLine(event.mode)
+                } else {
+                    logger.debug("No mode change, already in ${event.mode}")
+                }
             }
         }
     }
