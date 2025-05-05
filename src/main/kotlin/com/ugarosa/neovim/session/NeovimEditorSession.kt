@@ -111,6 +111,7 @@ class NeovimEditorSession private constructor(
     fun activateBuffer() {
         scope.launch {
             documentHandler.activateBuffer()
+            cursorHandler.syncCursorFromIdeaToNeovim()
         }
     }
 
