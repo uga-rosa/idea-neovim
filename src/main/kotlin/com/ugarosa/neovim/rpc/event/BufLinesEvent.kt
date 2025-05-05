@@ -17,9 +17,7 @@ fun maybeBufLinesEvent(push: NeovimRpcClient.PushNotification): BufLinesEvent? {
     }
     try {
         val params = push.params.asArrayValue().list()
-        val bufferId =
-            params[0].asBufferId().getOrNull()
-                ?: throw IllegalArgumentException("Invalid buffer ID: ${params[0]}")
+        val bufferId = params[0].asBufferId()
         val firstLine = params[2].asIntegerValue().toInt()
         val lastLine = params[3].asIntegerValue().toInt()
         val replacementLines = params[4].asArrayValue().list().map { it.asStringValue().asString() }

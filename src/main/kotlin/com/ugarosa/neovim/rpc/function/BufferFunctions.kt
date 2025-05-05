@@ -8,9 +8,10 @@ import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 
 suspend fun createBuffer(client: NeovimRpcClient): Either<NeovimFunctionError, BufferId> =
     either {
-        client.request("nvim_create_buf", listOf(true, false))
-            .translate().bind()
-            .asBufferId()
+        val result =
+            client.request("nvim_create_buf", listOf(true, false))
+                .translate().bind()
+        Either.catch { result.asBufferId() }
             .mapLeft { NeovimFunctionError.ResponseTypeMismatch }.bind()
     }
 

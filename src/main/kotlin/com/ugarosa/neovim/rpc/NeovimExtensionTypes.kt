@@ -1,8 +1,5 @@
 package com.ugarosa.neovim.rpc
 
-import arrow.core.Either
-import arrow.core.raise.either
-import arrow.core.raise.ensure
 import org.msgpack.core.MessagePack
 import org.msgpack.value.Value
 
@@ -14,34 +11,22 @@ data class WindowId(val value: Int)
 
 data class TabPageId(val value: Int)
 
-sealed interface DecodeError {
-    data object ValueTypeMismatch : DecodeError
+fun Value.asBufferId(): BufferId = toTypedId(0, ::BufferId)
 
-    data object NvimTypeMismatch : DecodeError
+fun Value.asWindowId(): WindowId = toTypedId(1, ::WindowId)
 
-    data object InvalidData : DecodeError
-}
-
-fun Value.asBufferId(): Either<DecodeError, BufferId> = toTypedId(0, ::BufferId)
-
-fun Value.asWindowId(): Either<DecodeError, WindowId> = toTypedId(1, ::WindowId)
-
-fun Value.asTabPageId(): Either<DecodeError, TabPageId> = toTypedId(2, ::TabPageId)
+fun Value.asTabPageId(): TabPageId = toTypedId(2, ::TabPageId)
 
 private inline fun <A> Value.toTypedId(
     expectedType: Byte,
     constructor: (Int) -> A,
-): Either<DecodeError, A> =
-    either {
-        ensure(isExtensionValue) { DecodeError.ValueTypeMismatch }
-        val ext = asExtensionValue()
-        ensure(ext.type == expectedType) { DecodeError.NvimTypeMismatch }
-        val value =
-            Either.catch { ext.data.toIntFromMsgpack() }
-                .mapLeft { DecodeError.InvalidData }
-                .bind()
-        constructor(value)
-    }
+): A {
+    require(isExtensionValue) { "Must be extension type" }
+    val ext = asExtensionValue()
+    require(ext.type == expectedType) { "Expected type $expectedType, but got ${ext.type}" }
+    val value = ext.data.toIntFromMsgpack()
+    return constructor(value)
+}
 
 private fun ByteArray.toIntFromMsgpack(): Int {
     return MessagePack.newDefaultUnpacker(this).unpackInt()
