@@ -136,7 +136,8 @@ class NeovimCursorHandler(
                     NeovimModeKind.VISUAL_BLOCK,
                     NeovimModeKind.SELECT,
                     NeovimModeKind.SELECT_LINE,
-                    NeovimModeKind.SELECT_BLOCK -> true
+                    NeovimModeKind.SELECT_BLOCK,
+                    -> true
 
                     else -> false
                 }

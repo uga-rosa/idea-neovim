@@ -28,19 +28,20 @@ data class NeovimMode(
 ) {
     companion object {
         fun fromRaw(raw: String): NeovimMode {
-            val kind = when (raw[0]) {
-                'n' -> NeovimModeKind.NORMAL
-                'v' -> NeovimModeKind.VISUAL
-                'V' -> NeovimModeKind.VISUAL_LINE
-                '\u0016' -> NeovimModeKind.VISUAL_BLOCK // Ctrl-V
-                's' -> NeovimModeKind.SELECT
-                'S' -> NeovimModeKind.SELECT_LINE
-                '\u0013' -> NeovimModeKind.SELECT_BLOCK // Ctrl-S
-                'i' -> NeovimModeKind.INSERT
-                'R' -> NeovimModeKind.REPLACE
-                'c' -> NeovimModeKind.COMMAND
-                else -> NeovimModeKind.OTHER
-            }
+            val kind =
+                when (raw[0]) {
+                    'n' -> NeovimModeKind.NORMAL
+                    'v' -> NeovimModeKind.VISUAL
+                    'V' -> NeovimModeKind.VISUAL_LINE
+                    '\u0016' -> NeovimModeKind.VISUAL_BLOCK // Ctrl-V
+                    's' -> NeovimModeKind.SELECT
+                    'S' -> NeovimModeKind.SELECT_LINE
+                    '\u0013' -> NeovimModeKind.SELECT_BLOCK // Ctrl-S
+                    'i' -> NeovimModeKind.INSERT
+                    'R' -> NeovimModeKind.REPLACE
+                    'c' -> NeovimModeKind.COMMAND
+                    else -> NeovimModeKind.OTHER
+                }
             return NeovimMode(kind, raw)
         }
 
