@@ -4,8 +4,8 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
+import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.rpc.BufferId
-import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 import com.ugarosa.neovim.rpc.event.BufLinesEvent
 import com.ugarosa.neovim.rpc.function.bufferAttach
 import com.ugarosa.neovim.rpc.function.bufferDetach
@@ -13,19 +13,18 @@ import com.ugarosa.neovim.rpc.function.bufferSetLines
 import com.ugarosa.neovim.rpc.function.setCurrentBuffer
 
 class NeovimDocumentHandler private constructor(
-    private val client: NeovimRpcClient,
     private val editor: Editor,
     private val bufferId: BufferId,
 ) {
     private val logger = thisLogger()
+    private val client = getClient()
 
     companion object {
         suspend fun create(
-            client: NeovimRpcClient,
             editor: Editor,
             bufferId: BufferId,
         ): NeovimDocumentHandler {
-            val handler = NeovimDocumentHandler(client, editor, bufferId)
+            val handler = NeovimDocumentHandler(editor, bufferId)
             handler.initializeBuffer()
             handler.attachBuffer()
             return handler

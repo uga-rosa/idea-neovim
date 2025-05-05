@@ -1,21 +1,19 @@
 package com.ugarosa.neovim.cursor
 
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.EDT
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.LogicalPosition
 import com.intellij.openapi.editor.colors.EditorFontType
 import com.ugarosa.neovim.common.ListenerGuard
 import com.ugarosa.neovim.common.charOffsetToUtf8ByteOffset
+import com.ugarosa.neovim.common.getClient
+import com.ugarosa.neovim.common.getOptionManager
 import com.ugarosa.neovim.common.utf8ByteOffsetToCharOffset
-import com.ugarosa.neovim.config.neovim.NeovimOptionManager
 import com.ugarosa.neovim.config.neovim.option.Scrolloff
 import com.ugarosa.neovim.config.neovim.option.Sidescrolloff
 import com.ugarosa.neovim.rpc.BufferId
-import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 import com.ugarosa.neovim.rpc.event.CursorMoveEvent
 import com.ugarosa.neovim.rpc.event.NeovimMode
 import com.ugarosa.neovim.rpc.event.NeovimModeKind
@@ -24,12 +22,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class NeovimCursorHandler(
-    private val client: NeovimRpcClient,
     private val editor: Editor,
     private val bufferId: BufferId,
     private val disposable: Disposable,
 ) {
     private val logger = thisLogger()
+    private val client = getClient()
     private val caretListenerGuard =
         ListenerGuard(
             NeovimCaretListener(editor),
@@ -40,7 +38,7 @@ class NeovimCursorHandler(
             register()
         }
 
-    private val optionManager = ApplicationManager.getApplication().service<NeovimOptionManager>()
+    private val optionManager = getOptionManager()
 
     init {
         editor.settings.isBlockCursor = true
@@ -60,7 +58,6 @@ class NeovimCursorHandler(
 
     private suspend fun getScrollOptions(): Pair<Scrolloff, Sidescrolloff> {
         val options = optionManager.getLocal(bufferId)
-        logger.trace("Got current local options: $options")
         return options.scrolloff to options.sidescrolloff
     }
 

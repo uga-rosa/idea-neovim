@@ -1,7 +1,6 @@
 package com.ugarosa.neovim.startup
 
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.EditorFactory
@@ -15,7 +14,6 @@ import com.intellij.openapi.fileEditor.TextEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
 import com.ugarosa.neovim.keymap.NeovimTypedActionHandler
-import com.ugarosa.neovim.rpc.client.NeovimRpcClientImpl
 import com.ugarosa.neovim.session.NEOVIM_SESSION_KEY
 import com.ugarosa.neovim.session.NeovimEditorSession
 import kotlinx.coroutines.CoroutineScope
@@ -25,12 +23,11 @@ class NeovimProjectActivity(
     private val scope: CoroutineScope,
 ) : ProjectActivity {
     override suspend fun execute(project: Project) {
-        val client = ApplicationManager.getApplication().service<NeovimRpcClientImpl>()
         val disposable = project.service<PluginDisposable>()
 
         installNeovimTypedActionHandler()
-        setupEditorFactoryListener(project, client, disposable)
-        initializeExistingEditors(project, client, disposable)
+        setupEditorFactoryListener(project, disposable)
+        initializeExistingEditors(project, disposable)
         setupBufferActivationOnEditorSwitch(project, disposable)
     }
 
@@ -42,14 +39,13 @@ class NeovimProjectActivity(
 
     private fun setupEditorFactoryListener(
         project: Project,
-        client: NeovimRpcClientImpl,
         disposable: Disposable,
     ) {
         EditorFactory.getInstance().addEditorFactoryListener(
             object : EditorFactoryListener {
                 override fun editorCreated(event: EditorFactoryEvent) {
                     scope.launch {
-                        initializeEditor(event.editor, project, client, disposable)
+                        initializeEditor(event.editor, project, disposable)
                     }
                 }
             },
@@ -59,21 +55,19 @@ class NeovimProjectActivity(
 
     private suspend fun initializeExistingEditors(
         project: Project,
-        client: NeovimRpcClientImpl,
         disposable: Disposable,
     ) {
         EditorFactory.getInstance().allEditors.forEach { editor ->
-            initializeEditor(editor, project, client, disposable)
+            initializeEditor(editor, project, disposable)
         }
     }
 
     private suspend fun initializeEditor(
         editor: Editor,
         project: Project,
-        client: NeovimRpcClientImpl,
         disposable: Disposable,
     ) {
-        NeovimEditorSession.create(client, scope, editor, project, disposable)
+        NeovimEditorSession.create(scope, editor, project, disposable)
             ?.let { editor.putUserData(NEOVIM_SESSION_KEY, it) }
             ?: throw IllegalStateException("Failed to create Neovim session")
     }

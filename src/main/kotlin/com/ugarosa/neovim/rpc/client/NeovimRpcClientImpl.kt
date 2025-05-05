@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 @Service(Service.Level.APP)
 class NeovimRpcClientImpl(
-    val scope: CoroutineScope,
+    override val scope: CoroutineScope,
 ) : NeovimRpcClient {
     private val logger = thisLogger()
     private val processManager = AutoNeovimProcessManager()

@@ -1,11 +1,9 @@
 package com.ugarosa.neovim.startup
 
 import com.intellij.ide.AppLifecycleListener
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
+import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.keymap.initializeKeymap
-import com.ugarosa.neovim.rpc.client.NeovimRpcClientImpl
 import com.ugarosa.neovim.rpc.function.enforceSingleWindow
 import com.ugarosa.neovim.rpc.function.hookCursorMove
 import com.ugarosa.neovim.rpc.function.hookModeChange
@@ -16,7 +14,7 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
 
     // Hooks that should be called only once at application startup.
     override fun appFrameCreated(commandLineArgs: List<String>) {
-        val client = ApplicationManager.getApplication().service<NeovimRpcClientImpl>()
+        val client = getClient()
 
         initializeKeymap()
 

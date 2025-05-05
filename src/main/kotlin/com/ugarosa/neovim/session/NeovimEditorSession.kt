@@ -7,11 +7,11 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.jetbrains.rd.util.AtomicReference
+import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.common.setIfDifferent
 import com.ugarosa.neovim.cursor.NeovimCursorHandler
 import com.ugarosa.neovim.document.NeovimDocumentHandler
 import com.ugarosa.neovim.rpc.BufferId
-import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 import com.ugarosa.neovim.rpc.event.NeovimMode
 import com.ugarosa.neovim.rpc.event.maybeBufLinesEvent
 import com.ugarosa.neovim.rpc.event.maybeCursorMoveEvent
@@ -30,7 +30,6 @@ val NEOVIM_SESSION_KEY = Key.create<NeovimEditorSession>("NEOVIM_SESSION_KEY")
  * Actual handling of events delegated to specific handlers.
  */
 class NeovimEditorSession private constructor(
-    private val client: NeovimRpcClient,
     private val scope: CoroutineScope,
     private val bufferId: BufferId,
     private val documentHandler: NeovimDocumentHandler,
@@ -38,29 +37,28 @@ class NeovimEditorSession private constructor(
     private val statusLineHandler: StatusLineHandler,
 ) {
     private val logger = thisLogger()
+    private val client = getClient()
     private val mode = AtomicReference(NeovimMode.default)
 
     companion object {
         private val logger = thisLogger()
 
         suspend fun create(
-            client: NeovimRpcClient,
             scope: CoroutineScope,
             editor: Editor,
             project: Project,
             disposable: Disposable,
         ): NeovimEditorSession? {
             val bufferId =
-                createBuffer(client).getOrElse {
+                createBuffer(getClient()).getOrElse {
                     logger.warn("Failed to create buffer: $it")
                     return null
                 }
-            val documentHandler = NeovimDocumentHandler.create(client, editor, bufferId)
-            val cursorHandler = NeovimCursorHandler(client, editor, bufferId, disposable)
+            val documentHandler = NeovimDocumentHandler.create(editor, bufferId)
+            val cursorHandler = NeovimCursorHandler(editor, bufferId, disposable)
             val statusLineHandler = StatusLineHandler(project)
             val session =
                 NeovimEditorSession(
-                    client,
                     scope,
                     bufferId,
                     documentHandler,

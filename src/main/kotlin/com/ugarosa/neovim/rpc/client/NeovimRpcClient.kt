@@ -1,9 +1,12 @@
 package com.ugarosa.neovim.rpc.client
 
 import arrow.core.Either
+import kotlinx.coroutines.CoroutineScope
 import org.msgpack.value.Value
 
 interface NeovimRpcClient {
+    val scope: CoroutineScope
+
     suspend fun request(
         method: String,
         params: List<Any?> = emptyList(),
