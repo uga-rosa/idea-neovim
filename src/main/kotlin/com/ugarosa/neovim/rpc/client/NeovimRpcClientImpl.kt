@@ -4,7 +4,6 @@ import arrow.core.Either
 import arrow.core.raise.either
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
-import com.jetbrains.rd.util.concurrentMapOf
 import com.ugarosa.neovim.keymap.initializeKeymap
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.TabPageId
@@ -26,6 +25,7 @@ import kotlinx.io.IOException
 import org.msgpack.core.MessagePack
 import org.msgpack.core.MessagePacker
 import org.msgpack.core.MessageUnpacker
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
 @Service(Service.Level.APP)
@@ -37,7 +37,7 @@ class NeovimRpcClientImpl(
     private val packer: MessagePacker
     private val unpacker: MessageUnpacker
     private val sendMutex = Mutex()
-    private val waitingResponses = concurrentMapOf<Int, CompletableDeferred<NeovimRpcClient.Response>>()
+    private val waitingResponses = ConcurrentHashMap<Int, CompletableDeferred<NeovimRpcClient.Response>>()
 
     private val pushHandlers = mutableListOf<suspend (NeovimRpcClient.PushNotification) -> Unit>()
 
