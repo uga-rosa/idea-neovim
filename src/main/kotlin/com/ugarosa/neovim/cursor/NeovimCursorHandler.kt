@@ -41,6 +41,10 @@ class NeovimCursorHandler(
 
     private val optionManager = ApplicationManager.getApplication().service<NeovimOptionManager>()
 
+    init {
+        editor.settings.isBlockCursor = true
+    }
+
     suspend fun syncCursorFromNeovimToIdea(event: CursorMoveEvent) {
         val pos = event.toLogicalPosition()
         caretListenerGuard.runWithoutListenerSuspend {
