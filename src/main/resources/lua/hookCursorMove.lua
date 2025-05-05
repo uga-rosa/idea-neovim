@@ -1,16 +1,7 @@
 local chanId = ...
 
 local group = vim.api.nvim_create_augroup("IdeaNeovim:CursorMove", { clear = true })
--- BufEnter is triggered not only when switching buffers, but also during the initial setup timing.
-vim.g.__idea_neovim_cursor_move_ignore_count = -1
-
-vim.api.nvim_create_autocmd("BufEnter", {
-	group = group,
-	callback = function()
-		-- Ignore the first CursorMoved event after entering a buffer
-		vim.g.__idea_neovim_cursor_move_ignore_count = vim.g.__idea_neovim_cursor_move_ignore_count + 1
-	end,
-})
+vim.g.__idea_neovim_cursor_move_ignore_count = 0
 
 vim.api.nvim_create_autocmd("CursorMoved", {
 	group = group,
