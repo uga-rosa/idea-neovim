@@ -15,34 +15,23 @@ suspend fun execLua(
     code: String,
     args: List<Any> = emptyList(),
 ): Either<NeovimFunctionError, Value> =
-    either {
-        client.request(
-            "nvim_exec_lua",
-            listOf(code, args),
-        )
-            .translate().bind()
-    }
+    client.request("nvim_exec_lua", listOf(code, args))
+        .translate()
 
 suspend fun execLuaNotify(
     client: NeovimRpcClient,
     code: String,
     args: List<Any> = emptyList(),
 ): Either<NeovimFunctionError, Unit> =
-    either {
-        client.notify(
-            "nvim_exec_lua",
-            listOf(code, args),
-        )
-            .translate().bind()
-    }
+    client.notify("nvim_exec_lua", listOf(code, args))
+        .translate()
 
-fun Raise<NeovimFunctionError>.readLuaCode(resourcePath: String): String {
-    return object {}.javaClass.getResource(resourcePath)?.readText()
+fun Raise<NeovimFunctionError>.readLuaCode(resourcePath: String): String =
+    object {}.javaClass.getResource(resourcePath)?.readText()
         ?: run {
             logger.warn("Lua script not found: $resourcePath")
             raise(NeovimFunctionError.Unexpected)
         }
-}
 
 suspend fun getChanId(client: NeovimRpcClient): Either<NeovimFunctionError, Int> =
     either {
@@ -55,8 +44,7 @@ suspend fun getChanId(client: NeovimRpcClient): Either<NeovimFunctionError, Int>
             .mapLeft { NeovimFunctionError.ResponseTypeMismatch }.bind()
     }
 
-private fun MapValue.get(key: String): Value? {
-    return this.map().entries
+private fun MapValue.get(key: String): Value? =
+    this.map().entries
         .firstOrNull { it.key.isStringValue && it.key.asStringValue().asString() == key }
         ?.value
-}
