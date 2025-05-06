@@ -16,6 +16,14 @@ suspend fun execLua(
     client.request("nvim_exec_lua", listOf(code, args))
         .translate()
 
+suspend fun execLuaNotify(
+    client: NeovimRpcClient,
+    code: String,
+    args: List<Any> = emptyList(),
+): Either<NeovimFunctionError, Unit> =
+    client.notify("nvim_exec_lua", listOf(code, args))
+        .translate()
+
 fun Raise<NeovimFunctionError>.readLuaCode(resourcePath: String): String =
     object {}.javaClass.getResource(resourcePath)?.readText()
         ?: run {

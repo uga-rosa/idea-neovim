@@ -38,7 +38,7 @@ suspend fun hookGlobalOptionSet(client: NeovimRpcClient): Either<NeovimFunctionE
     either {
         val chanId = ChanIdManager.fetch(client).bind()
         val luaCode = readLuaCode("/lua/hookGlobalOptionSet.lua")
-        execLua(client, luaCode, listOf(chanId)).bind()
+        execLuaNotify(client, luaCode, listOf(chanId)).bind()
     }
 
 suspend fun hookLocalOptionSet(
@@ -48,5 +48,5 @@ suspend fun hookLocalOptionSet(
     either {
         val chanId = ChanIdManager.fetch(client).bind()
         val luaCode = readLuaCode("/lua/hookLocalOptionSet.lua")
-        execLua(client, luaCode, listOf(chanId, bufferId)).bind()
+        execLuaNotify(client, luaCode, listOf(chanId, bufferId)).bind()
     }

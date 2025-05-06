@@ -20,7 +20,7 @@ suspend fun setCurrentBuffer(
     bufferId: BufferId,
 ): Either<NeovimFunctionError, Unit> =
     either {
-        client.request("nvim_set_current_buf", listOf(bufferId))
+        client.notify("nvim_set_current_buf", listOf(bufferId))
             .translate().bind()
     }
 
@@ -32,7 +32,7 @@ suspend fun bufferSetLines(
     lines: List<String>,
 ): Either<NeovimFunctionError, Unit> =
     either {
-        client.request("nvim_buf_set_lines", listOf(bufferId, start, end, false, lines))
+        client.notify("nvim_buf_set_lines", listOf(bufferId, start, end, false, lines))
             .translate().bind()
     }
 
@@ -41,7 +41,7 @@ suspend fun bufferAttach(
     bufferId: BufferId,
 ): Either<NeovimFunctionError, Unit> =
     either {
-        client.request("nvim_buf_attach", listOf(bufferId, false, emptyMap<String, Any>()))
+        client.notify("nvim_buf_attach", listOf(bufferId, false, emptyMap<String, Any>()))
             .translate().bind()
     }
 

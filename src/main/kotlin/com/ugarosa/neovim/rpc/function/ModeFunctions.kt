@@ -8,5 +8,5 @@ suspend fun hookModeChange(client: NeovimRpcClient): Either<NeovimFunctionError,
     either {
         val chanId = ChanIdManager.fetch(client).bind()
         val luaCode = readLuaCode("/lua/hookModeChange.lua")
-        execLua(client, luaCode, listOf(chanId)).bind()
+        execLuaNotify(client, luaCode, listOf(chanId)).bind()
     }
