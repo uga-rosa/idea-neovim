@@ -4,9 +4,6 @@ import arrow.core.Either
 import arrow.core.raise.either
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
-import com.jetbrains.rd.util.AtomicInteger
-import com.jetbrains.rd.util.ConcurrentHashMap
-import com.jetbrains.rd.util.CopyOnWriteArrayList
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.TabPageId
 import com.ugarosa.neovim.rpc.WindowId
@@ -23,6 +20,9 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.io.IOException
 import org.msgpack.core.MessagePack
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicInteger
 
 @Service(Service.Level.APP)
 class NeovimRpcClientImpl(
