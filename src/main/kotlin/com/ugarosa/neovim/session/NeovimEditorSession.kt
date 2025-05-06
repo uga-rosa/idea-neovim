@@ -9,12 +9,11 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.ugarosa.neovim.common.getClient
+import com.ugarosa.neovim.common.getModeManager
 import com.ugarosa.neovim.common.getOptionManager
-import com.ugarosa.neovim.common.setIfDifferent
 import com.ugarosa.neovim.cursor.NeovimCursorHandler
 import com.ugarosa.neovim.document.NeovimDocumentHandler
 import com.ugarosa.neovim.rpc.BufferId
-import com.ugarosa.neovim.rpc.event.NeovimMode
 import com.ugarosa.neovim.rpc.event.NeovimModeKind
 import com.ugarosa.neovim.rpc.event.maybeBufLinesEvent
 import com.ugarosa.neovim.rpc.event.maybeCursorMoveEvent
@@ -26,7 +25,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.concurrent.atomic.AtomicReference
 
 val NEOVIM_SESSION_KEY = Key.create<NeovimEditorSession>("NEOVIM_SESSION_KEY")
 
@@ -45,7 +43,7 @@ class NeovimEditorSession private constructor(
 ) {
     private val logger = thisLogger()
     private val client = getClient()
-    private val mode = AtomicReference(NeovimMode.default)
+    private val modeManager = getModeManager()
 
     companion object {
         private val logger = thisLogger()
@@ -102,27 +100,28 @@ class NeovimEditorSession private constructor(
         client.registerPushHandler { push ->
             val event = maybeModeChangeEvent(push)
             if (event?.bufferId == bufferId) {
-                if (mode.setIfDifferent(event.mode)) {
-                    logger.trace("Change mode to ${event.mode}")
-                    cursorHandler.changeCursorShape(event.mode)
-                    statusLineHandler.updateStatusLine(event.mode)
+                if (!modeManager.setMode(event.mode)) {
+                    logger.trace("No mode change, already in ${event.mode}")
+                    return@registerPushHandler
+                }
+                logger.trace("Change mode to ${event.mode}")
 
-                    if (event.mode.kind == NeovimModeKind.INSERT) {
-                        // Disable nvim_buf_lines_event if in insert mode
-                        documentHandler.disableBufLinesEvent()
-                        cursorHandler.disableCursorListener()
-                    } else {
-                        // Close completion popup
-                        withContext(Dispatchers.EDT) {
-                            LookupManager.getActiveLookup(editor)
-                                ?.hideLookup(true)
-                        }
-                        // Re-enable nvim_buf_lines_event
-                        documentHandler.enableBufLinesEvent()
-                        cursorHandler.enableCursorListener()
-                    }
+                cursorHandler.changeCursorShape(event.mode)
+                statusLineHandler.updateStatusLine(event.mode)
+
+                if (event.mode.kind == NeovimModeKind.INSERT) {
+                    // Disable nvim_buf_lines_event if in insert mode
+                    documentHandler.disableBufLinesEvent()
+                    cursorHandler.disableCursorListener()
                 } else {
-                    logger.debug("No mode change, already in ${event.mode}")
+                    // Close completion popup
+                    withContext(Dispatchers.EDT) {
+                        LookupManager.getActiveLookup(editor)
+                            ?.hideLookup(true)
+                    }
+                    // Re-enable nvim_buf_lines_event
+                    documentHandler.enableBufLinesEvent()
+                    cursorHandler.enableCursorListener()
                 }
             }
         }
@@ -147,7 +146,4 @@ class NeovimEditorSession private constructor(
         }
     }
 
-    fun getMode(): NeovimMode {
-        return mode.get()
-    }
 }

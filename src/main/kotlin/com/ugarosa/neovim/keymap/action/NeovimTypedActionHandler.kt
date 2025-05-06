@@ -6,6 +6,7 @@ import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.actionSystem.TypedActionHandler
 import com.intellij.openapi.project.Project
+import com.ugarosa.neovim.common.getModeManager
 import com.ugarosa.neovim.rpc.event.NeovimModeKind
 import com.ugarosa.neovim.session.NEOVIM_SESSION_KEY
 
@@ -14,6 +15,7 @@ class NeovimTypedActionHandler(
     private val delegate: TypedActionHandler,
 ) : TypedActionHandler {
     private val logger = thisLogger()
+    private val modeManager = getModeManager()
 
     override fun execute(
         editor: Editor,
@@ -24,7 +26,7 @@ class NeovimTypedActionHandler(
             editor.getUserData(NEOVIM_SESSION_KEY)
                 ?: throw IllegalStateException("NeovimEditorSession does not exist")
 
-        if (session.getMode().kind == NeovimModeKind.INSERT) {
+        if (modeManager.getMode().kind == NeovimModeKind.INSERT) {
             logger.trace("Typed action in insert mode: $char")
             WriteCommandAction.runWriteCommandAction(project) {
                 delegate.execute(editor, char, ctx)
