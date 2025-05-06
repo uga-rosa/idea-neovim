@@ -4,6 +4,9 @@ import arrow.core.Either
 import arrow.core.raise.either
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
+import com.jetbrains.rd.util.AtomicInteger
+import com.jetbrains.rd.util.ConcurrentHashMap
+import com.jetbrains.rd.util.CopyOnWriteArrayList
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.TabPageId
 import com.ugarosa.neovim.rpc.WindowId
@@ -20,8 +23,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.io.IOException
 import org.msgpack.core.MessagePack
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicInteger
 
 @Service(Service.Level.APP)
 class NeovimRpcClientImpl(
@@ -35,7 +36,7 @@ class NeovimRpcClientImpl(
     private val sendMutex = Mutex()
     private val waitingResponses = ConcurrentHashMap<Int, CompletableDeferred<NeovimRpcClient.Response>>()
 
-    private val pushHandlers = mutableListOf<suspend (NeovimRpcClient.PushNotification) -> Unit>()
+    private val pushHandlers = CopyOnWriteArrayList<suspend (NeovimRpcClient.PushNotification) -> Unit>()
 
     override fun registerPushHandler(handler: suspend (NeovimRpcClient.PushNotification) -> Unit) {
         pushHandlers.add(handler)
