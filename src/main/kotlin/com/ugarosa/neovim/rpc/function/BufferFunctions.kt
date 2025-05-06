@@ -36,6 +36,34 @@ suspend fun bufferSetLines(
             .translate().bind()
     }
 
+data class BufferSetTextParams(
+    val bufferId: BufferId,
+    val startRow: Int,
+    val startCol: Int,
+    val endRow: Int,
+    val endCol: Int,
+    val replacement: List<String>,
+)
+
+suspend fun bufferSetText(
+    client: NeovimRpcClient,
+    params: BufferSetTextParams,
+): Either<NeovimFunctionError, Unit> =
+    either {
+        client.notify(
+            "nvim_buf_set_text",
+            listOf(
+                params.bufferId,
+                params.startRow,
+                params.startCol,
+                params.endRow,
+                params.endCol,
+                params.replacement,
+            ),
+        )
+            .translate().bind()
+    }
+
 suspend fun bufferAttach(
     client: NeovimRpcClient,
     bufferId: BufferId,

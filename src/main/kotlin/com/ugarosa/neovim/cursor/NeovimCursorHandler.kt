@@ -6,6 +6,7 @@ import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.LogicalPosition
 import com.intellij.openapi.editor.colors.EditorFontType
+import com.intellij.openapi.util.TextRange
 import com.ugarosa.neovim.common.ListenerGuard
 import com.ugarosa.neovim.common.charOffsetToUtf8ByteOffset
 import com.ugarosa.neovim.common.getClient
@@ -170,7 +171,7 @@ class NeovimCursorHandler(
 
         val lineStartOffset = document.getLineStartOffset(lineIndex)
         val lineEndOffset = document.getLineEndOffset(lineIndex)
-        val lineText = document.text.substring(lineStartOffset, lineEndOffset)
+        val lineText = document.getText(TextRange(lineStartOffset, lineEndOffset))
         val correctedCol = utf8ByteOffsetToCharOffset(lineText, nvimCol)
 
         return LogicalPosition(lineIndex, correctedCol)
@@ -184,7 +185,7 @@ class NeovimCursorHandler(
 
         val lineStartOffset = document.getLineStartOffset(line)
         val lineEndOffset = document.getLineEndOffset(line)
-        val lineText = document.text.substring(lineStartOffset, lineEndOffset)
+        val lineText = document.getText(TextRange(lineStartOffset, lineEndOffset))
         val byteCol = charOffsetToUtf8ByteOffset(lineText, this.column)
 
         return line + 1 to byteCol

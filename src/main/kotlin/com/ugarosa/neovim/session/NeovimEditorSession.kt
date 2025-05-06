@@ -59,7 +59,7 @@ class NeovimEditorSession private constructor(
                     logger.warn("Failed to create buffer: $it")
                     return null
                 }
-            val documentHandler = NeovimDocumentHandler.create(editor, bufferId)
+            val documentHandler = NeovimDocumentHandler.create(scope, editor, bufferId)
             val cursorHandler = NeovimCursorHandler(scope, editor, disposable, bufferId)
             val statusLineHandler = StatusLineHandler(project)
             val session =
