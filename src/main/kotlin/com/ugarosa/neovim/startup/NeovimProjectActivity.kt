@@ -21,7 +21,7 @@ class NeovimProjectActivity(
     private val scope: CoroutineScope,
 ) : ProjectActivity {
     override suspend fun execute(project: Project) {
-        val disposable = project.service<PluginDisposable>()
+        val disposable = project.service<ProjectDisposable>()
 
         setupEditorFactoryListener(project, disposable)
         initializeExistingEditors(project, disposable)
