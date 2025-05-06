@@ -18,19 +18,21 @@ import com.ugarosa.neovim.rpc.event.CursorMoveEvent
 import com.ugarosa.neovim.rpc.event.NeovimMode
 import com.ugarosa.neovim.rpc.event.NeovimModeKind
 import com.ugarosa.neovim.rpc.function.setCursor
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class NeovimCursorHandler(
+    scope: CoroutineScope,
     private val editor: Editor,
-    private val bufferId: BufferId,
     private val disposable: Disposable,
+    private val bufferId: BufferId,
 ) {
     private val logger = thisLogger()
     private val client = getClient()
     private val caretListenerGuard =
         ListenerGuard(
-            NeovimCaretListener(editor),
+            NeovimCaretListener(scope, this),
             { editor.caretModel.addCaretListener(it, disposable) },
             { editor.caretModel.removeCaretListener(it) },
         ).apply {

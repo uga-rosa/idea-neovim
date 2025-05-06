@@ -60,7 +60,7 @@ class NeovimEditorSession private constructor(
                     return null
                 }
             val documentHandler = NeovimDocumentHandler.create(editor, bufferId)
-            val cursorHandler = NeovimCursorHandler(editor, bufferId, disposable)
+            val cursorHandler = NeovimCursorHandler(scope, editor, disposable, bufferId)
             val statusLineHandler = StatusLineHandler(project)
             val session =
                 NeovimEditorSession(
@@ -139,11 +139,4 @@ class NeovimEditorSession private constructor(
             input(client, key)
         }
     }
-
-    fun syncCursorFromIdeaToNeovim() {
-        scope.launch {
-            cursorHandler.syncIdeaToNeovim()
-        }
-    }
-
 }

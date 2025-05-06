@@ -1,15 +1,17 @@
 package com.ugarosa.neovim.cursor
 
-import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.event.CaretEvent
 import com.intellij.openapi.editor.event.CaretListener
-import com.ugarosa.neovim.session.NEOVIM_SESSION_KEY
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 class NeovimCaretListener(
-    private val editor: Editor,
+    private val scope: CoroutineScope,
+    private val handler: NeovimCursorHandler,
 ) : CaretListener {
     override fun caretPositionChanged(event: CaretEvent) {
-        editor.getUserData(NEOVIM_SESSION_KEY)
-            ?.syncCursorFromIdeaToNeovim()
+        scope.launch {
+            handler.syncIdeaToNeovim()
+        }
     }
 }
