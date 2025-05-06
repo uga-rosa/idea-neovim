@@ -1,12 +1,10 @@
 package com.ugarosa.neovim.startup
 
 import com.intellij.ide.AppLifecycleListener
-import com.intellij.ide.IdeEventQueue
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.ugarosa.neovim.common.getClient
+import com.ugarosa.neovim.common.getKeyRouter
 import com.ugarosa.neovim.common.getOptionManager
-import com.ugarosa.neovim.keymap.dispatcher.NeovimEventDispatcher
 import com.ugarosa.neovim.rpc.function.enforceSingleWindow
 import com.ugarosa.neovim.rpc.function.hookCursorMove
 import com.ugarosa.neovim.rpc.function.hookModeChange
@@ -19,6 +17,7 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
     override fun appFrameCreated(commandLineArgs: List<String>) {
         val client = getClient()
         val optionManager = getOptionManager()
+        val keyRouter = getKeyRouter()
 
         client.scope.launch {
             enforceSingleWindow(client).onLeft {
@@ -42,10 +41,7 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
             optionManager.initializeGlobal()
         }
 
-        logger.trace("Registering key event dispatcher")
-        IdeEventQueue.getInstance().addDispatcher(
-            NeovimEventDispatcher(),
-            service<AppDisposable>(),
-        )
+        logger.trace("Starting Neovim key router")
+        keyRouter.start()
     }
 }

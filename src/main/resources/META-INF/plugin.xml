@@ -29,7 +29,7 @@
                                 implementation="com.ugarosa.neovim.statusline.NeovimModeWidgetFactory"/>
         <applicationConfigurable key="configurable.display.name.neovim"
                                  bundle="messages.NeovimBundle"
-                                 instance="com.ugarosa.neovim.config.NeovimKeymapConfigurable"/>
+                                 instance="com.ugarosa.neovim.config.idea.NeovimKeymapConfigurable"/>
     </extensions>
 
     <applicationListeners>

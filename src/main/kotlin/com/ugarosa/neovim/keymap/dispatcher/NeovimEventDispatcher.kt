@@ -5,6 +5,7 @@ import com.intellij.ide.IdeEventQueue
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
+import com.ugarosa.neovim.common.getKeyRouter
 import com.ugarosa.neovim.keymap.notation.NeovimKeyNotation
 import java.awt.AWTEvent
 import java.awt.KeyboardFocusManager
@@ -12,6 +13,7 @@ import java.awt.event.KeyEvent
 
 class NeovimEventDispatcher : IdeEventQueue.EventDispatcher {
     private val logger = thisLogger()
+    private val keyRouter = getKeyRouter()
 
     override fun dispatch(e: AWTEvent): Boolean {
         if (e is KeyEvent) {
@@ -48,7 +50,8 @@ class NeovimEventDispatcher : IdeEventQueue.EventDispatcher {
                 }
 
                 NeovimKeyNotation.fromKeyPressedEvent(e)?.also {
-                    logger.info("Pressed key: $it")
+                    logger.debug("Pressed key: $it")
+                    keyRouter.enqueueKey(it, editor)
                     return true
                 }
                 // Fallback to default behavior if not supported key
@@ -61,20 +64,22 @@ class NeovimEventDispatcher : IdeEventQueue.EventDispatcher {
 
                 // CTRL/ALT/META + character are not handled by KEY_TYPED
                 if (mods and (KeyEvent.CTRL_DOWN_MASK or KeyEvent.ALT_DOWN_MASK or KeyEvent.META_DOWN_MASK) != 0) {
-                    logger.trace("KEY_TYPED event with modifiers: $e")
+                    logger.trace("Ignore KEY_TYPED event with modifiers: $e")
                     return true
                 }
 
                 // Special case for space
                 if (c == ' ') {
                     NeovimKeyNotation.fromModsAndKey(mods, "Space").also {
-                        logger.info("Typed key: $it")
+                        logger.debug("Pressed key: $it")
+                        keyRouter.enqueueKey(it, editor)
                     }
                     return true
                 }
 
                 NeovimKeyNotation.fromKeyTypedEvent(e)?.also {
-                    logger.info("Typed key: $it")
+                    logger.debug("Typed key: $it")
+                    keyRouter.enqueueKey(it, editor)
                 }
                 return true
             }

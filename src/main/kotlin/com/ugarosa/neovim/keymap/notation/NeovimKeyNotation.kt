@@ -69,6 +69,20 @@ data class NeovimKeyNotation(
         }
     }
 
+    fun toSimpleChar(): Char? {
+        if (modifiers.isEmpty() && key.length == 1) {
+            return key[0]
+        }
+
+        return when (key) {
+            "Space" -> ' '
+            "CR" -> '\n'
+            "BS" -> '\b'
+            "Tab" -> '\t'
+            else -> null
+        }
+    }
+
     /**
      * Render as Neovim notation string.
      * Examples: "<C-A-x>", "g", "<Esc>"
