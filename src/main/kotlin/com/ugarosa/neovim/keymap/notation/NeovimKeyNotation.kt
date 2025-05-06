@@ -1,4 +1,4 @@
-package com.ugarosa.neovim.keymap
+package com.ugarosa.neovim.keymap.notation
 
 import java.awt.event.KeyEvent
 

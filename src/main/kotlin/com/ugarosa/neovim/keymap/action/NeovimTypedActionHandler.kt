@@ -1,4 +1,4 @@
-package com.ugarosa.neovim.keymap
+package com.ugarosa.neovim.keymap.action
 
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.command.WriteCommandAction

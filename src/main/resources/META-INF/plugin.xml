@@ -22,7 +22,7 @@
     <depends>com.intellij.modules.platform</depends>
 
     <actions>
-        <action id="NeovimKeyAction" class="com.ugarosa.neovim.keymap.NeovimKeyAction"/>
+        <action id="NeovimKeyAction" class="com.ugarosa.neovim.keymap.action.NeovimKeyAction"/>
     </actions>
 
     <!-- Extension points defined by the plugin.
@@ -34,7 +34,7 @@
         <applicationConfigurable key="configurable.display.name.neovim"
                                  bundle="messages.NeovimBundle"
                                  instance="com.ugarosa.neovim.config.NeovimKeymapConfigurable"/>
-        <actionPromoter implementation="com.ugarosa.neovim.keymap.NeovimActionPromoter"/>
+        <actionPromoter implementation="com.ugarosa.neovim.keymap.action.NeovimActionPromoter"/>
     </extensions>
 
     <applicationListeners>

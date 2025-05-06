@@ -13,7 +13,7 @@ import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.fileEditor.TextEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
-import com.ugarosa.neovim.keymap.NeovimTypedActionHandler
+import com.ugarosa.neovim.keymap.action.NeovimTypedActionHandler
 import com.ugarosa.neovim.session.NEOVIM_SESSION_KEY
 import com.ugarosa.neovim.session.NeovimEditorSession
 import kotlinx.coroutines.CoroutineScope

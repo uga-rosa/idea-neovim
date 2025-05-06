@@ -1,9 +1,9 @@
-package com.ugarosa.neovim.keymap
+package com.ugarosa.neovim.keymap.notation
 
 import com.intellij.openapi.diagnostic.Logger
 import java.awt.event.KeyEvent
 
-private val logger = Logger.getInstance("com.ugarosa.neovim.keymap.SupportedKey")
+private val logger = Logger.getInstance("com.ugarosa.neovim.keymap.notation.SupportedKey")
 
 data class SupportedKey(
     val awtName: String,
@@ -24,7 +24,7 @@ data class SupportedKey(
 val supportedKeys: List<SupportedKey> =
     buildList {
         // Letters A–Z
-        addAll(('A'..'Z').map { SupportedKey(awtName = it.toString(), neovimName = it.toString()) })
+        addAll(('A'..'Z').map { SupportedKey(it.toString(), it.toString()) })
         // Digits 0–9
         addAll(('0'..'9').map { SupportedKey(it.toString(), it.toString()) })
         // Function keys F1–F12

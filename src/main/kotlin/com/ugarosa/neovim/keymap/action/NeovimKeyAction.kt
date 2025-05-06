@@ -1,9 +1,10 @@
-package com.ugarosa.neovim.keymap
+package com.ugarosa.neovim.keymap.action
 
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.diagnostic.thisLogger
+import com.ugarosa.neovim.keymap.notation.NeovimKeyNotation
 import com.ugarosa.neovim.session.NEOVIM_SESSION_KEY
 import java.awt.event.KeyEvent
 

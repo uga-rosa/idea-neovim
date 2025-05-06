@@ -1,7 +1,8 @@
-package com.ugarosa.neovim.keymap
+package com.ugarosa.neovim.keymap.action
 
 import com.intellij.openapi.actionSystem.KeyboardShortcut
 import com.intellij.openapi.keymap.KeymapManager
+import com.ugarosa.neovim.keymap.notation.supportedKeys
 import javax.swing.KeyStroke
 
 fun initializeKeymap() {
