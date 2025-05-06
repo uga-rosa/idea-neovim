@@ -4,7 +4,6 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.EditorFactory
-import com.intellij.openapi.editor.actionSystem.TypedAction
 import com.intellij.openapi.editor.event.EditorFactoryEvent
 import com.intellij.openapi.editor.event.EditorFactoryListener
 import com.intellij.openapi.fileEditor.FileEditorManager
@@ -13,7 +12,6 @@ import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.fileEditor.TextEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
-import com.ugarosa.neovim.keymap.action.NeovimTypedActionHandler
 import com.ugarosa.neovim.session.NEOVIM_SESSION_KEY
 import com.ugarosa.neovim.session.NeovimEditorSession
 import kotlinx.coroutines.CoroutineScope
@@ -25,16 +23,9 @@ class NeovimProjectActivity(
     override suspend fun execute(project: Project) {
         val disposable = project.service<PluginDisposable>()
 
-        installNeovimTypedActionHandler(project)
         setupEditorFactoryListener(project, disposable)
         initializeExistingEditors(project, disposable)
         setupBufferActivationOnEditorSwitch(project, disposable)
-    }
-
-    private fun installNeovimTypedActionHandler(project: Project) {
-        val typedAction = TypedAction.getInstance()
-        val originalHandler = typedAction.handler
-        typedAction.setupRawHandler(NeovimTypedActionHandler(project, originalHandler))
     }
 
     private fun setupEditorFactoryListener(

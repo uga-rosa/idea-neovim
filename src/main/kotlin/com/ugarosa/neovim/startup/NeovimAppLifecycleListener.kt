@@ -4,7 +4,6 @@ import com.intellij.ide.AppLifecycleListener
 import com.intellij.openapi.diagnostic.thisLogger
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.common.getOptionManager
-import com.ugarosa.neovim.keymap.action.initializeKeymap
 import com.ugarosa.neovim.rpc.function.enforceSingleWindow
 import com.ugarosa.neovim.rpc.function.hookCursorMove
 import com.ugarosa.neovim.rpc.function.hookModeChange
@@ -17,8 +16,6 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
     override fun appFrameCreated(commandLineArgs: List<String>) {
         val client = getClient()
         val optionManager = getOptionManager()
-
-        initializeKeymap()
 
         client.scope.launch {
             enforceSingleWindow(client).onLeft {
