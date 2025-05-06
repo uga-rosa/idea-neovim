@@ -18,9 +18,13 @@ class NeovimKeyAction : AnAction() {
         val editor = e.getData(CommonDataKeys.EDITOR) ?: return
         val session = editor.getUserData(NEOVIM_SESSION_KEY) ?: return
 
-        val key = inputEvent.toNeovimNotation()
-        logger.trace("pressed key: $key")
-        session.sendKeyAndSyncStatus(key)
+        val keyNotation =
+            NeovimKeyNotation.fromKeyEvent(inputEvent)
+                ?: return logger.warn("Key event not supported: $inputEvent")
+
+        logger.trace("pressed key: $keyNotation")
+        session.sendKeyAndSyncStatus(keyNotation.toString())
+        inputEvent.consume()
     }
 
     override fun toString(): String {
