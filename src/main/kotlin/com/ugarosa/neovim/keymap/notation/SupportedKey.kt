@@ -42,6 +42,38 @@ val supportedKeys: List<SupportedKey> =
                 SupportedKey("SEPARATOR", "kComma"),
             ),
         )
+        // Sign keys
+        addAll(
+            listOf(
+                SupportedKey("EXCLAMATION_MARK", "!"),
+                SupportedKey("AT", "@"),
+                SupportedKey("NUMBER_SIGN", "#"),
+                SupportedKey("DOLLAR", "$"),
+                // There is no VK to represent `%`
+                SupportedKey("CIRCUMFLEX", "^"),
+                SupportedKey("AMPERSAND", "&"),
+                SupportedKey("ASTERISK", "*"),
+                SupportedKey("LEFT_PARENTHESIS", "("),
+                SupportedKey("RIGHT_PARENTHESIS", ")"),
+                SupportedKey("MINUS", "-"),
+                SupportedKey("UNDERSCORE", "_"),
+                SupportedKey("EQUALS", "="),
+                SupportedKey("BACK_SLASH", "\\"),
+                SupportedKey("BACK_QUOTE", "`"),
+                SupportedKey("OPEN_BRACKET", "["),
+                SupportedKey("CLOSE_BRACKET", "]"),
+                SupportedKey("SEMICOLON", ";"),
+                SupportedKey("COLON", ":"),
+                SupportedKey("QUOTE", "'"),
+                SupportedKey("QUOTEDBL", "\""),
+                SupportedKey("COMMA", ","),
+                SupportedKey("LESS", "<lt>"),
+                SupportedKey("PERIOD", "."),
+                SupportedKey("GREATER", ">"),
+                SupportedKey("SLASH", "/"),
+                // There is no VK to represent `?`
+            ),
+        )
         // Other common keys
         addAll(
             listOf(
