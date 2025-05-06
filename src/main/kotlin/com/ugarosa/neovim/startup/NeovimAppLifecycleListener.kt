@@ -1,9 +1,12 @@
 package com.ugarosa.neovim.startup
 
 import com.intellij.ide.AppLifecycleListener
+import com.intellij.ide.IdeEventQueue
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.common.getOptionManager
+import com.ugarosa.neovim.keymap.dispatcher.NeovimEventDispatcher
 import com.ugarosa.neovim.rpc.function.enforceSingleWindow
 import com.ugarosa.neovim.rpc.function.hookCursorMove
 import com.ugarosa.neovim.rpc.function.hookModeChange
@@ -38,5 +41,11 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
 
             optionManager.initializeGlobal()
         }
+
+        logger.trace("Registering key event dispatcher")
+        IdeEventQueue.getInstance().addDispatcher(
+            NeovimEventDispatcher(),
+            service<AppDisposable>(),
+        )
     }
 }
