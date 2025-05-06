@@ -1,7 +1,9 @@
 package com.ugarosa.neovim.session
 
 import arrow.core.getOrElse
+import com.intellij.codeInsight.lookup.LookupManager
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.EDT
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
@@ -22,7 +24,9 @@ import com.ugarosa.neovim.rpc.function.createBuffer
 import com.ugarosa.neovim.rpc.function.input
 import com.ugarosa.neovim.statusline.StatusLineHandler
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 val NEOVIM_SESSION_KEY = Key.create<NeovimEditorSession>("NEOVIM_SESSION_KEY")
 
@@ -33,6 +37,7 @@ val NEOVIM_SESSION_KEY = Key.create<NeovimEditorSession>("NEOVIM_SESSION_KEY")
  */
 class NeovimEditorSession private constructor(
     private val scope: CoroutineScope,
+    private val editor: Editor,
     private val bufferId: BufferId,
     private val documentHandler: NeovimDocumentHandler,
     private val cursorHandler: NeovimCursorHandler,
@@ -62,6 +67,7 @@ class NeovimEditorSession private constructor(
             val session =
                 NeovimEditorSession(
                     scope,
+                    editor,
                     bufferId,
                     documentHandler,
                     cursorHandler,
@@ -101,12 +107,17 @@ class NeovimEditorSession private constructor(
                     cursorHandler.changeCursorShape(event.mode)
                     statusLineHandler.updateStatusLine(event.mode)
 
-                    // Disable nvim_buf_lines_event if in insert mode
                     if (event.mode.kind == NeovimModeKind.INSERT) {
+                        // Disable nvim_buf_lines_event if in insert mode
                         documentHandler.disableBufLinesEvent()
                         cursorHandler.disableCursorListener()
-                        // CursorMoveEvent is not sent in insert mode, so I need to sync it manually
                     } else {
+                        // Close completion popup
+                        withContext(Dispatchers.EDT) {
+                            LookupManager.getActiveLookup(editor)
+                                ?.hideLookup(true)
+                        }
+                        // Re-enable nvim_buf_lines_event
                         documentHandler.enableBufLinesEvent()
                         cursorHandler.enableCursorListener()
                     }
