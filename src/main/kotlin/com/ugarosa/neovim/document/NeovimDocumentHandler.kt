@@ -1,6 +1,6 @@
 package com.ugarosa.neovim.document
 
-import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.EDT
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
@@ -19,6 +19,7 @@ import com.ugarosa.neovim.rpc.function.bufferSetText
 import com.ugarosa.neovim.rpc.function.input
 import com.ugarosa.neovim.rpc.function.setCurrentBuffer
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class NeovimDocumentHandler private constructor(
@@ -77,27 +78,27 @@ class NeovimDocumentHandler private constructor(
     }
 
     fun applyBufferLinesEvent(e: BufLinesEvent) {
-        ApplicationManager.getApplication().invokeLater {
-            documentListenerGuard.runWithoutListener {
-                WriteCommandAction.runWriteCommandAction(editor.project) {
-                    val document = editor.document
-                    val startOffset = document.getLineStartOffset(e.firstLine)
-                    val endOffset =
-                        if (e.lastLine == -1) {
-                            document.textLength
-                        } else {
-                            document.getLineStartOffset(e.lastLine)
-                        }
-                    val replacementText =
-                        if (e.replacementLines.isEmpty()) {
-                            ""
-                        } else {
-                            e.replacementLines.joinToString("\n", postfix = "\n")
-                        }
+        val document = editor.document
+        val startOffset = document.getLineStartOffset(e.firstLine)
+        val endOffset =
+            if (e.lastLine == -1) {
+                document.textLength
+            } else {
+                document.getLineStartOffset(e.lastLine)
+            }
+        val replacementText =
+            if (e.replacementLines.isEmpty()) {
+                ""
+            } else {
+                e.replacementLines.joinToString("\n", postfix = "\n")
+            }
+        scope.launch(Dispatchers.EDT) {
+            WriteCommandAction.runWriteCommandAction(editor.project, "ApplyBufLinesEvent", null, {
+                documentListenerGuard.runWithoutListener {
                     document.replaceString(startOffset, endOffset, replacementText)
                     logger.trace("Applied buffer lines event: $e")
                 }
-            }
+            })
         }
     }
 
