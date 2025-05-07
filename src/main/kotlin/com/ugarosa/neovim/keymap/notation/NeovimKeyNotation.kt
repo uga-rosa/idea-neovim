@@ -1,6 +1,8 @@
 package com.ugarosa.neovim.keymap.notation
 
 import com.intellij.openapi.diagnostic.thisLogger
+import com.intellij.util.xmlb.annotations.Attribute
+import com.intellij.util.xmlb.annotations.XCollection
 import java.awt.event.KeyEvent
 
 enum class NeovimKeyModifier(val neovimPrefix: String) {
@@ -18,9 +20,14 @@ enum class NeovimKeyModifier(val neovimPrefix: String) {
 }
 
 data class NeovimKeyNotation(
+    @XCollection(propertyElementName = "modifiers", elementName = "modifier")
     val modifiers: List<NeovimKeyModifier>,
+    @Attribute
     val key: String,
 ) {
+    @Suppress("unused")
+    constructor() : this(emptyList(), "")
+
     companion object {
         private val logger = thisLogger()
         private val keyCodeToNeovim: Map<Int, String> =
@@ -75,11 +82,21 @@ data class NeovimKeyNotation(
             return NeovimKeyNotation(modifiers, key)
         }
 
-        /**
-         * Parse a Neovim key notation string (e.g., "<C-A-x>", "g", "<Esc>").
-         */
-        fun fromNeovimNotation(notation: String): NeovimKeyNotation? {
+        // This regex will match:
+        //   1. <Xxx>(Yyy)
+        //   2. <Xxx>
+        //   3. Any single character
+        private val regex = Regex("""<[^>]+>\([^)]+\)|<[^>]+>|.""")
+
+        fun parseNotations(notations: String): List<NeovimKeyNotation> {
+            return regex.findAll(notations)
+                .mapNotNull { mr -> parseSingleNotation(mr.value) }
+                .toList()
+        }
+
+        private fun parseSingleNotation(notation: String): NeovimKeyNotation? {
             val text = notation.trim()
+            // <Xxx> may have modifiers like <C-A-x>
             if (text.startsWith("<") && text.endsWith(">")) {
                 val inner = text.substring(1, text.length - 1)
                 val parts = inner.split("-")
@@ -100,6 +117,7 @@ data class NeovimKeyNotation(
                     }
                 return NeovimKeyNotation(mods, key)
             } else {
+                // <Xxx>(Yyy) or any single character
                 return NeovimKeyNotation(emptyList(), text)
             }
         }
@@ -107,13 +125,15 @@ data class NeovimKeyNotation(
 
     /**
      * Render as Neovim notation string.
-     * Examples: "<C-A-x>", "g", "<Esc>"
+     * Examples: "<C-A-x>", "g", "<Esc>", "<Plug>(FooBar)"
      */
     override fun toString(): String {
         return when {
             modifiers.isNotEmpty() -> "<${modifiers.joinToString("-") { it.neovimPrefix }}-$key>"
 
             key.length == 1 -> key
+
+            key.startsWith("<") -> key
 
             else -> "<$key>"
         }

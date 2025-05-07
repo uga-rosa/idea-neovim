@@ -1,10 +1,13 @@
 package com.ugarosa.neovim.config.idea
 
+import com.intellij.openapi.actionSystem.IdeActions
 import com.intellij.openapi.components.RoamingType
 import com.intellij.openapi.components.SerializablePersistentStateComponent
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import com.intellij.util.xmlb.annotations.XCollection
+import com.ugarosa.neovim.keymap.notation.NeovimKeyModifier
 import com.ugarosa.neovim.keymap.notation.NeovimKeyNotation
 import com.ugarosa.neovim.mode.NeovimModeKind
 
@@ -18,7 +21,7 @@ import com.ugarosa.neovim.mode.NeovimModeKind
 class NeovimKeymapSettingsImpl : NeovimKeymapSettings,
     SerializablePersistentStateComponent<NeovimKeymapSettingsImpl.State>(State()) {
     data class State(
-        @JvmField val mappings: List<UserKeyMapping> = defaultMappings(),
+        @JvmField @XCollection val mappings: List<UserKeyMapping> = defaultMappings(),
     )
 
     override fun getUserKeyMappings(): List<UserKeyMapping> = state.mappings
@@ -30,11 +33,25 @@ class NeovimKeymapSettingsImpl : NeovimKeymapSettings,
     companion object {
         private fun defaultMappings(): List<UserKeyMapping> {
             val esc = NeovimKeyNotation(emptyList(), "Esc")
+            val u = NeovimKeyNotation(emptyList(), "u")
+            val undo = KeyMappingAction.ExecuteIdeaAction(IdeActions.ACTION_UNDO)
+            val ctrlR = NeovimKeyNotation(listOf(NeovimKeyModifier.CTRL), "R")
+            val redo = KeyMappingAction.ExecuteIdeaAction(IdeActions.ACTION_REDO)
             return listOf(
                 UserKeyMapping(
                     modes = listOf(NeovimModeKind.INSERT),
                     lhs = listOf(esc),
                     rhs = listOf(KeyMappingAction.SendToNeovim(esc)),
+                ),
+                UserKeyMapping(
+                    modes = listOf(NeovimModeKind.NORMAL),
+                    lhs = listOf(u),
+                    rhs = listOf(undo),
+                ),
+                UserKeyMapping(
+                    modes = listOf(NeovimModeKind.NORMAL),
+                    lhs = listOf(ctrlR),
+                    rhs = listOf(redo),
                 ),
             )
         }

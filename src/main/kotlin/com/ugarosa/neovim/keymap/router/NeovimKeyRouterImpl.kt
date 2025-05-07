@@ -12,7 +12,6 @@ import com.ugarosa.neovim.common.getKeymapSettings
 import com.ugarosa.neovim.common.getModeManager
 import com.ugarosa.neovim.common.setIfDifferent
 import com.ugarosa.neovim.config.idea.KeyMappingAction
-import com.ugarosa.neovim.config.idea.UserKeyMapping
 import com.ugarosa.neovim.keymap.dispatcher.NeovimEventDispatcher
 import com.ugarosa.neovim.keymap.notation.NeovimKeyNotation
 import com.ugarosa.neovim.rpc.function.input
@@ -21,7 +20,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentLinkedDeque
-import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicReference
 
 @Service(Service.Level.APP)
@@ -36,12 +34,10 @@ class NeovimKeyRouterImpl(
     private val settings = getKeymapSettings()
 
     private val buffer = ConcurrentLinkedDeque<NeovimKeyNotation>()
-    private val userMappings = CopyOnWriteArrayList<UserKeyMapping>()
     private val currentEditor = AtomicReference<Editor>()
 
     override fun start() {
         IdeEventQueue.getInstance().addDispatcher(eventDispatcher, this)
-        setUserMappings(settings.getUserKeyMappings())
     }
 
     private fun stop() {
@@ -70,7 +66,7 @@ class NeovimKeyRouterImpl(
         logger.trace("Processing buffer: $snapshot in mode: $mode")
 
         val prefixMatches =
-            userMappings.filter { (modes, lhs) ->
+            settings.getUserKeyMappings().filter { (modes, lhs) ->
                 modes.contains(mode.kind) &&
                     lhs.size >= snapshot.size &&
                     lhs.take(snapshot.size) == snapshot
@@ -151,12 +147,6 @@ class NeovimKeyRouterImpl(
                 )
             res.waitFor(5_000)
         }
-    }
-
-    override fun setUserMappings(mappings: List<UserKeyMapping>) {
-        userMappings.clear()
-        userMappings.addAll(mappings)
-        logger.debug("User mappings updated: $userMappings")
     }
 
     override fun dispose() {
