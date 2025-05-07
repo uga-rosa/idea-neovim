@@ -16,6 +16,7 @@ import com.ugarosa.neovim.rpc.function.bufferAttach
 import com.ugarosa.neovim.rpc.function.bufferDetach
 import com.ugarosa.neovim.rpc.function.bufferSetLines
 import com.ugarosa.neovim.rpc.function.bufferSetText
+import com.ugarosa.neovim.rpc.function.input
 import com.ugarosa.neovim.rpc.function.setCurrentBuffer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -102,10 +103,78 @@ class NeovimDocumentHandler private constructor(
 
     // Must be called before the document is changed
     fun syncDocumentChange(event: DocumentEvent) {
-        // IDEA uses (0, 0) character offset indexing
-        // :h nvim_buf_set_text()
-        //   Indexing is zero-based. Row indices are end-inclusive, and column indices are end-exclusive.
+        if (isSingleLineChange(event)) {
+            sendInput(event)
+        } else {
+            sendBufferSetText(event)
+        }
+    }
 
+    private fun isSingleLineChange(event: DocumentEvent): Boolean {
+        // Compute the range of the change and the cursor position.
+        val caretOffset = editor.caretModel.offset
+        val startOffset = event.offset
+        val endOffset = event.offset + event.oldLength
+        // Ensure the caret lies within the deleted range.
+        val beforeDelete = caretOffset - startOffset
+        val afterDelete = endOffset - caretOffset
+        if (beforeDelete < 0 || afterDelete < 0) {
+            return false
+        }
+        // Change must stay on a single line.
+        val startRow = event.document.getLineNumber(startOffset)
+        val endRow = event.document.getLineNumber(endOffset)
+        if (startRow != endRow) {
+            return false
+        }
+        // Inserted text must not contain newlines.
+        val insertText = event.newFragment.toString()
+        if (insertText.contains("\n")) {
+            return false
+        }
+        // Deletion range must be fully inside the same line boundaries.
+        val lineStartOffset = event.document.getLineStartOffset(startRow)
+        val lineEndOffset = event.document.getLineEndOffset(startRow)
+        if (caretOffset - lineStartOffset < beforeDelete) {
+            return false
+        }
+        if (lineEndOffset - caretOffset < afterDelete) {
+            return false
+        }
+        // Verify that the number of Unicode code points matches the expected length.
+        val deleteText = event.document.getText(TextRange(startOffset, endOffset))
+        if (deleteText.codePointCount(0, deleteText.length) != event.oldLength) {
+            return false
+        }
+        if (insertText.codePointCount(0, insertText.length) != event.newLength) {
+            return false
+        }
+
+        return true
+    }
+
+    private val beforeDeleteStr = "<C-g>U<Left><Del>"
+    private val afterDeleteStr = "<Del>"
+
+    // Apply oneline text change with dot-repeat
+    private fun sendInput(event: DocumentEvent) {
+        val caretOffset = editor.caretModel.offset
+        val startOffset = event.offset
+        val endOffset = event.offset + event.oldLength
+
+        val beforeDelete = caretOffset - startOffset
+        val afterDelete = endOffset - caretOffset
+
+        val deleteStr = beforeDeleteStr.repeat(beforeDelete) + afterDeleteStr.repeat(afterDelete)
+        val insertStr = event.newFragment.toString()
+
+        scope.launch {
+            input(client, deleteStr + insertStr)
+        }
+    }
+
+    // Apply multiline text change
+    private fun sendBufferSetText(event: DocumentEvent) {
         val document = event.document
 
         val startOffset = event.offset
