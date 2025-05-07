@@ -3,13 +3,10 @@ package com.ugarosa.neovim.keymap.router
 import com.intellij.ide.IdeEventQueue
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
-import com.intellij.openapi.editor.actionSystem.TypedAction
-import com.intellij.openapi.editor.ex.util.EditorUtil
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.common.getKeymapSettings
 import com.ugarosa.neovim.common.getModeManager
@@ -18,7 +15,6 @@ import com.ugarosa.neovim.config.idea.KeyMappingAction
 import com.ugarosa.neovim.config.idea.UserKeyMapping
 import com.ugarosa.neovim.keymap.dispatcher.NeovimEventDispatcher
 import com.ugarosa.neovim.keymap.notation.NeovimKeyNotation
-import com.ugarosa.neovim.rpc.event.NeovimMode
 import com.ugarosa.neovim.rpc.event.NeovimModeKind
 import com.ugarosa.neovim.rpc.function.input
 import kotlinx.coroutines.CoroutineScope
@@ -57,7 +53,7 @@ class NeovimKeyRouterImpl(
     override fun enqueueKey(
         key: NeovimKeyNotation,
         editor: Editor,
-    ) {
+    ): Boolean {
         // If the editor is different, clear the buffer
         if (currentEditor.setIfDifferent(editor)) {
             logger.trace("Clearing buffer due to editor change")
@@ -65,10 +61,10 @@ class NeovimKeyRouterImpl(
         }
 
         buffer.add(key)
-        processBuffer(editor)
+        return processBuffer(editor)
     }
 
-    private fun processBuffer(editor: Editor) {
+    private fun processBuffer(editor: Editor): Boolean {
         val mode = modeManager.getMode()
         val snapshot = buffer.toList()
 
@@ -83,50 +79,36 @@ class NeovimKeyRouterImpl(
         val exactlyMatch = prefixMatches.firstOrNull { it.lhs.size == snapshot.size }
 
         when {
+            // No match found.
             prefixMatches.isEmpty() -> {
-                logger.trace("Fallback to default behavior: $snapshot in mode: $mode")
-                scope.launch {
-                    fallback(snapshot, editor, mode)
-                }
                 buffer.clear()
+                // Don't consume the key if the mode is insert-mode
+                if (mode.kind == NeovimModeKind.INSERT) {
+                    logger.trace("No match found, but in insert mode: $mode")
+                    return false
+                }
+                scope.launch {
+                    logger.trace("No match found, sending keys to Neovim: $snapshot")
+                    input(client, snapshot.joinToString(separator = ""))
+                }
+                return true
             }
 
+            // Exact match found.
             exactlyMatch != null && prefixMatches.size == 1 -> {
+                buffer.clear()
                 logger.trace("Executing exact match: $exactlyMatch in mode: $mode")
                 scope.launch {
                     executeRhs(exactlyMatch.rhs, editor)
                 }
-                buffer.clear()
+                return true
             }
 
+            // Some prefix match found. Pending next input.
             else -> {
-                // pending next input
                 logger.trace("Pending next input: $snapshot in mode: $mode")
+                return true
             }
-        }
-    }
-
-    private suspend fun fallback(
-        keys: List<NeovimKeyNotation>,
-        editor: Editor,
-        mode: NeovimMode,
-    ) {
-        if (mode.kind == NeovimModeKind.INSERT) {
-            withContext(Dispatchers.EDT) {
-                ApplicationManager.getApplication().runWriteAction {
-                    val typedAction = TypedAction.getInstance()
-                    val dataContext = EditorUtil.getEditorDataContext(editor)
-                    keys.forEach { notation ->
-                        notation.toSimpleChar()?.let { char ->
-                            logger.trace("Typing character: $char")
-                            typedAction.actionPerformed(editor, char, dataContext)
-                        }
-                    }
-                }
-            }
-        } else {
-            logger.trace("Sending keys to Neovim: ${keys.joinToString("")}")
-            input(client, keys.joinToString(""))
         }
     }
 

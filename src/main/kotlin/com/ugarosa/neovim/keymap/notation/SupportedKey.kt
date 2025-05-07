@@ -5,9 +5,14 @@ import java.awt.event.KeyEvent
 
 private val logger = Logger.getInstance("com.ugarosa.neovim.keymap.notation.SupportedKey")
 
+/**
+ * Supported key mapping and printability in a single source-of-truth list.
+ */
 data class SupportedKey(
     val awtName: String,
     val neovimName: String,
+    // Whether this key is considered a printable character (i.e. should be passed through to KEY_TYPED)
+    val printable: Boolean,
 ) {
     val awtKeyCode: Int =
         try {
@@ -18,80 +23,87 @@ data class SupportedKey(
         }
 }
 
-/**
- * Single source of truth for all supported keys and their mappings.
- */
+// Single source of truth for all supported keys:
 val supportedKeys: List<SupportedKey> =
     buildList {
         // Letters A–Z
-        addAll(('A'..'Z').map { SupportedKey(it.toString(), it.toString()) })
+        addAll(('A'..'Z').map { SupportedKey(it.toString(), it.toString(), printable = true) })
         // Digits 0–9
-        addAll(('0'..'9').map { SupportedKey(it.toString(), it.toString()) })
-        // Function keys F1–F12
-        addAll((1..12).map { SupportedKey("F$it", "F$it") })
-        // Numpad keys k0–k9
-        addAll((0..9).map { SupportedKey("NUMPAD$it", "k$it") })
-        // Numpad operators and point
+        addAll(('0'..'9').map { SupportedKey(it.toString(), it.toString(), printable = true) })
+        // Function keys F1–F12 (non-printable)
+        addAll((1..12).map { SupportedKey("F$it", "F$it", printable = false) })
+        // Numpad keys (digits & operators)
+        addAll((0..9).map { SupportedKey("NUMPAD$it", "k$it", printable = true) })
         addAll(
             listOf(
-                SupportedKey("DECIMAL", "kPoint"),
-                SupportedKey("ADD", "kPlus"),
-                SupportedKey("SUBTRACT", "kMinus"),
-                SupportedKey("MULTIPLY", "kMultiply"),
-                SupportedKey("DIVIDE", "kDivide"),
-                SupportedKey("SEPARATOR", "kComma"),
+                SupportedKey("DECIMAL", "kPoint", printable = true),
+                SupportedKey("ADD", "kPlus", printable = true),
+                SupportedKey("SUBTRACT", "kMinus", printable = true),
+                SupportedKey("MULTIPLY", "kMultiply", printable = true),
+                SupportedKey("DIVIDE", "kDivide", printable = true),
+                SupportedKey("SEPARATOR", "kComma", printable = true),
+                SupportedKey("KP_ENTER", "CR", printable = false),
             ),
         )
-        // Sign keys
+        // Common punctuation and symbols
         addAll(
             listOf(
-                SupportedKey("EXCLAMATION_MARK", "!"),
-                SupportedKey("AT", "@"),
-                SupportedKey("NUMBER_SIGN", "#"),
-                SupportedKey("DOLLAR", "$"),
-                // There is no VK to represent `%`
-                SupportedKey("CIRCUMFLEX", "^"),
-                SupportedKey("AMPERSAND", "&"),
-                SupportedKey("ASTERISK", "*"),
-                SupportedKey("LEFT_PARENTHESIS", "("),
-                SupportedKey("RIGHT_PARENTHESIS", ")"),
-                SupportedKey("MINUS", "-"),
-                SupportedKey("UNDERSCORE", "_"),
-                SupportedKey("EQUALS", "="),
-                SupportedKey("BACK_SLASH", "\\"),
-                SupportedKey("BACK_QUOTE", "`"),
-                SupportedKey("OPEN_BRACKET", "["),
-                SupportedKey("CLOSE_BRACKET", "]"),
-                SupportedKey("SEMICOLON", ";"),
-                SupportedKey("COLON", ":"),
-                SupportedKey("QUOTE", "'"),
-                SupportedKey("QUOTEDBL", "\""),
-                SupportedKey("COMMA", ","),
-                SupportedKey("LESS", "<lt>"),
-                SupportedKey("PERIOD", "."),
-                SupportedKey("GREATER", ">"),
-                SupportedKey("SLASH", "/"),
-                // There is no VK to represent `?`
+                SupportedKey("MINUS", "-", printable = true),
+                SupportedKey("EQUALS", "=", printable = true),
+                SupportedKey("BACK_SLASH", "\\", printable = true),
+                SupportedKey("BACK_QUOTE", "`", printable = true),
+                SupportedKey("OPEN_BRACKET", "[", printable = true),
+                SupportedKey("CLOSE_BRACKET", "]", printable = true),
+                SupportedKey("SEMICOLON", ";", printable = true),
+                SupportedKey("QUOTE", "'", printable = true),
+                SupportedKey("COMMA", ",", printable = true),
+                SupportedKey("PERIOD", ".", printable = true),
+                SupportedKey("SLASH", "/", printable = true),
+                SupportedKey("SPACE", "Space", printable = true),
             ),
         )
-        // Other common keys
+        // Shift‐modified symbols
         addAll(
             listOf(
-                SupportedKey("SPACE", "Space"),
-                SupportedKey("ENTER", "CR"),
-                SupportedKey("BACK_SPACE", "BS"),
-                SupportedKey("TAB", "Tab"),
-                SupportedKey("ESCAPE", "Esc"),
-                SupportedKey("DELETE", "Del"),
-                SupportedKey("INSERT", "Ins"),
-                SupportedKey("HOME", "Home"),
-                SupportedKey("END", "End"),
-                SupportedKey("PAGE_UP", "PageUp"),
-                SupportedKey("PAGE_DOWN", "PageDown"),
-                SupportedKey("UP", "Up"),
-                SupportedKey("DOWN", "Down"),
-                SupportedKey("LEFT", "Left"),
-                SupportedKey("RIGHT", "Right"),
+                SupportedKey("EXCLAMATION_MARK", "!", printable = true),
+                SupportedKey("AT", "@", printable = true),
+                SupportedKey("NUMBER_SIGN", "#", printable = true),
+                SupportedKey("DOLLAR", "$", printable = true),
+                SupportedKey("CIRCUMFLEX", "^", printable = true),
+                SupportedKey("AMPERSAND", "&", printable = true),
+                SupportedKey("ASTERISK", "*", printable = true),
+                SupportedKey("LEFT_PARENTHESIS", "(", printable = true),
+                SupportedKey("RIGHT_PARENTHESIS", ")", printable = true),
+                SupportedKey("UNDERSCORE", "_", printable = true),
+                SupportedKey("PLUS", "+", printable = true),
+                SupportedKey("BRACELEFT", "{", printable = true),
+                SupportedKey("BRACERIGHT", "}", printable = true),
+                SupportedKey("COLON", ":", printable = true),
+                SupportedKey("QUOTEDBL", "\"", printable = true),
+                SupportedKey("LESS", "<lt>", printable = true),
+                SupportedKey("GREATER", ">", printable = true),
+            ),
+        )
+        // Other common keys (non-printable)
+        addAll(
+            listOf(
+                SupportedKey("ENTER", "CR", printable = false),
+                SupportedKey("BACK_SPACE", "BS", printable = false),
+                SupportedKey("TAB", "Tab", printable = false),
+                SupportedKey("ESCAPE", "Esc", printable = false),
+                SupportedKey("DELETE", "Del", printable = false),
+                SupportedKey("INSERT", "Ins", printable = false),
+                SupportedKey("HOME", "Home", printable = false),
+                SupportedKey("END", "End", printable = false),
+                SupportedKey("PAGE_UP", "PageUp", printable = false),
+                SupportedKey("PAGE_DOWN", "PageDown", printable = false),
+                SupportedKey("UP", "Up", printable = false),
+                SupportedKey("DOWN", "Down", printable = false),
+                SupportedKey("LEFT", "Left", printable = false),
+                SupportedKey("RIGHT", "Right", printable = false),
             ),
         )
     }
+
+// Derive the set of printable key codes when needed:
+val printableVKs: Set<Int> = supportedKeys.filter { it.printable }.map { it.awtKeyCode }.toSet()

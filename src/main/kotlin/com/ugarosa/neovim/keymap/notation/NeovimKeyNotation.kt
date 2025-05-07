@@ -78,7 +78,7 @@ data class NeovimKeyNotation(
         /**
          * Parse a Neovim key notation string (e.g., "<C-A-x>", "g", "<Esc>").
          */
-        fun fromString(notation: String): NeovimKeyNotation? {
+        fun fromNeovimNotation(notation: String): NeovimKeyNotation? {
             val text = notation.trim()
             if (text.startsWith("<") && text.endsWith(">")) {
                 val inner = text.substring(1, text.length - 1)
@@ -102,19 +102,6 @@ data class NeovimKeyNotation(
             } else {
                 return NeovimKeyNotation(emptyList(), text)
             }
-        }
-    }
-
-    fun toSimpleChar(): Char? {
-        if (modifiers.isEmpty() && key.length == 1) {
-            return key[0]
-        }
-
-        return when (key) {
-            "Space" -> ' '
-            "CR" -> '\n'
-            "Tab" -> '\t'
-            else -> null
         }
     }
 

@@ -6,6 +6,7 @@ import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.ugarosa.neovim.keymap.notation.NeovimKeyNotation
+import com.ugarosa.neovim.keymap.notation.printableVKs
 import com.ugarosa.neovim.keymap.router.NeovimKeyRouter
 import java.awt.AWTEvent
 import java.awt.KeyboardFocusManager
@@ -33,27 +34,24 @@ class NeovimEventDispatcher(
 
         val editor =
             searchEditor() ?: run {
-                logger.warn("No editor found for key event")
+                logger.debug("No editor found for key event")
                 return false
             }
 
         when (e.id) {
             KeyEvent.KEY_PRESSED -> {
-                val c = e.keyChar
                 val mods = e.modifiersEx
-
                 lastMods = mods
 
                 // Pure characters or SHIFT + character go to KEY_TYPED
                 val onlyShift = mods == KeyEvent.SHIFT_DOWN_MASK
-                if (c != KeyEvent.CHAR_UNDEFINED && !c.isISOControl() && (mods == 0 || onlyShift)) {
+                if (e.keyCode in printableVKs && (mods == 0 || onlyShift)) {
                     return false
                 }
 
                 NeovimKeyNotation.fromKeyPressedEvent(e)?.also {
                     logger.debug("Pressed key: $it")
-                    keyRouter.enqueueKey(it, editor)
-                    return true
+                    return keyRouter.enqueueKey(it, editor)
                 }
                 // Fallback to default behavior if not supported key
                 return false
@@ -71,22 +69,20 @@ class NeovimEventDispatcher(
 
                 // Special case for space
                 if (c == ' ') {
-                    NeovimKeyNotation.fromModsAndKey(mods, "Space").also {
-                        logger.debug("Pressed key: $it")
-                        keyRouter.enqueueKey(it, editor)
-                    }
-                    return true
+                    val notation = NeovimKeyNotation.fromModsAndKey(mods, "Space")
+                    logger.debug("Pressed key: $notation")
+                    return keyRouter.enqueueKey(notation, editor)
                 }
 
                 NeovimKeyNotation.fromKeyTypedEvent(e)?.also {
                     logger.debug("Typed key: $it")
-                    keyRouter.enqueueKey(it, editor)
+                    return keyRouter.enqueueKey(it, editor)
                 }
                 return true
             }
 
             else -> {
-                return true
+                return false
             }
         }
     }
