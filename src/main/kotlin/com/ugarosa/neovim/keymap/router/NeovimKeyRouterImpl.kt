@@ -66,8 +66,8 @@ class NeovimKeyRouterImpl(
         logger.trace("Processing buffer: $snapshot in mode: $mode")
 
         val prefixMatches =
-            settings.getUserKeyMappings().filter { (modes, lhs) ->
-                modes.contains(mode.kind) &&
+            settings.getUserKeyMappings().filter { (mapMode, lhs) ->
+                mapMode.toModeKinds().contains(mode.kind) &&
                     lhs.size >= snapshot.size &&
                     lhs.take(snapshot.size) == snapshot
             }

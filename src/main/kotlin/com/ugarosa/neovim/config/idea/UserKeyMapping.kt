@@ -7,22 +7,46 @@ import com.ugarosa.neovim.keymap.notation.NeovimKeyNotation
 import com.ugarosa.neovim.mode.NeovimModeKind
 
 data class UserKeyMapping(
-    @XCollection(propertyElementName = "modes", elementName = "mode")
-    val modes: List<NeovimModeKind>,
-    @XCollection(propertyElementName = "lhs", elementName = "key")
+    @Tag
+    val mode: MapMode,
+    @XCollection(
+        propertyElementName = "lhs",
+        elementName = "key",
+        elementTypes = [NeovimKeyNotation::class],
+    )
     val lhs: List<NeovimKeyNotation>,
-    @XCollection(propertyElementName = "rhs", elementName = "action")
+    @XCollection(
+        propertyElementName = "rhs",
+        elementName = "action",
+        elementTypes = [KeyMappingAction.SendToNeovim::class, KeyMappingAction.ExecuteIdeaAction::class],
+    )
     val rhs: List<KeyMappingAction>,
 ) {
     @Suppress("unused")
-    constructor() : this(modes = emptyList(), lhs = emptyList(), rhs = emptyList())
+    constructor() : this(mode = MapMode(), lhs = emptyList(), rhs = emptyList())
 }
 
-@JvmName("joinNeovimKeyNotations")
-fun List<NeovimKeyNotation>.join() = joinToString("") { it.toString() }
+data class MapMode(
+    @Attribute val value: String,
+) {
+    constructor() : this("")
 
-@JvmName("joinKeyMappingActions")
-fun List<KeyMappingAction>.join() = joinToString("") { it.toString() }
+    fun toModeKinds(): List<NeovimModeKind> {
+        if (value.isEmpty()) return listOf(NeovimModeKind.NORMAL, NeovimModeKind.VISUAL, NeovimModeKind.SELECT)
+        return value.toList().flatMap {
+            when (it) {
+                'n' -> listOf(NeovimModeKind.NORMAL)
+                'v' -> listOf(NeovimModeKind.VISUAL, NeovimModeKind.SELECT)
+                'x' -> listOf(NeovimModeKind.VISUAL)
+                's' -> listOf(NeovimModeKind.SELECT)
+                '!' -> listOf(NeovimModeKind.INSERT, NeovimModeKind.COMMAND)
+                'i' -> listOf(NeovimModeKind.INSERT)
+                'c' -> listOf(NeovimModeKind.COMMAND)
+                else -> emptyList()
+            }
+        }
+    }
+}
 
 sealed class KeyMappingAction {
     data class SendToNeovim(

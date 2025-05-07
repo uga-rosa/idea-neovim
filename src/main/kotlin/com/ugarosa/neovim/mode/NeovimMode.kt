@@ -9,12 +9,8 @@ data class NeovimMode(
             val kind =
                 when (raw[0]) {
                     'n' -> NeovimModeKind.NORMAL
-                    'v' -> NeovimModeKind.VISUAL
-                    'V' -> NeovimModeKind.VISUAL_LINE
-                    '\u0016' -> NeovimModeKind.VISUAL_BLOCK // Ctrl-V
-                    's' -> NeovimModeKind.SELECT
-                    'S' -> NeovimModeKind.SELECT_LINE
-                    '\u0013' -> NeovimModeKind.SELECT_BLOCK // Ctrl-S
+                    'v', 'V', '\u0016' -> NeovimModeKind.VISUAL // Ctrl-V
+                    's', 'S', '\u0013' -> NeovimModeKind.SELECT // Ctrl-S
                     'i' -> NeovimModeKind.INSERT
                     'R' -> NeovimModeKind.REPLACE
                     'c' -> NeovimModeKind.COMMAND
@@ -30,11 +26,7 @@ data class NeovimMode(
         when (kind) {
             NeovimModeKind.NORMAL,
             NeovimModeKind.VISUAL,
-            NeovimModeKind.VISUAL_LINE,
-            NeovimModeKind.VISUAL_BLOCK,
             NeovimModeKind.SELECT,
-            NeovimModeKind.SELECT_LINE,
-            NeovimModeKind.SELECT_BLOCK,
             -> true
 
             else -> false
@@ -46,11 +38,7 @@ data class NeovimMode(
 enum class NeovimModeKind {
     NORMAL,
     VISUAL,
-    VISUAL_LINE,
-    VISUAL_BLOCK,
     SELECT,
-    SELECT_LINE,
-    SELECT_BLOCK,
     INSERT,
     REPLACE,
     COMMAND,

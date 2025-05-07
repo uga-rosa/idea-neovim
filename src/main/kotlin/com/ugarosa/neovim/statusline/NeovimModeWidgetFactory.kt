@@ -67,11 +67,7 @@ class NeovimModeWidget : CustomStatusBarWidget {
             NeovimModeKind.NORMAL -> JBColor.GREEN
 
             NeovimModeKind.VISUAL,
-            NeovimModeKind.VISUAL_LINE,
-            NeovimModeKind.VISUAL_BLOCK,
             NeovimModeKind.SELECT,
-            NeovimModeKind.SELECT_LINE,
-            NeovimModeKind.SELECT_BLOCK,
             -> JBColor.BLUE
 
             NeovimModeKind.INSERT -> JBColor.YELLOW

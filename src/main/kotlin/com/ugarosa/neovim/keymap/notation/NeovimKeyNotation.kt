@@ -20,7 +20,10 @@ enum class NeovimKeyModifier(val neovimPrefix: String) {
 }
 
 data class NeovimKeyNotation(
-    @XCollection(propertyElementName = "modifiers", elementName = "modifier")
+    @XCollection(
+        propertyElementName = "modifiers",
+        elementName = "modifier",
+    )
     val modifiers: List<NeovimKeyModifier>,
     @Attribute
     val key: String,

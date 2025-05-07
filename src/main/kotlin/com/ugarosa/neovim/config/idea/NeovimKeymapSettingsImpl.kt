@@ -9,7 +9,6 @@ import com.intellij.openapi.components.Storage
 import com.intellij.util.xmlb.annotations.XCollection
 import com.ugarosa.neovim.keymap.notation.NeovimKeyModifier
 import com.ugarosa.neovim.keymap.notation.NeovimKeyNotation
-import com.ugarosa.neovim.mode.NeovimModeKind
 
 @Service(Service.Level.APP)
 @State(
@@ -39,17 +38,17 @@ class NeovimKeymapSettingsImpl : NeovimKeymapSettings,
             val redo = KeyMappingAction.ExecuteIdeaAction(IdeActions.ACTION_REDO)
             return listOf(
                 UserKeyMapping(
-                    modes = listOf(NeovimModeKind.INSERT),
+                    mode = MapMode("i"),
                     lhs = listOf(esc),
                     rhs = listOf(KeyMappingAction.SendToNeovim(esc)),
                 ),
                 UserKeyMapping(
-                    modes = listOf(NeovimModeKind.NORMAL),
+                    mode = MapMode("n"),
                     lhs = listOf(u),
                     rhs = listOf(undo),
                 ),
                 UserKeyMapping(
-                    modes = listOf(NeovimModeKind.NORMAL),
+                    mode = MapMode("n"),
                     lhs = listOf(ctrlR),
                     rhs = listOf(redo),
                 ),
