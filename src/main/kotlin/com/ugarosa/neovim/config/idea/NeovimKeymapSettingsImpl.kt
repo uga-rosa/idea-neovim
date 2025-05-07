@@ -6,7 +6,7 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.ugarosa.neovim.keymap.notation.NeovimKeyNotation
-import com.ugarosa.neovim.rpc.event.NeovimModeKind
+import com.ugarosa.neovim.mode.NeovimModeKind
 
 @Service(Service.Level.APP)
 @State(

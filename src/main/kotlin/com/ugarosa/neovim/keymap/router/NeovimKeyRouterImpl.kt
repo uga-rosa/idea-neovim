@@ -15,7 +15,6 @@ import com.ugarosa.neovim.config.idea.KeyMappingAction
 import com.ugarosa.neovim.config.idea.UserKeyMapping
 import com.ugarosa.neovim.keymap.dispatcher.NeovimEventDispatcher
 import com.ugarosa.neovim.keymap.notation.NeovimKeyNotation
-import com.ugarosa.neovim.rpc.event.NeovimModeKind
 import com.ugarosa.neovim.rpc.function.input
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -83,7 +82,7 @@ class NeovimKeyRouterImpl(
             prefixMatches.isEmpty() -> {
                 buffer.clear()
                 // Don't consume the key if the mode is insert-mode
-                if (mode.kind == NeovimModeKind.INSERT) {
+                if (mode.isInsert()) {
                     logger.trace("No match found, but in insert mode: $mode")
                     return false
                 }

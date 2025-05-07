@@ -14,10 +14,9 @@ import com.ugarosa.neovim.common.getOptionManager
 import com.ugarosa.neovim.common.utf8ByteOffsetToCharOffset
 import com.ugarosa.neovim.config.neovim.option.Scrolloff
 import com.ugarosa.neovim.config.neovim.option.Sidescrolloff
+import com.ugarosa.neovim.mode.NeovimMode
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.event.CursorMoveEvent
-import com.ugarosa.neovim.rpc.event.NeovimMode
-import com.ugarosa.neovim.rpc.event.NeovimModeKind
 import com.ugarosa.neovim.rpc.function.setCursor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -151,19 +150,7 @@ class NeovimCursorHandler private constructor(
 
     suspend fun changeCursorShape(mode: NeovimMode) {
         withContext(Dispatchers.EDT) {
-            editor.settings.isBlockCursor =
-                when (mode.kind) {
-                    NeovimModeKind.NORMAL,
-                    NeovimModeKind.VISUAL,
-                    NeovimModeKind.VISUAL_LINE,
-                    NeovimModeKind.VISUAL_BLOCK,
-                    NeovimModeKind.SELECT,
-                    NeovimModeKind.SELECT_LINE,
-                    NeovimModeKind.SELECT_BLOCK,
-                    -> true
-
-                    else -> false
-                }
+            editor.settings.isBlockCursor = mode.isBlock()
         }
     }
 

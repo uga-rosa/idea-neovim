@@ -14,7 +14,6 @@ import com.ugarosa.neovim.common.getOptionManager
 import com.ugarosa.neovim.cursor.NeovimCursorHandler
 import com.ugarosa.neovim.document.NeovimDocumentHandler
 import com.ugarosa.neovim.rpc.BufferId
-import com.ugarosa.neovim.rpc.event.NeovimModeKind
 import com.ugarosa.neovim.rpc.event.maybeBufLinesEvent
 import com.ugarosa.neovim.rpc.event.maybeCursorMoveEvent
 import com.ugarosa.neovim.rpc.event.maybeModeChangeEvent
@@ -108,7 +107,7 @@ class NeovimEditorSession private constructor(
                 cursorHandler.changeCursorShape(event.mode)
                 statusLineHandler.updateStatusLine(event.mode)
 
-                if (event.mode.kind == NeovimModeKind.INSERT) {
+                if (event.mode.isInsert()) {
                     // Disable nvim_buf_lines_event if in insert mode
                     documentHandler.disableBufLinesEvent()
                     cursorHandler.disableCursorListener()

@@ -1,7 +1,7 @@
 package com.ugarosa.neovim.config.idea
 
 import com.ugarosa.neovim.keymap.notation.NeovimKeyNotation
-import com.ugarosa.neovim.rpc.event.NeovimModeKind
+import com.ugarosa.neovim.mode.NeovimModeKind
 
 data class UserKeyMapping(
     val modes: List<NeovimModeKind>,

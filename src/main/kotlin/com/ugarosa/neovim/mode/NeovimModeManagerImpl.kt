@@ -1,7 +1,6 @@
 package com.ugarosa.neovim.mode
 
 import com.intellij.openapi.components.Service
-import com.ugarosa.neovim.rpc.event.NeovimMode
 import java.util.concurrent.atomic.AtomicReference
 
 @Service(Service.Level.APP)
