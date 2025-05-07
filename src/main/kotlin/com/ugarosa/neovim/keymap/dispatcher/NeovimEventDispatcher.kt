@@ -5,15 +5,16 @@ import com.intellij.ide.IdeEventQueue
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
-import com.ugarosa.neovim.common.getKeyRouter
 import com.ugarosa.neovim.keymap.notation.NeovimKeyNotation
+import com.ugarosa.neovim.keymap.router.NeovimKeyRouter
 import java.awt.AWTEvent
 import java.awt.KeyboardFocusManager
 import java.awt.event.KeyEvent
 
-class NeovimEventDispatcher : IdeEventQueue.EventDispatcher {
+class NeovimEventDispatcher(
+    private val keyRouter: NeovimKeyRouter,
+) : IdeEventQueue.EventDispatcher {
     private val logger = thisLogger()
-    private val keyRouter = getKeyRouter()
 
     override fun dispatch(e: AWTEvent): Boolean {
         if (e is KeyEvent) {

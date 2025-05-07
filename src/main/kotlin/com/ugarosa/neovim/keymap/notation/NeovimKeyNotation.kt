@@ -89,14 +89,11 @@ data class NeovimKeyNotation(
      */
     override fun toString(): String {
         return when {
-            modifiers.isNotEmpty() ->
-                "<${modifiers.joinToString("-") { it.neovimPrefix }}-$key>"
+            modifiers.isNotEmpty() -> "<${modifiers.joinToString("-") { it.neovimPrefix }}-$key>"
 
-            key.length == 1 ->
-                key.lowercase()
+            key.length == 1 -> key
 
-            else ->
-                "<$key>"
+            else -> "<$key>"
         }
     }
 }

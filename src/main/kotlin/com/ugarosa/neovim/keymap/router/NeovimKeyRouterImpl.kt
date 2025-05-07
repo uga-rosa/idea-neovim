@@ -11,6 +11,7 @@ import com.intellij.openapi.editor.actionSystem.TypedAction
 import com.intellij.openapi.editor.ex.util.EditorUtil
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.common.getModeManager
+import com.ugarosa.neovim.common.setIfDifferent
 import com.ugarosa.neovim.config.idea.KeyMappingAction
 import com.ugarosa.neovim.config.idea.UserKeyMapping
 import com.ugarosa.neovim.keymap.dispatcher.NeovimEventDispatcher
@@ -30,7 +31,7 @@ class NeovimKeyRouterImpl(
 ) : NeovimKeyRouter, Disposable {
     private val logger = thisLogger()
 
-    private val eventDispatcher = NeovimEventDispatcher()
+    private val eventDispatcher = NeovimEventDispatcher(this)
     private val client = getClient()
     private val modeManager = getModeManager()
 
@@ -52,8 +53,8 @@ class NeovimKeyRouterImpl(
         editor: Editor,
     ) {
         // If the editor is different, clear the buffer
-        val prevEditor = currentEditor.getAndSet(editor)
-        if (prevEditor != editor) {
+        if (currentEditor.setIfDifferent(editor)) {
+            logger.trace("Clearing buffer due to editor change")
             buffer.clear()
         }
 
@@ -65,6 +66,8 @@ class NeovimKeyRouterImpl(
         val mode = modeManager.getMode()
         val snapshot = buffer.toList()
 
+        logger.trace("Processing buffer: $snapshot in mode: $mode")
+
         val prefixMatches =
             userMappings.filter { (modes, lhs) ->
                 modes.contains(mode.kind) &&
@@ -75,18 +78,20 @@ class NeovimKeyRouterImpl(
 
         when {
             prefixMatches.isEmpty() -> {
-                // Fallback to default behavior
+                logger.trace("Fallback to default behavior: $snapshot in mode: $mode")
                 fallback(snapshot, editor, mode)
                 buffer.clear()
             }
 
             exactlyMatch != null && prefixMatches.size == 1 -> {
+                logger.trace("Executing exact match: $exactlyMatch in mode: $mode")
                 executeRhs(exactlyMatch.rhs, editor)
                 buffer.clear()
             }
 
-            prefixMatches.size > 1 -> {
+            else -> {
                 // pending next input
+                logger.trace("Pending next input: $snapshot in mode: $mode")
             }
         }
     }
@@ -96,19 +101,22 @@ class NeovimKeyRouterImpl(
         editor: Editor,
         mode: NeovimMode,
     ) {
-        if (mode.kind == NeovimModeKind.INSERT) {
-            val typedAction = TypedAction.getInstance()
-            val dataContext = EditorUtil.getEditorDataContext(editor)
-            ApplicationManager.getApplication().runWriteAction {
-                keys.forEach { notation ->
+        val typedAction = TypedAction.getInstance()
+        val dataContext = EditorUtil.getEditorDataContext(editor)
+        val isInsert = mode.kind == NeovimModeKind.INSERT
+        ApplicationManager.getApplication().runWriteAction {
+            keys.forEach { notation ->
+                if (isInsert && notation.toString() != "<Esc>") {
                     notation.toSimpleChar()?.let { char ->
+                        logger.trace("Typing character: $char")
                         typedAction.actionPerformed(editor, char, dataContext)
                     }
+                } else {
+                    scope.launch {
+                        logger.trace("Sending keys to Neovim: ${keys.joinToString("")}")
+                        input(client, keys.joinToString(""))
+                    }
                 }
-            }
-        } else {
-            scope.launch {
-                input(client, keys.joinToString(""))
             }
         }
     }
@@ -121,10 +129,12 @@ class NeovimKeyRouterImpl(
             actions.forEach { action ->
                 when (action) {
                     is KeyMappingAction.SendToNeovim -> {
+                        logger.trace("Sending key to Neovim: ${action.key}")
                         input(client, action.key.toString())
                     }
 
                     is KeyMappingAction.ExecuteIdeaAction -> {
+                        logger.trace("Executing action: ${action.actionId}")
                         callAction(action, editor)
                     }
                 }

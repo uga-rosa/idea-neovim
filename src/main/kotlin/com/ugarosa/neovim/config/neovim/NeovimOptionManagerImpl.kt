@@ -73,22 +73,22 @@ class NeovimOptionManagerImpl : NeovimOptionManager {
     }
 
     override suspend fun putGlobal(
-        name: String,
-        raw: Any,
+        key: String,
+        value: Any,
     ) {
         globalInit.await()
-        logger.trace("Set a global option: $name = $raw")
-        globalOptionsManager.putAll(mapOf(name to raw))
+        logger.trace("Set a global option: $key = $value")
+        globalOptionsManager.putAll(mapOf(key to value))
     }
 
     override suspend fun putLocal(
         bufferId: BufferId,
-        name: String,
-        raw: Any,
+        key: String,
+        value: Any,
     ) {
         localInits[bufferId]?.await()
             ?: throw IllegalStateException("Buffer $bufferId is not initialized")
-        logger.trace("Set a local option: $name = $raw")
-        localOptionsManagers[bufferId]?.putAll(mapOf(name to raw))
+        logger.trace("Set a local option: $key = $value")
+        localOptionsManagers[bufferId]?.putAll(mapOf(key to value))
     }
 }

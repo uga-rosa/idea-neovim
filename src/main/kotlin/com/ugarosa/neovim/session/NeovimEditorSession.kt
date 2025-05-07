@@ -19,7 +19,6 @@ import com.ugarosa.neovim.rpc.event.maybeBufLinesEvent
 import com.ugarosa.neovim.rpc.event.maybeCursorMoveEvent
 import com.ugarosa.neovim.rpc.event.maybeModeChangeEvent
 import com.ugarosa.neovim.rpc.function.createBuffer
-import com.ugarosa.neovim.rpc.function.input
 import com.ugarosa.neovim.statusline.StatusLineHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -131,12 +130,6 @@ class NeovimEditorSession private constructor(
         scope.launch {
             documentHandler.activateBuffer()
             cursorHandler.syncIdeaToNeovim()
-        }
-    }
-
-    fun sendKeyAndSyncStatus(key: String) {
-        scope.launch {
-            input(client, key)
         }
     }
 }
