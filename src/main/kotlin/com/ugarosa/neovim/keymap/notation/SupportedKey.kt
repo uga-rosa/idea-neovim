@@ -42,7 +42,6 @@ val supportedKeys: List<SupportedKey> =
                 SupportedKey("MULTIPLY", "kMultiply", printable = true),
                 SupportedKey("DIVIDE", "kDivide", printable = true),
                 SupportedKey("SEPARATOR", "kComma", printable = true),
-                SupportedKey("KP_ENTER", "CR", printable = false),
             ),
         )
         // Common punctuation and symbols
