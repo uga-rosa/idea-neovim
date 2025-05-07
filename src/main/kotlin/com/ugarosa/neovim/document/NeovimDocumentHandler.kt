@@ -6,6 +6,7 @@ import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.util.TextRange
+import com.ugarosa.neovim.common.GroupIdGenerator
 import com.ugarosa.neovim.common.ListenerGuard
 import com.ugarosa.neovim.common.charOffsetToUtf8ByteOffset
 import com.ugarosa.neovim.common.getClient
@@ -93,12 +94,17 @@ class NeovimDocumentHandler private constructor(
                 e.replacementLines.joinToString("\n", postfix = "\n")
             }
         scope.launch(Dispatchers.EDT) {
-            WriteCommandAction.runWriteCommandAction(editor.project, "ApplyBufLinesEvent", null, {
-                documentListenerGuard.runWithoutListener {
-                    document.replaceString(startOffset, endOffset, replacementText)
-                    logger.trace("Applied buffer lines event: $e")
-                }
-            })
+            WriteCommandAction.runWriteCommandAction(
+                editor.project,
+                "ApplyBufLinesEvent",
+                GroupIdGenerator.generate(),
+                {
+                    documentListenerGuard.runWithoutListener {
+                        document.replaceString(startOffset, endOffset, replacementText)
+                        logger.trace("Applied buffer lines event: $e")
+                    }
+                },
+            )
         }
     }
 
