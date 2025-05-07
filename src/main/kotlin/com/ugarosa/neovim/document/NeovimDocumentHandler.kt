@@ -18,9 +18,10 @@ import com.ugarosa.neovim.rpc.function.bufferSetLines
 import com.ugarosa.neovim.rpc.function.bufferSetText
 import com.ugarosa.neovim.rpc.function.setCurrentBuffer
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 class NeovimDocumentHandler private constructor(
-    scope: CoroutineScope,
+    private val scope: CoroutineScope,
     private val editor: Editor,
     private val bufferId: BufferId,
 ) {
@@ -28,7 +29,7 @@ class NeovimDocumentHandler private constructor(
     private val client = getClient()
     private val documentListenerGuard =
         ListenerGuard(
-            NeovimDocumentListener(scope, this),
+            NeovimDocumentListener(this),
             { editor.document.addDocumentListener(it) },
             { editor.document.removeDocumentListener(it) },
         ).apply {
@@ -99,35 +100,25 @@ class NeovimDocumentHandler private constructor(
         }
     }
 
-    suspend fun syncDocumentChange(event: DocumentEvent) {
+    // Must be called before the document is changed
+    fun syncDocumentChange(event: DocumentEvent) {
+        // IDEA uses (0, 0) character offset indexing
+        // :h nvim_buf_set_text()
+        //   Indexing is zero-based. Row indices are end-inclusive, and column indices are end-exclusive.
+
         val document = event.document
 
         val startOffset = event.offset
-        val endOffset = event.offset + event.oldLength
-
-        // IDEA uses (0, 0) character offset indexing
         val startRow = document.getLineNumber(startOffset)
-        val endRow = document.getLineNumber(endOffset)
-        val startCharCol = startOffset - document.getLineStartOffset(startRow)
-        val endCharCol = endOffset - document.getLineStartOffset(endRow)
-
-        // nvim_buf_set_text()
-        //   Indexing is zero-based. Row indices are end-inclusive, and column indices are end-exclusive.
-        val startLineText =
-            document.getText(
-                TextRange(
-                    document.getLineStartOffset(startRow),
-                    document.getLineEndOffset(startRow),
-                ),
-            )
-        val endLineText =
-            document.getText(
-                TextRange(
-                    document.getLineStartOffset(endRow),
-                    document.getLineEndOffset(endRow),
-                ),
-            )
+        val startLineStartOffset = document.getLineStartOffset(startRow)
+        val startCharCol = startOffset - startLineStartOffset
+        val startLineText = document.getText(TextRange(startLineStartOffset, document.getLineEndOffset(startRow)))
         val startByteCol = charOffsetToUtf8ByteOffset(startLineText, startCharCol)
+
+        val endRow = document.getLineNumber(startOffset + event.oldLength)
+        val endLineStartOffset = document.getLineStartOffset(endRow)
+        val endCharCol = startOffset + event.oldLength - endLineStartOffset
+        val endLineText = document.getText(TextRange(endLineStartOffset, document.getLineEndOffset(endRow)))
         val endByteCol = charOffsetToUtf8ByteOffset(endLineText, endCharCol)
 
         val replacement =
@@ -136,8 +127,10 @@ class NeovimDocumentHandler private constructor(
                 .split("\n")
 
         val params = BufferSetTextParams(bufferId, startRow, startByteCol, endRow, endByteCol, replacement)
-        bufferSetText(client, params)
-            .onRight { logger.trace("Sync document change: $params") }
-            .onLeft { logger.warn("Failed to set text: $it") }
+        scope.launch {
+            bufferSetText(client, params)
+                .onRight { logger.trace("Sync document change: $params") }
+                .onLeft { logger.warn("Failed to sync document change: $it") }
+        }
     }
 }
