@@ -23,7 +23,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class NeovimCursorHandler(
+class NeovimCursorHandler private constructor(
     scope: CoroutineScope,
     private val editor: Editor,
     private val disposable: Disposable,
@@ -43,8 +43,18 @@ class NeovimCursorHandler(
 
     private val optionManager = getOptionManager()
 
-    init {
-        editor.settings.isBlockCursor = true
+    companion object {
+        suspend fun create(
+            scope: CoroutineScope,
+            editor: Editor,
+            disposable: Disposable,
+            bufferId: BufferId,
+        ): NeovimCursorHandler {
+            withContext(Dispatchers.EDT) {
+                editor.settings.isBlockCursor = true
+            }
+            return NeovimCursorHandler(scope, editor, disposable, bufferId)
+        }
     }
 
     fun enableCursorListener() {

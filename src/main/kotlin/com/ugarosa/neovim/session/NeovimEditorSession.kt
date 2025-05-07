@@ -59,7 +59,7 @@ class NeovimEditorSession private constructor(
                     return null
                 }
             val documentHandler = NeovimDocumentHandler.create(scope, editor, bufferId)
-            val cursorHandler = NeovimCursorHandler(scope, editor, disposable, bufferId)
+            val cursorHandler = NeovimCursorHandler.create(scope, editor, disposable, bufferId)
             val statusLineHandler = StatusLineHandler(project)
             val session =
                 NeovimEditorSession(
