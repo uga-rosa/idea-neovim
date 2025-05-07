@@ -8,6 +8,13 @@ enum class NeovimKeyModifier(val neovimPrefix: String) {
     SHIFT("S"),
     ALT("A"),
     META("M"),
+    ;
+
+    companion object {
+        private val map = entries.associateBy { it.neovimPrefix }
+
+        fun fromString(prefix: String): NeovimKeyModifier? = map[prefix]
+    }
 }
 
 data class NeovimKeyNotation(
@@ -67,6 +74,35 @@ data class NeovimKeyNotation(
                 }
             return NeovimKeyNotation(modifiers, key)
         }
+
+        /**
+         * Parse a Neovim key notation string (e.g., "<C-A-x>", "g", "<Esc>").
+         */
+        fun fromString(notation: String): NeovimKeyNotation? {
+            val text = notation.trim()
+            if (text.startsWith("<") && text.endsWith(">")) {
+                val inner = text.substring(1, text.length - 1)
+                val parts = inner.split("-")
+
+                val key = parts.last()
+                if (supportedKeys.none { it.neovimName == key }) {
+                    logger.warn("Unknown key: $key")
+                    return null
+                }
+
+                val mods =
+                    parts.dropLast(1).map { token ->
+                        NeovimKeyModifier.fromString(token)
+                            ?: run {
+                                logger.warn("Unknown modifier: $token")
+                                return null
+                            }
+                    }
+                return NeovimKeyNotation(mods, key)
+            } else {
+                return NeovimKeyNotation(emptyList(), text)
+            }
+        }
     }
 
     fun toSimpleChar(): Char? {
@@ -77,7 +113,6 @@ data class NeovimKeyNotation(
         return when (key) {
             "Space" -> ' '
             "CR" -> '\n'
-            "BS" -> '\b'
             "Tab" -> '\t'
             else -> null
         }

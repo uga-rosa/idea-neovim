@@ -4,12 +4,14 @@ import com.intellij.ide.IdeEventQueue
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.actionSystem.TypedAction
 import com.intellij.openapi.editor.ex.util.EditorUtil
 import com.ugarosa.neovim.common.getClient
+import com.ugarosa.neovim.common.getKeymapSettings
 import com.ugarosa.neovim.common.getModeManager
 import com.ugarosa.neovim.common.setIfDifferent
 import com.ugarosa.neovim.config.idea.KeyMappingAction
@@ -20,7 +22,9 @@ import com.ugarosa.neovim.rpc.event.NeovimMode
 import com.ugarosa.neovim.rpc.event.NeovimModeKind
 import com.ugarosa.neovim.rpc.function.input
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicReference
@@ -34,6 +38,7 @@ class NeovimKeyRouterImpl(
     private val eventDispatcher = NeovimEventDispatcher(this)
     private val client = getClient()
     private val modeManager = getModeManager()
+    private val settings = getKeymapSettings()
 
     private val buffer = ConcurrentLinkedDeque<NeovimKeyNotation>()
     private val userMappings = CopyOnWriteArrayList<UserKeyMapping>()
@@ -41,6 +46,7 @@ class NeovimKeyRouterImpl(
 
     override fun start() {
         IdeEventQueue.getInstance().addDispatcher(eventDispatcher, this)
+        setUserMappings(settings.getUserKeyMappings())
     }
 
     private fun stop() {
@@ -79,13 +85,17 @@ class NeovimKeyRouterImpl(
         when {
             prefixMatches.isEmpty() -> {
                 logger.trace("Fallback to default behavior: $snapshot in mode: $mode")
-                fallback(snapshot, editor, mode)
+                scope.launch {
+                    fallback(snapshot, editor, mode)
+                }
                 buffer.clear()
             }
 
             exactlyMatch != null && prefixMatches.size == 1 -> {
                 logger.trace("Executing exact match: $exactlyMatch in mode: $mode")
-                executeRhs(exactlyMatch.rhs, editor)
+                scope.launch {
+                    executeRhs(exactlyMatch.rhs, editor)
+                }
                 buffer.clear()
             }
 
@@ -96,76 +106,76 @@ class NeovimKeyRouterImpl(
         }
     }
 
-    private fun fallback(
+    private suspend fun fallback(
         keys: List<NeovimKeyNotation>,
         editor: Editor,
         mode: NeovimMode,
     ) {
-        val typedAction = TypedAction.getInstance()
-        val dataContext = EditorUtil.getEditorDataContext(editor)
-        val isInsert = mode.kind == NeovimModeKind.INSERT
-        ApplicationManager.getApplication().runWriteAction {
-            keys.forEach { notation ->
-                if (isInsert && notation.toString() != "<Esc>") {
-                    notation.toSimpleChar()?.let { char ->
-                        logger.trace("Typing character: $char")
-                        typedAction.actionPerformed(editor, char, dataContext)
-                    }
-                } else {
-                    scope.launch {
-                        logger.trace("Sending keys to Neovim: ${keys.joinToString("")}")
-                        input(client, keys.joinToString(""))
+        if (mode.kind == NeovimModeKind.INSERT) {
+            withContext(Dispatchers.EDT) {
+                ApplicationManager.getApplication().runWriteAction {
+                    val typedAction = TypedAction.getInstance()
+                    val dataContext = EditorUtil.getEditorDataContext(editor)
+                    keys.forEach { notation ->
+                        notation.toSimpleChar()?.let { char ->
+                            logger.trace("Typing character: $char")
+                            typedAction.actionPerformed(editor, char, dataContext)
+                        }
                     }
                 }
             }
+        } else {
+            logger.trace("Sending keys to Neovim: ${keys.joinToString("")}")
+            input(client, keys.joinToString(""))
         }
     }
 
-    private fun executeRhs(
+    private suspend fun executeRhs(
         actions: List<KeyMappingAction>,
         editor: Editor,
     ) {
-        scope.launch {
-            actions.forEach { action ->
-                when (action) {
-                    is KeyMappingAction.SendToNeovim -> {
-                        logger.trace("Sending key to Neovim: ${action.key}")
-                        input(client, action.key.toString())
-                    }
+        actions.forEach { action ->
+            when (action) {
+                is KeyMappingAction.SendToNeovim -> {
+                    logger.trace("Sending key to Neovim: ${action.key}")
+                    input(client, action.key.toString())
+                }
 
-                    is KeyMappingAction.ExecuteIdeaAction -> {
-                        logger.trace("Executing action: ${action.actionId}")
-                        callAction(action, editor)
-                    }
+                is KeyMappingAction.ExecuteIdeaAction -> {
+                    logger.trace("Executing action: ${action.actionId}")
+                    callAction(action, editor)
                 }
             }
         }
     }
 
-    private fun callAction(
+    private suspend fun callAction(
         action: KeyMappingAction.ExecuteIdeaAction,
         editor: Editor,
     ) {
-        val action =
+        val anAction =
             ActionManager.getInstance().getAction(action.actionId)
                 ?: run {
                     logger.warn("Action not found: ${action.actionId}")
                     return
                 }
-        val res =
-            ActionManager.getInstance().tryToExecute(
-                action,
-                null,
-                editor.contentComponent,
-                "IdeaNeovim",
-                true,
-            )
-        res.waitFor(5_000)
+        withContext(Dispatchers.EDT) {
+            val res =
+                ActionManager.getInstance().tryToExecute(
+                    anAction,
+                    null,
+                    editor.contentComponent,
+                    "IdeaNeovim",
+                    true,
+                )
+            res.waitFor(5_000)
+        }
     }
 
     override fun setUserMappings(mappings: List<UserKeyMapping>) {
         userMappings.clear()
         userMappings.addAll(mappings)
+        logger.debug("User mappings updated: $userMappings")
     }
 
     override fun dispose() {

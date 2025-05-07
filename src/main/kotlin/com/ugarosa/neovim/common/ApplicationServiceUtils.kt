@@ -1,6 +1,8 @@
 package com.ugarosa.neovim.common
 
 import com.intellij.openapi.components.service
+import com.ugarosa.neovim.config.idea.NeovimKeymapSettings
+import com.ugarosa.neovim.config.idea.NeovimKeymapSettingsImpl
 import com.ugarosa.neovim.config.neovim.NeovimOptionManager
 import com.ugarosa.neovim.config.neovim.NeovimOptionManagerImpl
 import com.ugarosa.neovim.keymap.router.NeovimKeyRouter
@@ -17,3 +19,5 @@ fun getOptionManager(): NeovimOptionManager = service<NeovimOptionManagerImpl>()
 fun getModeManager(): NeovimModeManager = service<NeovimModeManagerImpl>()
 
 fun getKeyRouter(): NeovimKeyRouter = service<NeovimKeyRouterImpl>()
+
+fun getKeymapSettings(): NeovimKeymapSettings = service<NeovimKeymapSettingsImpl>()
