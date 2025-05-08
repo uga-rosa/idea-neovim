@@ -6,6 +6,7 @@ import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 
 data class BufLinesEvent(
     val bufferId: BufferId,
+    val changedTick: Int,
     val firstLine: Int,
     val lastLine: Int,
     val replacementLines: List<String>,
@@ -18,10 +19,11 @@ fun maybeBufLinesEvent(push: NeovimRpcClient.PushNotification): BufLinesEvent? {
     try {
         val params = push.params.asArrayValue().list()
         val bufferId = params[0].asBufferId()
+        val changedTick = params[1].asIntegerValue().toInt()
         val firstLine = params[2].asIntegerValue().toInt()
         val lastLine = params[3].asIntegerValue().toInt()
         val replacementLines = params[4].asArrayValue().list().map { it.asStringValue().asString() }
-        return BufLinesEvent(bufferId, firstLine, lastLine, replacementLines)
+        return BufLinesEvent(bufferId, changedTick, firstLine, lastLine, replacementLines)
     } catch (e: Exception) {
         logger.warn(e)
         return null

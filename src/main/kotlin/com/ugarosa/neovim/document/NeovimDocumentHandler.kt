@@ -10,18 +10,21 @@ import com.ugarosa.neovim.common.GroupIdGenerator
 import com.ugarosa.neovim.common.ListenerGuard
 import com.ugarosa.neovim.common.charOffsetToUtf8ByteOffset
 import com.ugarosa.neovim.common.getClient
+import com.ugarosa.neovim.common.getModeManager
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.event.BufLinesEvent
 import com.ugarosa.neovim.rpc.function.BufferSetTextParams
 import com.ugarosa.neovim.rpc.function.bufferAttach
 import com.ugarosa.neovim.rpc.function.bufferSetLines
 import com.ugarosa.neovim.rpc.function.bufferSetText
+import com.ugarosa.neovim.rpc.function.getChangedTick
 import com.ugarosa.neovim.rpc.function.input
 import com.ugarosa.neovim.rpc.function.setCurrentBuffer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.concurrent.ConcurrentHashMap
 
 class NeovimDocumentHandler private constructor(
     private val scope: CoroutineScope,
@@ -30,12 +33,14 @@ class NeovimDocumentHandler private constructor(
 ) {
     private val logger = thisLogger()
     private val client = getClient()
+    private val modeManager = getModeManager()
     private val documentListenerGuard =
         ListenerGuard(
             NeovimDocumentListener(this),
             { editor.document.addDocumentListener(it) },
             { editor.document.removeDocumentListener(it) },
         )
+    private val ignoreChangedTicks = ConcurrentHashMap.newKeySet<Int>()
 
     companion object {
         suspend fun create(
@@ -72,6 +77,11 @@ class NeovimDocumentHandler private constructor(
     }
 
     suspend fun applyBufferLinesEvent(e: BufLinesEvent) {
+        if (ignoreChangedTicks.remove(e.changedTick)) {
+            logger.trace("Ignore event by changed tick: $e")
+            return
+        }
+
         val document = editor.document
         val startOffset = document.getLineStartOffset(e.firstLine)
         val endOffset =
@@ -103,7 +113,8 @@ class NeovimDocumentHandler private constructor(
 
     // Must be called before the document is changed
     fun syncDocumentChange(event: DocumentEvent) {
-        if (isSingleLineChange(event)) {
+        val mode = modeManager.getMode()
+        if (mode.isInsert() && isSingleLineChange(event)) {
             sendInput(event)
         } else {
             sendBufferSetText(event)
@@ -169,7 +180,12 @@ class NeovimDocumentHandler private constructor(
         val insertStr = event.newFragment.toString()
 
         scope.launch {
+            getChangedTick(client, bufferId)
+                .onRight { ignoreChangedTicks.add(it + 1) }
+                .onLeft { logger.warn("Failed getChangedTick: sendInput") }
             input(client, deleteStr + insertStr)
+                .onRight { logger.trace("Success sendInput: $deleteStr$insertStr") }
+                .onLeft { logger.warn("Failed sendInput: $deleteStr$insertStr") }
         }
     }
 
@@ -197,9 +213,12 @@ class NeovimDocumentHandler private constructor(
 
         val params = BufferSetTextParams(bufferId, startRow, startByteCol, endRow, endByteCol, replacement)
         scope.launch {
+            getChangedTick(client, bufferId)
+                .onRight { ignoreChangedTicks.add(it + 1) }
+                .onLeft { logger.warn("Failed getChangedTick: sendBufferSetText") }
             bufferSetText(client, params)
-                .onRight { logger.trace("Sync document change: $params") }
-                .onLeft { logger.warn("Failed to sync document change: $it") }
+                .onRight { logger.trace("Success sendBufferSetText: $params") }
+                .onLeft { logger.warn("Failed sendBufferSetText: $it") }
         }
     }
 }

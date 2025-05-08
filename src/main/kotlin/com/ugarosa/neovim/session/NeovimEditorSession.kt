@@ -104,7 +104,6 @@ class NeovimEditorSession private constructor(
         client.registerPushHandler { push ->
             val event = maybeBufLinesEvent(push)
             if (event?.bufferId == bufferId) {
-                logger.trace("Apply buffer lines event: $event")
                 documentHandler.applyBufferLinesEvent(event)
             }
         }
@@ -112,7 +111,6 @@ class NeovimEditorSession private constructor(
         client.registerPushHandler { push ->
             val event = maybeCursorMoveEvent(push)
             if (event?.bufferId == bufferId) {
-                logger.trace("Apply cursor move event: $event")
                 cursorHandler.syncNeovimToIdea(event)
             }
         }
@@ -145,7 +143,6 @@ class NeovimEditorSession private constructor(
         client.registerPushHandler { push ->
             val event = maybeExecIdeaActionEvent(push)
             if (event?.bufferId == bufferId) {
-                logger.trace("Execute action: ${event.actionId}")
                 actionHandler.executeAction(event.actionId)
             }
         }
