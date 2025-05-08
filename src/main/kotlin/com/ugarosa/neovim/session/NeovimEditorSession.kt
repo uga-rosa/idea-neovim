@@ -24,7 +24,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 val NEOVIM_SESSION_KEY = Key.create<Deferred<NeovimEditorSession?>>("NEOVIM_SESSION_KEY")
@@ -149,11 +148,10 @@ class NeovimEditorSession private constructor(
         }
     }
 
-    fun activateBuffer() {
-        scope.launch {
-            documentHandler.activateBuffer()
-            cursorHandler.syncIdeaToNeovim()
-        }
+    suspend fun activateBuffer() {
+        documentHandler.activateBuffer()
+        cursorHandler.syncIdeaToNeovim()
+        cursorHandler.changeCursorShape(modeManager.getMode())
     }
 
     suspend fun executeAction(actionId: String) {

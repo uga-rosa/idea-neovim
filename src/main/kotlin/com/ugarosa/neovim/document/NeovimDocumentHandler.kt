@@ -22,6 +22,7 @@ import com.ugarosa.neovim.rpc.function.setCurrentBuffer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class NeovimDocumentHandler private constructor(
     private val scope: CoroutineScope,
@@ -78,7 +79,7 @@ class NeovimDocumentHandler private constructor(
             .onLeft { logger.warn("Failed to set current buffer to window: $it") }
     }
 
-    fun applyBufferLinesEvent(e: BufLinesEvent) {
+    suspend fun applyBufferLinesEvent(e: BufLinesEvent) {
         val document = editor.document
         val startOffset = document.getLineStartOffset(e.firstLine)
         val endOffset =
@@ -93,7 +94,7 @@ class NeovimDocumentHandler private constructor(
             } else {
                 e.replacementLines.joinToString("\n", postfix = "\n")
             }
-        scope.launch(Dispatchers.EDT) {
+        withContext(Dispatchers.EDT) {
             WriteCommandAction.runWriteCommandAction(
                 editor.project,
                 "ApplyBufLinesEvent",
