@@ -1,6 +1,7 @@
 package com.ugarosa.neovim.rpc.event
 
 import com.ugarosa.neovim.common.asAny
+import com.ugarosa.neovim.common.decode
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 
@@ -31,15 +32,12 @@ fun maybeOptionSetEvent(push: NeovimRpcClient.PushNotification): OptionSetEvent?
     if (push.method != "nvim_option_set_event") {
         return null
     }
-    try {
-        val params = push.params.asArrayValue().list()
+    return push.params.decode {
+        val params = it.asArrayValue().list()
         val bufferId = params[0].asIntegerValue().toInt().let { BufferId(it) }
         val scope = params[1].asStringValue().asString().let { OptionScope.fromRaw(it) }
         val name = params[2].asStringValue().asString()
         val value = params[3].asAny()
-        return OptionSetEvent(bufferId, scope, name, value)
-    } catch (e: Exception) {
-        logger.warn(e)
-        return null
+        OptionSetEvent(bufferId, scope, name, value)
     }
 }

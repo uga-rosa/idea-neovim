@@ -1,6 +1,6 @@
 package com.ugarosa.neovim.common
 
-import arrow.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicBoolean
 
 class ListenerGuard<T : Any>(
     private val listener: T,
@@ -10,13 +10,13 @@ class ListenerGuard<T : Any>(
     private var isRegistered = AtomicBoolean(false)
 
     fun unregister() {
-        if (isRegistered.compareAndSet(expected = true, new = false)) {
+        if (isRegistered.compareAndSet(true, false)) {
             remove(listener)
         }
     }
 
     fun register() {
-        if (isRegistered.compareAndSet(expected = false, new = true)) {
+        if (isRegistered.compareAndSet(false, true)) {
             add(listener)
         }
     }

@@ -1,21 +1,17 @@
 package com.ugarosa.neovim.rpc.function
 
-import arrow.core.Either
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.asBufferId
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 
-suspend fun createBuffer(client: NeovimRpcClient): Either<NeovimFunctionError, BufferId> =
+suspend fun createBuffer(client: NeovimRpcClient): BufferId? =
     client.request("nvim_create_buf", listOf(true, false))
-        .translate()
-        .flatMapValue { it.asBufferId() }
+        ?.decode { it.asBufferId() }
 
 suspend fun setCurrentBuffer(
     client: NeovimRpcClient,
     bufferId: BufferId,
-): Either<NeovimFunctionError, Unit> =
-    client.notify("nvim_set_current_buf", listOf(bufferId))
-        .translate()
+): Unit = client.notify("nvim_set_current_buf", listOf(bufferId))
 
 suspend fun bufferSetLines(
     client: NeovimRpcClient,
@@ -23,9 +19,7 @@ suspend fun bufferSetLines(
     start: Int,
     end: Int,
     lines: List<String>,
-): Either<NeovimFunctionError, Unit> =
-    client.notify("nvim_buf_set_lines", listOf(bufferId, start, end, false, lines))
-        .translate()
+): Unit = client.notify("nvim_buf_set_lines", listOf(bufferId, start, end, false, lines))
 
 data class BufferSetTextParams(
     val bufferId: BufferId,
@@ -39,7 +33,7 @@ data class BufferSetTextParams(
 suspend fun bufferSetText(
     client: NeovimRpcClient,
     params: BufferSetTextParams,
-): Either<NeovimFunctionError, Unit> =
+): Unit =
     client.notify(
         "nvim_buf_set_text",
         listOf(
@@ -51,11 +45,8 @@ suspend fun bufferSetText(
             params.replacement,
         ),
     )
-        .translate()
 
 suspend fun bufferAttach(
     client: NeovimRpcClient,
     bufferId: BufferId,
-): Either<NeovimFunctionError, Unit> =
-    client.notify("nvim_buf_attach", listOf(bufferId, false, emptyMap<String, Any>()))
-        .translate()
+): Unit = client.notify("nvim_buf_attach", listOf(bufferId, false, emptyMap<String, Any>()))

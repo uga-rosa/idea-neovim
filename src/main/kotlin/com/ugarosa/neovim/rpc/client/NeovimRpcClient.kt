@@ -1,6 +1,5 @@
 package com.ugarosa.neovim.rpc.client
 
-import arrow.core.Either
 import kotlinx.coroutines.CoroutineScope
 import org.msgpack.value.Value
 
@@ -11,7 +10,7 @@ interface NeovimRpcClient {
         method: String,
         params: List<Any?> = emptyList(),
         timeoutMills: Long? = 500,
-    ): Either<RequestError, Response>
+    ): Response?
 
     data class Response(
         val msgId: Int,
@@ -19,28 +18,10 @@ interface NeovimRpcClient {
         val result: Value,
     )
 
-    sealed interface RequestError {
-        data object BadRequest : RequestError
-
-        data object IO : RequestError
-
-        data object Timeout : RequestError
-
-        data object Unexpected : RequestError
-    }
-
     suspend fun notify(
         method: String,
         params: List<Any?> = emptyList(),
-    ): Either<NotifyError, Unit>
-
-    sealed interface NotifyError {
-        data object BadRequest : NotifyError
-
-        data object IO : NotifyError
-
-        data object Unexpected : NotifyError
-    }
+    )
 
     fun registerPushHandler(handler: suspend (PushNotification) -> Unit)
 

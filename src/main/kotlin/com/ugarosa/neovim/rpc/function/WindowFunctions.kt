@@ -1,11 +1,8 @@
 package com.ugarosa.neovim.rpc.function
 
-import arrow.core.Either
-import arrow.core.raise.either
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 
-suspend fun enforceSingleWindow(client: NeovimRpcClient): Either<NeovimFunctionError, Unit> =
-    either {
-        val luaCode = readLuaCode("/lua/enforceSingleWindow.lua")
-        execLuaNotify(client, luaCode).bind()
-    }
+suspend fun enforceSingleWindow(client: NeovimRpcClient) {
+    val luaCode = readLuaCode("/lua/enforceSingleWindow.lua") ?: return
+    execLuaNotify(client, luaCode)
+}

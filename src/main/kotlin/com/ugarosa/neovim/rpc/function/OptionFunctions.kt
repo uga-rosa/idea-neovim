@@ -1,40 +1,34 @@
 package com.ugarosa.neovim.rpc.function
 
-import arrow.core.Either
-import arrow.core.raise.either
 import com.ugarosa.neovim.common.asStringMap
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 
-suspend fun getGlobalOptions(client: NeovimRpcClient): Either<NeovimFunctionError, Map<String, Any>> =
-    either {
-        val luaCode = readLuaCode("/lua/getGlobalOptions.lua")
-        execLua(client, luaCode).flatMapValue { it.asStringMap() }.bind()
-    }
+suspend fun getGlobalOptions(client: NeovimRpcClient): Map<String, Any>? {
+    val luaCode = readLuaCode("/lua/getGlobalOptions.lua") ?: return null
+    return execLua(client, luaCode)?.decode { it.asStringMap() }
+}
 
 suspend fun getLocalOptions(
     client: NeovimRpcClient,
     bufferId: BufferId,
-): Either<NeovimFunctionError, Map<String, Any>> =
-    either {
-        val luaCode = readLuaCode("/lua/getLocalOptions.lua")
-        execLua(client, luaCode, listOf(bufferId))
-            .flatMapValue { it.asStringMap() }.bind()
-    }
+): Map<String, Any>? {
+    val luaCode = readLuaCode("/lua/getLocalOptions.lua") ?: return null
+    return execLua(client, luaCode, listOf(bufferId))
+        ?.decode { it.asStringMap() }
+}
 
-suspend fun hookGlobalOptionSet(client: NeovimRpcClient): Either<NeovimFunctionError, Unit> =
-    either {
-        val chanId = ChanIdManager.fetch(client).bind()
-        val luaCode = readLuaCode("/lua/hookGlobalOptionSet.lua")
-        execLuaNotify(client, luaCode, listOf(chanId)).bind()
-    }
+suspend fun hookGlobalOptionSet(client: NeovimRpcClient) {
+    val chanId = ChanIdManager.fetch(client)
+    val luaCode = readLuaCode("/lua/hookGlobalOptionSet.lua") ?: return
+    execLuaNotify(client, luaCode, listOf(chanId))
+}
 
 suspend fun hookLocalOptionSet(
     client: NeovimRpcClient,
     bufferId: BufferId,
-): Either<NeovimFunctionError, Unit> =
-    either {
-        val chanId = ChanIdManager.fetch(client).bind()
-        val luaCode = readLuaCode("/lua/hookLocalOptionSet.lua")
-        execLuaNotify(client, luaCode, listOf(chanId, bufferId)).bind()
-    }
+) {
+    val chanId = ChanIdManager.fetch(client)
+    val luaCode = readLuaCode("/lua/hookLocalOptionSet.lua") ?: return
+    execLuaNotify(client, luaCode, listOf(chanId, bufferId))
+}

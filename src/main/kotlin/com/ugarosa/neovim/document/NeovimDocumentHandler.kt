@@ -58,11 +58,7 @@ class NeovimDocumentHandler private constructor(
     private suspend fun initializeBuffer() {
         val liens = editor.document.text.split("\n")
         bufferSetLines(client, bufferId, 0, -1, liens)
-            .onRight { logger.info("Set lines to the buffer: $bufferId") }
-            .onLeft { logger.warn("Failed to set lines to the buffer $bufferId: $it") }
         bufferAttach(client, bufferId)
-            .onRight { logger.info("Attached the buffer: $bufferId") }
-            .onLeft { logger.warn("Failed to attach the buffer $bufferId: $it") }
     }
 
     private fun enableListener() {
@@ -72,8 +68,6 @@ class NeovimDocumentHandler private constructor(
 
     suspend fun activateBuffer() {
         setCurrentBuffer(client, bufferId)
-            .onRight { logger.trace("Set current buffer: $bufferId") }
-            .onLeft { logger.warn("Failed to set current buffer to window: $it") }
     }
 
     suspend fun applyBufferLinesEvent(e: BufLinesEvent) {
@@ -181,11 +175,8 @@ class NeovimDocumentHandler private constructor(
 
         scope.launch {
             getChangedTick(client, bufferId)
-                .onRight { ignoreChangedTicks.add(it + 1) }
-                .onLeft { logger.warn("Failed getChangedTick: sendInput") }
+                ?.let { ignoreChangedTicks.add(it + 1) }
             input(client, deleteStr + insertStr)
-                .onRight { logger.trace("Success sendInput: $deleteStr$insertStr") }
-                .onLeft { logger.warn("Failed sendInput: $deleteStr$insertStr") }
         }
     }
 
@@ -214,11 +205,8 @@ class NeovimDocumentHandler private constructor(
         val params = BufferSetTextParams(bufferId, startRow, startByteCol, endRow, endByteCol, replacement)
         scope.launch {
             getChangedTick(client, bufferId)
-                .onRight { ignoreChangedTicks.add(it + 1) }
-                .onLeft { logger.warn("Failed getChangedTick: sendBufferSetText") }
+                ?.let { ignoreChangedTicks.add(it + 1) }
             bufferSetText(client, params)
-                .onRight { logger.trace("Success sendBufferSetText: $params") }
-                .onLeft { logger.warn("Failed sendBufferSetText: $it") }
         }
     }
 }

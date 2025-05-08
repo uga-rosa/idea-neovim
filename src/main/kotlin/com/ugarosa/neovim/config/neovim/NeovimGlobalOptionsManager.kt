@@ -1,6 +1,5 @@
 package com.ugarosa.neovim.config.neovim
 
-import arrow.core.getOrElse
 import com.intellij.openapi.diagnostic.thisLogger
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.config.neovim.option.Scrolloff
@@ -37,15 +36,9 @@ class NeovimGlobalOptionsManager() {
 
     suspend fun initialize() {
         logger.trace("Initializing global options")
-        val globalOptions =
-            getGlobalOptions(client).getOrElse {
-                logger.warn("Failed to get global options: $it")
-                mapOf()
-            }
+        val globalOptions = getGlobalOptions(client) ?: mapOf()
         putAll(globalOptions)
-        hookGlobalOptionSet(client).onLeft {
-            logger.warn("Failed to hook global option set: $it")
-        }
+        hookGlobalOptionSet(client)
     }
 
     suspend fun get(): NeovimGlobalOptions = mutex.withLock { options.copy() }

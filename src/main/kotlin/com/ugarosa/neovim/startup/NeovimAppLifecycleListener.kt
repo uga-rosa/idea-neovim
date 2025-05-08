@@ -17,38 +17,27 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
     // Hooks that should be called only once at application startup.
     override fun appFrameCreated(commandLineArgs: List<String>) {
         val client = getClient()
-        val optionManager = getOptionManager()
-        val keyRouter = getKeyRouter()
 
         client.scope.launch {
-            enforceSingleWindow(client).onLeft {
-                logger.warn("Failed to enforce single window: $it")
-            }.onRight {
-                logger.debug("Enforced single window")
-            }
+            enforceSingleWindow(client)
+            logger.debug("Enforced single window")
 
-            hookCursorMove(client).onLeft {
-                logger.warn("Failed to hook cursor move: $it")
-            }.onRight {
-                logger.debug("Hooked cursor move")
-            }
+            hookCursorMove(client)
+            logger.debug("Hooked cursor move")
 
-            hookModeChange(client).onLeft {
-                logger.warn("Failed to hook mode change: $it")
-            }.onRight {
-                logger.debug("Hooked mode change")
-            }
+            hookModeChange(client)
+            logger.debug("Hooked mode change")
 
-            createCommand(client).onLeft {
-                logger.warn("Failed to create command: $it")
-            }.onRight {
-                logger.debug("Created command")
-            }
+            createCommand(client)
+            logger.debug("Created command")
 
+            val optionManager = getOptionManager()
             optionManager.initializeGlobal()
-        }
+            logger.debug("Initialized global options")
 
-        logger.trace("Starting Neovim key router")
-        keyRouter.start()
+            val keyRouter = getKeyRouter()
+            keyRouter.start()
+            logger.trace("Start Neovim key router")
+        }
     }
 }

@@ -1,6 +1,5 @@
 package com.ugarosa.neovim.config.neovim
 
-import arrow.core.getOrElse
 import com.intellij.openapi.diagnostic.thisLogger
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.config.neovim.option.Filetype
@@ -38,15 +37,9 @@ class NeovimLocalOptionsManager() {
 
     suspend fun initialize(bufferId: BufferId) {
         logger.trace("Initializing local options for buffer: $bufferId")
-        val localOptions =
-            getLocalOptions(client, bufferId).getOrElse {
-                logger.warn("Failed to get local options for buffer $bufferId")
-                mapOf()
-            }
+        val localOptions = getLocalOptions(client, bufferId) ?: mapOf()
         putAll(localOptions)
-        hookLocalOptionSet(client, bufferId).onLeft {
-            logger.warn("Failed to hook local option set for buffer $bufferId: $it")
-        }
+        hookLocalOptionSet(client, bufferId)
     }
 
     suspend fun get(): NeovimLocalOptions = mutex.withLock { options.copy() }

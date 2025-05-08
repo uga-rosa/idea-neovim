@@ -1,13 +1,12 @@
 package com.ugarosa.neovim.rpc.client
 
-import arrow.core.Either
-import arrow.core.raise.either
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.TabPageId
 import com.ugarosa.neovim.rpc.WindowId
 import com.ugarosa.neovim.rpc.process.AutoNeovimProcessManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -51,22 +50,29 @@ class NeovimRpcClientImpl(
                         val msgId = unpacker.unpackInt()
                         val error = unpacker.unpackValue()
                         val result = unpacker.unpackValue()
-                        logger.trace("Received response: $msgId, result: $result")
-                        waitingResponses.remove(msgId)?.complete(NeovimRpcClient.Response(msgId, error, result))
+                        val response = NeovimRpcClient.Response(msgId, error, result)
+                        logger.trace("Received response [$msgId]: $response")
+                        waitingResponses.remove(msgId)?.complete(response)
                     }
 
                     2 -> {
                         val method = unpacker.unpackString()
                         val params = unpacker.unpackValue()
-                        logger.trace("Received push notification: $method, params: $params")
+                        val push = NeovimRpcClient.PushNotification(method, params)
+                        logger.trace("Received push notification: $push")
                         withContext(Dispatchers.Default) {
-                            val notification = NeovimRpcClient.PushNotification(method, params)
-                            pushHandlers.forEach { it(notification) }
+                            pushHandlers.forEach {
+                                try {
+                                    it(push)
+                                } catch (e: Exception) {
+                                    logger.warn("Error in push handler: $it", e)
+                                }
+                            }
                         }
                     }
 
                     else -> {
-                        logger.warn("Unknown message type: $type")
+                        logger.error("Unknown message type: $type")
                     }
                 }
             }
@@ -77,81 +83,77 @@ class NeovimRpcClientImpl(
         method: String,
         params: List<Any?>,
         timeoutMills: Long?,
-    ): Either<NeovimRpcClient.RequestError, NeovimRpcClient.Response> =
-        either {
-            val msgId = messageIdGenerator.getAndIncrement()
-            val deferred = CompletableDeferred<NeovimRpcClient.Response>()
-            waitingResponses[msgId] = deferred
+    ): NeovimRpcClient.Response? {
+        val msgId = messageIdGenerator.getAndIncrement()
+        val deferred = CompletableDeferred<NeovimRpcClient.Response>()
+        waitingResponses[msgId] = deferred
 
-            logger.trace("Sending request: $msgId, method: $method, params: $params")
+        logger.trace("Sending request [$msgId]: method: $method, params: $params")
 
+        try {
             withContext(Dispatchers.IO) {
                 sendMutex.withLock {
-                    try {
-                        packer.packArrayHeader(4)
-                        packer.packInt(0) // 0 = Request
-                        packer.packInt(msgId)
-                        packer.packString(method)
-                        packParams(params)
-                        packer.flush()
-                    } catch (e: Exception) {
-                        packer.clear()
-                        waitingResponses.remove(msgId)?.cancel()
-                        when (e) {
-                            is IOException -> raise(NeovimRpcClient.RequestError.IO)
-                            is IllegalArgumentException -> raise(NeovimRpcClient.RequestError.BadRequest)
-                            else -> raise(NeovimRpcClient.RequestError.Unexpected)
-                        }
-                    }
+                    packer.packArrayHeader(4)
+                    packer.packInt(0) // 0 = Request
+                    packer.packInt(msgId)
+                    packer.packString(method)
+                    packParams(params)
+                    packer.flush()
                 }
             }
 
-            try {
-                if (timeoutMills == null) {
-                    deferred.await()
-                } else {
-                    withTimeout(timeoutMills) {
-                        deferred.await()
-                    }
-                }
-            } catch (e: Exception) {
-                waitingResponses.remove(msgId)?.cancel()
-                when (e) {
-                    is TimeoutCancellationException -> raise(NeovimRpcClient.RequestError.Timeout)
-                    else -> {
-                        logger.warn("Unexpected error during response await", e)
-                        raise(NeovimRpcClient.RequestError.Unexpected)
-                    }
-                }
+            return if (timeoutMills == null) {
+                deferred.await()
+            } else {
+                withTimeout(timeoutMills) { deferred.await() }
             }
+        } catch (e: Exception) {
+            handleException(e, msgId)
+            return null
+        } finally {
+            waitingResponses.remove(msgId)
         }
+    }
 
     override suspend fun notify(
         method: String,
         params: List<Any?>,
-    ): Either<NeovimRpcClient.NotifyError, Unit> =
-        either {
-            logger.trace("Sending notification: method: $method, params: $params")
+    ) {
+        logger.trace("Sending notification: method: $method, params: $params")
 
+        try {
             withContext(Dispatchers.IO) {
                 sendMutex.withLock {
-                    try {
-                        packer.packArrayHeader(3)
-                        packer.packInt(2) // 2 = Notification
-                        packer.packString(method)
-                        packParams(params)
-                        packer.flush()
-                    } catch (e: Exception) {
-                        packer.clear()
-                        when (e) {
-                            is IOException -> raise(NeovimRpcClient.NotifyError.IO)
-                            is IllegalArgumentException -> raise(NeovimRpcClient.NotifyError.BadRequest)
-                            else -> raise(NeovimRpcClient.NotifyError.Unexpected)
-                        }
-                    }
+                    packer.packArrayHeader(3)
+                    packer.packInt(2) // 2 = Notification
+                    packer.packString(method)
+                    packParams(params)
+                    packer.flush()
                 }
             }
+        } catch (e: Exception) {
+            handleException(e)
         }
+    }
+
+    private fun handleException(
+        e: Exception,
+        msgId: Int? = null,
+    ) {
+        waitingResponses.remove(msgId)?.cancel()
+        when (e) {
+            is TimeoutCancellationException -> logger.warn("Request timed out: $msgId")
+            is CancellationException -> throw e
+            is IOException -> {
+                waitingResponses.values.forEach { it.cancel() }
+                waitingResponses.clear()
+                processManager.close()
+                logger.error("IO exception. Closed the connection.", e)
+            }
+
+            else -> logger.warn("Exception", e)
+        }
+    }
 
     private fun packParams(params: List<Any?>) {
         packer.packArrayHeader(params.size)

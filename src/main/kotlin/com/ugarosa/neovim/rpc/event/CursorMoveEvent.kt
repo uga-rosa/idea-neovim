@@ -1,5 +1,6 @@
 package com.ugarosa.neovim.rpc.event
 
+import com.ugarosa.neovim.common.decode
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 
@@ -14,16 +15,13 @@ fun maybeCursorMoveEvent(push: NeovimRpcClient.PushNotification): CursorMoveEven
     if (push.method != "nvim_cursor_move_event") {
         return null
     }
-    try {
-        val params = push.params.asArrayValue().list()
+    return push.params.decode {
+        val params = it.asArrayValue().list()
         val bufferId =
             params[0].asIntegerValue().toInt()
                 .let { BufferId(it) }
         val line = params[1].asIntegerValue().toInt()
         val column = params[2].asIntegerValue().toInt()
-        return CursorMoveEvent(bufferId, line, column)
-    } catch (e: Exception) {
-        logger.warn(e)
-        return null
+        CursorMoveEvent(bufferId, line, column)
     }
 }

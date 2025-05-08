@@ -1,6 +1,5 @@
 package com.ugarosa.neovim.session
 
-import arrow.core.getOrElse
 import com.intellij.codeInsight.lookup.LookupManager
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.EDT
@@ -29,8 +28,9 @@ import kotlinx.coroutines.withContext
 
 val NEOVIM_SESSION_KEY = Key.create<Deferred<NeovimEditorSession?>>("NEOVIM_SESSION_KEY")
 
-suspend fun Editor.getSessionOrNull(): NeovimEditorSession? {
+suspend fun Editor.getSession(): NeovimEditorSession {
     return getUserData(NEOVIM_SESSION_KEY)?.await()
+        ?: throw IllegalStateException("Neovim session not found")
 }
 
 /**
@@ -51,8 +51,6 @@ class NeovimEditorSession private constructor(
     private val modeManager = getModeManager()
 
     companion object {
-        private val logger = thisLogger()
-
         fun create(
             scope: CoroutineScope,
             editor: Editor,
@@ -72,12 +70,10 @@ class NeovimEditorSession private constructor(
             editor: Editor,
             project: Project,
             disposable: Disposable,
-        ): NeovimEditorSession? {
+        ): NeovimEditorSession {
             val bufferId =
-                createBuffer(getClient()).getOrElse {
-                    logger.warn("Failed to create buffer: $it")
-                    return null
-                }
+                createBuffer(getClient())
+                    ?: throw IllegalStateException("Failed to create buffer")
             val documentHandler = NeovimDocumentHandler.create(scope, editor, bufferId)
             val cursorHandler = NeovimCursorHandler.create(scope, editor, disposable, bufferId)
             val statusLineHandler = StatusLineHandler(project)

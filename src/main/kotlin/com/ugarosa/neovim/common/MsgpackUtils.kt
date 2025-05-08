@@ -1,6 +1,15 @@
 package com.ugarosa.neovim.common
 
+import com.ugarosa.neovim.rpc.function.logger
 import org.msgpack.value.Value
+
+fun <T> Value.decode(f: (Value) -> T): T? =
+    runCatching {
+        f(this)
+    }.getOrElse {
+        logger.warn("Failed to decode value: $this", it)
+        null
+    }
 
 fun Value.asStringMap(): Map<String, Any> =
     asMapValue().map()

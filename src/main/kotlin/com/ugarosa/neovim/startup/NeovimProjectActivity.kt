@@ -13,7 +13,7 @@ import com.intellij.openapi.fileEditor.TextEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
 import com.ugarosa.neovim.session.NeovimEditorSession
-import com.ugarosa.neovim.session.getSessionOrNull
+import com.ugarosa.neovim.session.getSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -66,7 +66,7 @@ class NeovimProjectActivity(
         // Activate the buffer in the currently selected editor
         val fileEditorManager = FileEditorManager.getInstance(project)
         val selectedEditor = fileEditorManager.selectedTextEditor
-        selectedEditor?.getSessionOrNull()?.activateBuffer()
+        selectedEditor?.getSession()?.activateBuffer()
         // Activate the buffer when the editor selection changes
         project.messageBus.connect(disposable).subscribe(
             FileEditorManagerListener.FILE_EDITOR_MANAGER,
@@ -75,7 +75,7 @@ class NeovimProjectActivity(
                     val newEditor = event.newEditor
                     if (newEditor is TextEditor) {
                         scope.launch {
-                            newEditor.editor.getSessionOrNull()?.activateBuffer()
+                            newEditor.editor.getSession().activateBuffer()
                         }
                     }
                     super.selectionChanged(event)
