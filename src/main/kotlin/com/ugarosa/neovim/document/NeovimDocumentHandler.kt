@@ -14,7 +14,6 @@ import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.event.BufLinesEvent
 import com.ugarosa.neovim.rpc.function.BufferSetTextParams
 import com.ugarosa.neovim.rpc.function.bufferAttach
-import com.ugarosa.neovim.rpc.function.bufferDetach
 import com.ugarosa.neovim.rpc.function.bufferSetLines
 import com.ugarosa.neovim.rpc.function.bufferSetText
 import com.ugarosa.neovim.rpc.function.input
@@ -36,10 +35,7 @@ class NeovimDocumentHandler private constructor(
             NeovimDocumentListener(this),
             { editor.document.addDocumentListener(it) },
             { editor.document.removeDocumentListener(it) },
-        ).apply {
-            logger.trace("Registering document listener for buffer: $bufferId")
-            register()
-        }
+        )
 
     companion object {
         suspend fun create(
@@ -49,7 +45,7 @@ class NeovimDocumentHandler private constructor(
         ): NeovimDocumentHandler {
             val handler = NeovimDocumentHandler(scope, editor, bufferId)
             handler.initializeBuffer()
-            handler.enableBufLinesEvent()
+            handler.enableListener()
             return handler
         }
     }
@@ -57,20 +53,16 @@ class NeovimDocumentHandler private constructor(
     private suspend fun initializeBuffer() {
         val liens = editor.document.text.split("\n")
         bufferSetLines(client, bufferId, 0, -1, liens)
-            .onRight { logger.trace("Initialized buffer: $bufferId") }
-            .onLeft { logger.warn("Failed to initialize: $it") }
-    }
-
-    suspend fun enableBufLinesEvent() {
+            .onRight { logger.info("Set lines to the buffer: $bufferId") }
+            .onLeft { logger.warn("Failed to set lines to the buffer $bufferId: $it") }
         bufferAttach(client, bufferId)
-            .onRight { logger.trace("Attached buffer: $bufferId") }
-            .onLeft { logger.warn("Failed to attach buffer: $it") }
+            .onRight { logger.info("Attached the buffer: $bufferId") }
+            .onLeft { logger.warn("Failed to attach the buffer $bufferId: $it") }
     }
 
-    suspend fun disableBufLinesEvent() {
-        bufferDetach(client, bufferId)
-            .onRight { logger.trace("Detached buffer: $bufferId") }
-            .onLeft { logger.warn("Failed to detach buffer: $it") }
+    private fun enableListener() {
+        logger.trace("Enabling document listener for buffer: $bufferId")
+        documentListenerGuard.register()
     }
 
     suspend fun activateBuffer() {

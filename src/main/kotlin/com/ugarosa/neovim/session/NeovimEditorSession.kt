@@ -38,7 +38,6 @@ suspend fun Editor.getSessionOrNull(): NeovimEditorSession? {
  * Actual handling of events delegated to specific handlers.
  */
 class NeovimEditorSession private constructor(
-    private val scope: CoroutineScope,
     private val editor: Editor,
     private val bufferId: BufferId,
     private val documentHandler: NeovimDocumentHandler,
@@ -84,7 +83,6 @@ class NeovimEditorSession private constructor(
             val actionHandler = NeovimActionHandler(editor)
             val session =
                 NeovimEditorSession(
-                    scope,
                     editor,
                     bufferId,
                     documentHandler,
@@ -131,8 +129,6 @@ class NeovimEditorSession private constructor(
                 statusLineHandler.updateStatusLine(event.mode)
 
                 if (event.mode.isInsert()) {
-                    // Disable nvim_buf_lines_event if in insert mode
-                    documentHandler.disableBufLinesEvent()
                     cursorHandler.disableCursorListener()
                 } else {
                     // Close completion popup
@@ -140,8 +136,6 @@ class NeovimEditorSession private constructor(
                         LookupManager.getActiveLookup(editor)
                             ?.hideLookup(true)
                     }
-                    // Re-enable nvim_buf_lines_event
-                    documentHandler.enableBufLinesEvent()
                     cursorHandler.enableCursorListener()
                 }
             }

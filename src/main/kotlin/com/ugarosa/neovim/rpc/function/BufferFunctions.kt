@@ -72,12 +72,3 @@ suspend fun bufferAttach(
         client.notify("nvim_buf_attach", listOf(bufferId, false, emptyMap<String, Any>()))
             .translate().bind()
     }
-
-suspend fun bufferDetach(
-    client: NeovimRpcClient,
-    bufferId: BufferId,
-): Either<NeovimFunctionError, Unit> =
-    either {
-        client.notify("nvim_buf_detach", listOf(bufferId))
-            .translate().bind()
-    }
