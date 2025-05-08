@@ -60,6 +60,7 @@ tasks {
 }
 
 tasks.named<RunIdeTask>("runIde") {
+    systemProperties["idea.log.trace.categories"] = "#com.ugarosa.neovim"
     jvmArgs =
         listOf(
             "-Dnvim.listen.address=127.0.0.1:6666",
