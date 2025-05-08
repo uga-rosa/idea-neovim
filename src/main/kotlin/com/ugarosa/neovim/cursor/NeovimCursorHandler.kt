@@ -30,17 +30,13 @@ class NeovimCursorHandler private constructor(
 ) {
     private val logger = thisLogger()
     private val client = getClient()
+    private val optionManager = getOptionManager()
     private val caretListenerGuard =
         ListenerGuard(
             NeovimCaretListener(scope, this),
             { editor.caretModel.addCaretListener(it, disposable) },
             { editor.caretModel.removeCaretListener(it) },
-        ).apply {
-            logger.trace("Registering caret listener for buffer: $bufferId")
-            register()
-        }
-
-    private val optionManager = getOptionManager()
+        )
 
     companion object {
         suspend fun create(
@@ -49,18 +45,20 @@ class NeovimCursorHandler private constructor(
             disposable: Disposable,
             bufferId: BufferId,
         ): NeovimCursorHandler {
-            withContext(Dispatchers.EDT) {
-                editor.settings.isBlockCursor = true
-            }
-            return NeovimCursorHandler(scope, editor, disposable, bufferId)
+            val handler = NeovimCursorHandler(scope, editor, disposable, bufferId)
+            handler.changeCursorShape(NeovimMode.default)
+            handler.enableCursorListener()
+            return handler
         }
     }
 
     fun enableCursorListener() {
+        logger.trace("Enabling cursor listener for buffer: $bufferId")
         caretListenerGuard.register()
     }
 
     fun disableCursorListener() {
+        logger.trace("Disabling cursor listener for buffer: $bufferId")
         caretListenerGuard.unregister()
     }
 
