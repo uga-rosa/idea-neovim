@@ -1,9 +1,11 @@
-package com.ugarosa.neovim.rpc.event
+package com.ugarosa.neovim.common
 
-import com.intellij.openapi.diagnostic.Logger
 import org.msgpack.value.Value
 
-val logger = Logger.getInstance("com.ugarosa.neovim.rpc.event")
+fun Value.asStringMap(): Map<String, Any> =
+    asMapValue().map()
+        .mapKeys { it.key.asStringValue().asString() }
+        .mapValues { it.value.asAny() }
 
 fun Value.asAny(): Any =
     when {

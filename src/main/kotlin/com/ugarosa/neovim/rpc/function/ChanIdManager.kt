@@ -41,14 +41,9 @@ object ChanIdManager {
         }
 
     private suspend fun request(client: NeovimRpcClient): Either<NeovimFunctionError, Int> =
-        either {
-            val result =
-                client.request("nvim_get_chan_info", listOf(0))
-                    .translate().bind()
-            Either.catch {
-                result.asMapValue().get("id")!!.asIntegerValue().toInt()
-            }.mapLeft { NeovimFunctionError.ResponseTypeMismatch }.bind()
-        }
+        client.request("nvim_get_chan_info", listOf(0))
+            .translate()
+            .flatMapValue { it.asMapValue().get("id")!!.asIntegerValue().toInt() }
 
     private fun MapValue.get(key: String): Value? =
         this.map().entries

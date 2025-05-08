@@ -1,28 +1,21 @@
 package com.ugarosa.neovim.rpc.function
 
 import arrow.core.Either
-import arrow.core.raise.either
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.asBufferId
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 
 suspend fun createBuffer(client: NeovimRpcClient): Either<NeovimFunctionError, BufferId> =
-    either {
-        val result =
-            client.request("nvim_create_buf", listOf(true, false))
-                .translate().bind()
-        Either.catch { result.asBufferId() }
-            .mapLeft { NeovimFunctionError.ResponseTypeMismatch }.bind()
-    }
+    client.request("nvim_create_buf", listOf(true, false))
+        .translate()
+        .flatMapValue { it.asBufferId() }
 
 suspend fun setCurrentBuffer(
     client: NeovimRpcClient,
     bufferId: BufferId,
 ): Either<NeovimFunctionError, Unit> =
-    either {
-        client.notify("nvim_set_current_buf", listOf(bufferId))
-            .translate().bind()
-    }
+    client.notify("nvim_set_current_buf", listOf(bufferId))
+        .translate()
 
 suspend fun bufferSetLines(
     client: NeovimRpcClient,
@@ -31,10 +24,8 @@ suspend fun bufferSetLines(
     end: Int,
     lines: List<String>,
 ): Either<NeovimFunctionError, Unit> =
-    either {
-        client.notify("nvim_buf_set_lines", listOf(bufferId, start, end, false, lines))
-            .translate().bind()
-    }
+    client.notify("nvim_buf_set_lines", listOf(bufferId, start, end, false, lines))
+        .translate()
 
 data class BufferSetTextParams(
     val bufferId: BufferId,
@@ -49,26 +40,22 @@ suspend fun bufferSetText(
     client: NeovimRpcClient,
     params: BufferSetTextParams,
 ): Either<NeovimFunctionError, Unit> =
-    either {
-        client.notify(
-            "nvim_buf_set_text",
-            listOf(
-                params.bufferId,
-                params.startRow,
-                params.startCol,
-                params.endRow,
-                params.endCol,
-                params.replacement,
-            ),
-        )
-            .translate().bind()
-    }
+    client.notify(
+        "nvim_buf_set_text",
+        listOf(
+            params.bufferId,
+            params.startRow,
+            params.startCol,
+            params.endRow,
+            params.endCol,
+            params.replacement,
+        ),
+    )
+        .translate()
 
 suspend fun bufferAttach(
     client: NeovimRpcClient,
     bufferId: BufferId,
 ): Either<NeovimFunctionError, Unit> =
-    either {
-        client.notify("nvim_buf_attach", listOf(bufferId, false, emptyMap<String, Any>()))
-            .translate().bind()
-    }
+    client.notify("nvim_buf_attach", listOf(bufferId, false, emptyMap<String, Any>()))
+        .translate()

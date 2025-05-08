@@ -1,6 +1,7 @@
 package com.ugarosa.neovim.rpc.function
 
 import arrow.core.Either
+import arrow.core.flatMap
 import arrow.core.raise.either
 import arrow.core.raise.ensure
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
@@ -48,3 +49,9 @@ private fun NeovimRpcClient.NotifyError.translate(): NeovimFunctionError {
         is NeovimRpcClient.NotifyError.Unexpected -> NeovimFunctionError.Unexpected
     }
 }
+
+fun <T> Either<NeovimFunctionError, Value>.flatMapValue(f: (Value) -> T): Either<NeovimFunctionError, T> =
+    flatMap {
+        Either.catch { f(it) }
+            .mapLeft { NeovimFunctionError.ResponseTypeMismatch }
+    }

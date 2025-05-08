@@ -1,5 +1,6 @@
 package com.ugarosa.neovim.rpc.event
 
+import com.ugarosa.neovim.common.asAny
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 
