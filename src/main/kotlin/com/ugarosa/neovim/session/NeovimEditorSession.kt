@@ -17,6 +17,7 @@ import com.ugarosa.neovim.document.NeovimDocumentHandler
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.event.maybeBufLinesEvent
 import com.ugarosa.neovim.rpc.event.maybeCursorMoveEvent
+import com.ugarosa.neovim.rpc.event.maybeExecIdeaActionEvent
 import com.ugarosa.neovim.rpc.event.maybeModeChangeEvent
 import com.ugarosa.neovim.rpc.function.createBuffer
 import com.ugarosa.neovim.statusline.StatusLineHandler
@@ -138,6 +139,14 @@ class NeovimEditorSession private constructor(
                     }
                     cursorHandler.enableCursorListener()
                 }
+            }
+        }
+
+        client.registerPushHandler { push ->
+            val event = maybeExecIdeaActionEvent(push)
+            if (event?.bufferId == bufferId) {
+                logger.trace("Execute action: ${event.actionId}")
+                actionHandler.executeAction(event.actionId)
             }
         }
     }

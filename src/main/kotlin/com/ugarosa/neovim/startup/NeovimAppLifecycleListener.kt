@@ -5,6 +5,7 @@ import com.intellij.openapi.diagnostic.thisLogger
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.common.getKeyRouter
 import com.ugarosa.neovim.common.getOptionManager
+import com.ugarosa.neovim.rpc.function.createCommand
 import com.ugarosa.neovim.rpc.function.enforceSingleWindow
 import com.ugarosa.neovim.rpc.function.hookCursorMove
 import com.ugarosa.neovim.rpc.function.hookModeChange
@@ -36,6 +37,12 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
                 logger.warn("Failed to hook mode change: $it")
             }.onRight {
                 logger.debug("Hooked mode change")
+            }
+
+            createCommand(client).onLeft {
+                logger.warn("Failed to create command: $it")
+            }.onRight {
+                logger.debug("Created command")
             }
 
             optionManager.initializeGlobal()
