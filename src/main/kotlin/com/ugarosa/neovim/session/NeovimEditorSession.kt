@@ -8,6 +8,7 @@ import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
+import com.ugarosa.neovim.action.NeovimActionHandler
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.common.getModeManager
 import com.ugarosa.neovim.common.getOptionManager
@@ -20,11 +21,17 @@ import com.ugarosa.neovim.rpc.event.maybeModeChangeEvent
 import com.ugarosa.neovim.rpc.function.createBuffer
 import com.ugarosa.neovim.statusline.StatusLineHandler
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-val NEOVIM_SESSION_KEY = Key.create<NeovimEditorSession>("NEOVIM_SESSION_KEY")
+val NEOVIM_SESSION_KEY = Key.create<Deferred<NeovimEditorSession?>>("NEOVIM_SESSION_KEY")
+
+suspend fun Editor.getSessionOrNull(): NeovimEditorSession? {
+    return getUserData(NEOVIM_SESSION_KEY)?.await()
+}
 
 /**
  * Represents a session of Neovim editor.
@@ -38,6 +45,7 @@ class NeovimEditorSession private constructor(
     private val documentHandler: NeovimDocumentHandler,
     private val cursorHandler: NeovimCursorHandler,
     private val statusLineHandler: StatusLineHandler,
+    private val actionHandler: NeovimActionHandler,
 ) {
     private val logger = thisLogger()
     private val client = getClient()
@@ -46,7 +54,21 @@ class NeovimEditorSession private constructor(
     companion object {
         private val logger = thisLogger()
 
-        suspend fun create(
+        fun create(
+            scope: CoroutineScope,
+            editor: Editor,
+            project: Project,
+            disposable: Disposable,
+        ) {
+            editor.putUserData(
+                NEOVIM_SESSION_KEY,
+                scope.async {
+                    createInternal(scope, editor, project, disposable)
+                },
+            )
+        }
+
+        private suspend fun createInternal(
             scope: CoroutineScope,
             editor: Editor,
             project: Project,
@@ -60,6 +82,7 @@ class NeovimEditorSession private constructor(
             val documentHandler = NeovimDocumentHandler.create(scope, editor, bufferId)
             val cursorHandler = NeovimCursorHandler.create(scope, editor, disposable, bufferId)
             val statusLineHandler = StatusLineHandler(project)
+            val actionHandler = NeovimActionHandler(editor)
             val session =
                 NeovimEditorSession(
                     scope,
@@ -68,6 +91,7 @@ class NeovimEditorSession private constructor(
                     documentHandler,
                     cursorHandler,
                     statusLineHandler,
+                    actionHandler,
                 )
 
             session.initializePushHandler()
@@ -130,5 +154,9 @@ class NeovimEditorSession private constructor(
             documentHandler.activateBuffer()
             cursorHandler.syncIdeaToNeovim()
         }
+    }
+
+    suspend fun executeAction(actionId: String) {
+        actionHandler.executeAction(actionId)
     }
 }

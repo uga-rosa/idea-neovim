@@ -2,8 +2,6 @@ package com.ugarosa.neovim.keymap.router
 
 import com.intellij.ide.IdeEventQueue
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
@@ -15,10 +13,9 @@ import com.ugarosa.neovim.config.idea.KeyMappingAction
 import com.ugarosa.neovim.keymap.dispatcher.NeovimEventDispatcher
 import com.ugarosa.neovim.keymap.notation.NeovimKeyNotation
 import com.ugarosa.neovim.rpc.function.input
+import com.ugarosa.neovim.session.getSessionOrNull
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.atomic.AtomicReference
 
@@ -111,6 +108,7 @@ class NeovimKeyRouterImpl(
         actions: List<KeyMappingAction>,
         editor: Editor,
     ) {
+        val session = editor.getSessionOrNull()
         actions.forEach { action ->
             when (action) {
                 is KeyMappingAction.SendToNeovim -> {
@@ -119,33 +117,12 @@ class NeovimKeyRouterImpl(
                 }
 
                 is KeyMappingAction.ExecuteIdeaAction -> {
-                    logger.trace("Executing action: ${action.actionId}")
-                    callAction(action, editor)
+                    session?.run {
+                        logger.trace("Executing action: ${action.actionId}")
+                        executeAction(action.actionId)
+                    }
                 }
             }
-        }
-    }
-
-    private suspend fun callAction(
-        action: KeyMappingAction.ExecuteIdeaAction,
-        editor: Editor,
-    ) {
-        val anAction =
-            ActionManager.getInstance().getAction(action.actionId)
-                ?: run {
-                    logger.warn("Action not found: ${action.actionId}")
-                    return
-                }
-        withContext(Dispatchers.EDT) {
-            val res =
-                ActionManager.getInstance().tryToExecute(
-                    anAction,
-                    null,
-                    editor.contentComponent,
-                    "IdeaNeovim",
-                    true,
-                )
-            res.waitFor(5_000)
         }
     }
 
