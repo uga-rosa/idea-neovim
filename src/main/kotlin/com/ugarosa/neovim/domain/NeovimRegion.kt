@@ -11,14 +11,13 @@ data class NeovimRegion(
     val endColumn: Int,
 ) {
     fun startOffset(document: Document): Int {
-        val pos = NeovimPosition(row, startColumn).toLogicalPosition(document)
-        return document.getLineStartOffset(pos.line) + pos.column
+        return NeovimPosition(row, startColumn).toOffset(document)
     }
 
     fun endOffset(document: Document): Int {
-        val pos = NeovimPosition(row, endColumn).toLogicalPosition(document)
-        val lineEndOffset = document.getLineEndOffset(pos.line)
-        return (document.getLineStartOffset(pos.line) + pos.column + 1)
-            .coerceAtMost(lineEndOffset)
+        val offset = NeovimPosition(row, endColumn).toOffset(document)
+        val line = document.getLineNumber(offset)
+        val lineEndOffset = document.getLineEndOffset(line)
+        return (offset + 1).coerceAtMost(lineEndOffset)
     }
 }
