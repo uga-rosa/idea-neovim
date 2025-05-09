@@ -3,85 +3,70 @@ package com.ugarosa.neovim.selection
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
-import com.intellij.openapi.editor.VisualPosition
-import com.ugarosa.neovim.common.NeovimPosition
-import com.ugarosa.neovim.common.toLogicalPosition
-import com.ugarosa.neovim.rpc.event.VisualMode
+import com.intellij.openapi.editor.colors.EditorColors
+import com.intellij.openapi.editor.colors.EditorColorsManager
+import com.intellij.openapi.editor.markup.HighlighterLayer
+import com.intellij.openapi.editor.markup.HighlighterTargetArea
+import com.intellij.openapi.editor.markup.RangeHighlighter
+import com.intellij.openapi.editor.markup.TextAttributes
 import com.ugarosa.neovim.rpc.event.VisualSelectionEvent
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 class NeovimSelectionHandler(
     private val editor: Editor,
 ) {
     private val logger = thisLogger()
+    private val globalScheme = EditorColorsManager.getInstance().globalScheme
+    private val selectionColor = globalScheme.getColor(EditorColors.SELECTION_BACKGROUND_COLOR)
+    private val attributes =
+        TextAttributes().apply {
+            backgroundColor = selectionColor
+        }
+    private val highlighters = mutableListOf<RangeHighlighter>()
+    private val mutex = Mutex()
 
     suspend fun applyVisualSelectionEvent(event: VisualSelectionEvent) {
         logger.trace("applyVisualSelectionEvent: $event")
-        when (event.mode) {
-            VisualMode.VISUAL -> selectWord(event)
-            VisualMode.VISUAL_LINE -> selectLine(event)
-            VisualMode.VISUAL_BLOCK -> selectBlock(event)
-        }
-    }
 
-    private suspend fun selectWord(event: VisualSelectionEvent) {
-        val start = event.startPosition.toLogicalPosition(editor.document)
-        val startOffset = editor.logicalPositionToOffset(start)
-        val end = event.endPosition.toLogicalPosition(editor.document)
-        val endOffset = editor.logicalPositionToOffset(end)
-
-        withContext(Dispatchers.EDT) {
-            editor.selectionModel.setSelection(startOffset, endOffset)
-        }
-    }
-
-    private suspend fun selectLine(event: VisualSelectionEvent) {
-        val startOffset = editor.document.getLineStartOffset(event.startPosition.line)
-        val endLine = event.endPosition.line.coerceAtMost(editor.document.lineCount - 1)
-        val endOffset = editor.document.getLineEndOffset(endLine)
-
-        withContext(Dispatchers.EDT) {
-            editor.selectionModel.setSelection(startOffset, endOffset)
-        }
-    }
-
-    private suspend fun selectBlock(event: VisualSelectionEvent) {
-        val startRow = minOf(event.startPosition.row, event.endPosition.row)
-        val endRow = maxOf(event.startPosition.row, event.endPosition.row)
-        val colStartByte = minOf(event.startPosition.col, event.endPosition.col)
-        val colEndByte = maxOf(event.startPosition.col, event.endPosition.col)
+        resetSelection()
 
         val offsets =
-            (startRow..endRow).map { row ->
-                val start = NeovimPosition(row, colStartByte).toLogicalPosition(editor.document)
-                val end = NeovimPosition(row, colEndByte).toLogicalPosition(editor.document)
-                Triple(row - 1, start, end)
+            event.regions.map { region ->
+                val startOffset = region.startOffset(editor.document)
+                val endOffset = region.endOffset(editor.document)
+                startOffset to endOffset
             }
 
-        withContext(Dispatchers.EDT) {
-            val caretModel = editor.caretModel
-            val mainCaret = caretModel.primaryCaret
-            resetSelection()
+        logger.trace("Offsets: $offsets")
 
-            for ((line, start, end) in offsets) {
-                val startOffset = editor.logicalPositionToOffset(start)
-                val endOffset = editor.logicalPositionToOffset(end)
-                val caret =
-                    if (line == mainCaret.logicalPosition.line) {
-                        mainCaret
-                    } else {
-                        caretModel.addCaret(VisualPosition(line, start.column))
-                    }
-                caret?.setSelection(startOffset, endOffset)
+        withContext(Dispatchers.EDT) {
+            mutex.withLock {
+                offsets.forEach { (startOffset, endOffset) ->
+                    val highlighter =
+                        editor.markupModel.addRangeHighlighter(
+                            startOffset,
+                            endOffset,
+                            HighlighterLayer.SELECTION,
+                            attributes,
+                            HighlighterTargetArea.EXACT_RANGE,
+                        )
+                    highlighters.add(highlighter)
+                }
             }
         }
     }
 
     suspend fun resetSelection() {
         withContext(Dispatchers.EDT) {
-            editor.selectionModel.removeSelection()
-            editor.caretModel.removeSecondaryCarets()
+            mutex.withLock {
+                highlighters.forEach {
+                    editor.markupModel.removeHighlighter(it)
+                }
+                highlighters.clear()
+            }
         }
     }
 }

@@ -8,7 +8,9 @@ import com.ugarosa.neovim.common.utf8ByteOffsetToCharOffset
 
 // (1, 0) index, column is byte offset
 data class NeovimPosition(
+    // 1-based
     val row: Int,
+    // 0-based byte offset
     val col: Int,
 ) {
     val line: Int = row - 1

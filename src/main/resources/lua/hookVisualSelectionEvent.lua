@@ -11,13 +11,13 @@ vim.api.nvim_create_autocmd({ "CursorMoved", "ModeChanged" }, {
         local bufferId = vim.api.nvim_get_current_buf()
         local vpos = vim.fn.getpos("v")
         local cpos = vim.fn.getpos(".")
-        -- (row, col) should follow (1, 0) index in neovim
-        local start_row, start_col = vpos[2], vpos[3] - 1
-        local end_row, end_col = cpos[2], cpos[3] - 1
-        if start_row > end_row or (start_row == end_row and start_col > end_col) then
-            start_row, start_col, end_row, end_col = end_row, end_col, start_row, start_col
-        end
-        -- [bufferId, mode, start_row, start_col, end_row, end_col]
-        vim.rpcnotify(chanId, "nvim_visual_selection_event", bufferId, mode, start_row, start_col, end_row, end_col)
+        local regionPos = vim.fn.getregionpos(vpos, cpos, { type = mode })
+        local regions = vim.iter(regionPos):map(function(arg)
+            local startPos, endPos = unpack(arg)
+            return { startPos[2], startPos[3] - 1, endPos[3] - 1 }
+        end):totable()
+        -- [bufferId, regions]
+        -- regions = []{ row (1-index), startCol (0-index), endCol (0-index) }
+        vim.rpcnotify(chanId, "nvim_visual_selection_event", bufferId, regions)
     end,
 })
