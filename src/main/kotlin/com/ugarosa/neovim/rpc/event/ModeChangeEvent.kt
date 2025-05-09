@@ -13,9 +13,9 @@ data class ModeChangeEvent(
     val mode: NeovimMode,
 )
 
-suspend fun hookModeChange(client: NeovimRpcClient) {
+suspend fun hookModeChangeEvent(client: NeovimRpcClient) {
     val chanId = ChanIdManager.fetch(client)
-    val luaCode = readLuaCode("/lua/hookModeChange.lua") ?: return
+    val luaCode = readLuaCode("/lua/hookModeChangeEvent.lua") ?: return
     execLuaNotify(client, luaCode, listOf(chanId))
 }
 

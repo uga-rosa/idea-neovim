@@ -14,9 +14,9 @@ data class CursorMoveEvent(
     val column: Int,
 )
 
-suspend fun hookCursorMove(client: NeovimRpcClient) {
+suspend fun hookCursorMoveEvent(client: NeovimRpcClient) {
     val chanId = ChanIdManager.fetch(client)
-    val luaCode = readLuaCode("/lua/hookCursorMove.lua") ?: return
+    val luaCode = readLuaCode("/lua/hookCursorMoveEvent.lua") ?: return
     execLuaNotify(client, luaCode, listOf(chanId))
 }
 

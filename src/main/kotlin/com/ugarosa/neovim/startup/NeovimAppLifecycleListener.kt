@@ -6,8 +6,9 @@ import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.common.getKeyRouter
 import com.ugarosa.neovim.common.getOptionManager
 import com.ugarosa.neovim.rpc.event.createExecIdeaActionCommand
-import com.ugarosa.neovim.rpc.event.hookCursorMove
-import com.ugarosa.neovim.rpc.event.hookModeChange
+import com.ugarosa.neovim.rpc.event.hookCursorMoveEvent
+import com.ugarosa.neovim.rpc.event.hookModeChangeEvent
+import com.ugarosa.neovim.rpc.event.hookVisualSelectionEvent
 import com.ugarosa.neovim.rpc.function.enforceSingleWindow
 import kotlinx.coroutines.launch
 
@@ -22,10 +23,10 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
             enforceSingleWindow(client)
             logger.debug("Enforced single window")
 
-            hookCursorMove(client)
+            hookCursorMoveEvent(client)
             logger.debug("Hooked cursor move")
 
-            hookModeChange(client)
+            hookModeChangeEvent(client)
             logger.debug("Hooked mode change")
 
             createExecIdeaActionCommand(client)

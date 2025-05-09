@@ -6,7 +6,7 @@ import com.ugarosa.neovim.config.neovim.option.Filetype
 import com.ugarosa.neovim.config.neovim.option.Scrolloff
 import com.ugarosa.neovim.config.neovim.option.Sidescrolloff
 import com.ugarosa.neovim.rpc.BufferId
-import com.ugarosa.neovim.rpc.event.hookLocalOptionSet
+import com.ugarosa.neovim.rpc.event.hookLocalOptionSetEvent
 import com.ugarosa.neovim.rpc.function.getLocalOptions
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -39,7 +39,7 @@ class NeovimLocalOptionsManager() {
         logger.trace("Initializing local options for buffer: $bufferId")
         val localOptions = getLocalOptions(client, bufferId) ?: mapOf()
         putAll(localOptions)
-        hookLocalOptionSet(client, bufferId)
+        hookLocalOptionSetEvent(client, bufferId)
     }
 
     suspend fun get(): NeovimLocalOptions = mutex.withLock { options.copy() }

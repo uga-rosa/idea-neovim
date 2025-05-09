@@ -5,7 +5,7 @@ import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.config.neovim.option.Scrolloff
 import com.ugarosa.neovim.config.neovim.option.Selection
 import com.ugarosa.neovim.config.neovim.option.Sidescrolloff
-import com.ugarosa.neovim.rpc.event.hookGlobalOptionSet
+import com.ugarosa.neovim.rpc.event.hookGlobalOptionSetEvent
 import com.ugarosa.neovim.rpc.function.getGlobalOptions
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -38,7 +38,7 @@ class NeovimGlobalOptionsManager() {
         logger.trace("Initializing global options")
         val globalOptions = getGlobalOptions(client) ?: mapOf()
         putAll(globalOptions)
-        hookGlobalOptionSet(client)
+        hookGlobalOptionSetEvent(client)
     }
 
     suspend fun get(): NeovimGlobalOptions = mutex.withLock { options.copy() }
