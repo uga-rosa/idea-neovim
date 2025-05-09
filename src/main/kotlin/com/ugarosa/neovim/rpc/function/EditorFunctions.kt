@@ -7,12 +7,6 @@ suspend fun input(
     key: String,
 ): Unit = client.notify("nvim_input", listOf(key))
 
-suspend fun hookCursorMove(client: NeovimRpcClient) {
-    val chanId = ChanIdManager.fetch(client)
-    val luaCode = readLuaCode("/lua/hookCursorMove.lua") ?: return
-    execLuaNotify(client, luaCode, listOf(chanId))
-}
-
 suspend fun setCursor(
     client: NeovimRpcClient,
     row: Int,

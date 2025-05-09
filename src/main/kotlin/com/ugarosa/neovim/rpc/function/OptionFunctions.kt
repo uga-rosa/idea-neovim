@@ -17,18 +17,3 @@ suspend fun getLocalOptions(
     return execLua(client, luaCode, listOf(bufferId))
         ?.decode { it.asStringMap() }
 }
-
-suspend fun hookGlobalOptionSet(client: NeovimRpcClient) {
-    val chanId = ChanIdManager.fetch(client)
-    val luaCode = readLuaCode("/lua/hookGlobalOptionSet.lua") ?: return
-    execLuaNotify(client, luaCode, listOf(chanId))
-}
-
-suspend fun hookLocalOptionSet(
-    client: NeovimRpcClient,
-    bufferId: BufferId,
-) {
-    val chanId = ChanIdManager.fetch(client)
-    val luaCode = readLuaCode("/lua/hookLocalOptionSet.lua") ?: return
-    execLuaNotify(client, luaCode, listOf(chanId, bufferId))
-}

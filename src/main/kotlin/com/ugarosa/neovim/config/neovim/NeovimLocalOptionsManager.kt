@@ -6,8 +6,8 @@ import com.ugarosa.neovim.config.neovim.option.Filetype
 import com.ugarosa.neovim.config.neovim.option.Scrolloff
 import com.ugarosa.neovim.config.neovim.option.Sidescrolloff
 import com.ugarosa.neovim.rpc.BufferId
+import com.ugarosa.neovim.rpc.event.hookLocalOptionSet
 import com.ugarosa.neovim.rpc.function.getLocalOptions
-import com.ugarosa.neovim.rpc.function.hookLocalOptionSet
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 

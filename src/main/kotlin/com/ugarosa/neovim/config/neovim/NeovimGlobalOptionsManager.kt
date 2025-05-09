@@ -5,8 +5,8 @@ import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.config.neovim.option.Scrolloff
 import com.ugarosa.neovim.config.neovim.option.Selection
 import com.ugarosa.neovim.config.neovim.option.Sidescrolloff
+import com.ugarosa.neovim.rpc.event.hookGlobalOptionSet
 import com.ugarosa.neovim.rpc.function.getGlobalOptions
-import com.ugarosa.neovim.rpc.function.hookGlobalOptionSet
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 

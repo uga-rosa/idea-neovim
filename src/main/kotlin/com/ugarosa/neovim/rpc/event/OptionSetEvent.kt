@@ -4,6 +4,9 @@ import com.ugarosa.neovim.common.asAny
 import com.ugarosa.neovim.common.decode
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
+import com.ugarosa.neovim.rpc.function.ChanIdManager
+import com.ugarosa.neovim.rpc.function.execLuaNotify
+import com.ugarosa.neovim.rpc.function.readLuaCode
 
 data class OptionSetEvent(
     val bufferId: BufferId,
@@ -26,6 +29,21 @@ enum class OptionScope {
             }
         }
     }
+}
+
+suspend fun hookGlobalOptionSet(client: NeovimRpcClient) {
+    val chanId = ChanIdManager.fetch(client)
+    val luaCode = readLuaCode("/lua/hookGlobalOptionSet.lua") ?: return
+    execLuaNotify(client, luaCode, listOf(chanId))
+}
+
+suspend fun hookLocalOptionSet(
+    client: NeovimRpcClient,
+    bufferId: BufferId,
+) {
+    val chanId = ChanIdManager.fetch(client)
+    val luaCode = readLuaCode("/lua/hookLocalOptionSet.lua") ?: return
+    execLuaNotify(client, luaCode, listOf(chanId, bufferId))
 }
 
 fun maybeOptionSetEvent(push: NeovimRpcClient.PushNotification): OptionSetEvent? {

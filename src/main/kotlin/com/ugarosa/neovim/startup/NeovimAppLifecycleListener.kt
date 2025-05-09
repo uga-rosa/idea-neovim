@@ -5,10 +5,10 @@ import com.intellij.openapi.diagnostic.thisLogger
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.common.getKeyRouter
 import com.ugarosa.neovim.common.getOptionManager
-import com.ugarosa.neovim.rpc.function.createCommand
+import com.ugarosa.neovim.rpc.event.createExecIdeaActionCommand
+import com.ugarosa.neovim.rpc.event.hookCursorMove
+import com.ugarosa.neovim.rpc.event.hookModeChange
 import com.ugarosa.neovim.rpc.function.enforceSingleWindow
-import com.ugarosa.neovim.rpc.function.hookCursorMove
-import com.ugarosa.neovim.rpc.function.hookModeChange
 import kotlinx.coroutines.launch
 
 class NeovimAppLifecycleListener : AppLifecycleListener {
@@ -28,7 +28,7 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
             hookModeChange(client)
             logger.debug("Hooked mode change")
 
-            createCommand(client)
+            createExecIdeaActionCommand(client)
             logger.debug("Created command")
 
             val optionManager = getOptionManager()
