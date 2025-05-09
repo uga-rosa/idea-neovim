@@ -18,7 +18,9 @@ import com.ugarosa.neovim.rpc.event.maybeBufLinesEvent
 import com.ugarosa.neovim.rpc.event.maybeCursorMoveEvent
 import com.ugarosa.neovim.rpc.event.maybeExecIdeaActionEvent
 import com.ugarosa.neovim.rpc.event.maybeModeChangeEvent
+import com.ugarosa.neovim.rpc.event.maybeVisualSelectionEvent
 import com.ugarosa.neovim.rpc.function.createBuffer
+import com.ugarosa.neovim.selection.NeovimSelectionHandler
 import com.ugarosa.neovim.statusline.StatusLineHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -45,6 +47,7 @@ class NeovimEditorSession private constructor(
     private val cursorHandler: NeovimCursorHandler,
     private val statusLineHandler: StatusLineHandler,
     private val actionHandler: NeovimActionHandler,
+    private val selectionHandler: NeovimSelectionHandler,
 ) {
     private val logger = thisLogger()
     private val client = getClient()
@@ -78,6 +81,7 @@ class NeovimEditorSession private constructor(
             val cursorHandler = NeovimCursorHandler.create(scope, editor, disposable, bufferId)
             val statusLineHandler = StatusLineHandler(project)
             val actionHandler = NeovimActionHandler(editor)
+            val selectionHandler = NeovimSelectionHandler(editor)
             val session =
                 NeovimEditorSession(
                     editor,
@@ -86,6 +90,7 @@ class NeovimEditorSession private constructor(
                     cursorHandler,
                     statusLineHandler,
                     actionHandler,
+                    selectionHandler,
                 )
 
             session.initializePushHandler()
@@ -133,6 +138,10 @@ class NeovimEditorSession private constructor(
                     }
                     cursorHandler.enableCursorListener()
                 }
+
+                if (!event.mode.isVisual()) {
+                    selectionHandler.resetSelection()
+                }
             }
         }
 
@@ -140,6 +149,13 @@ class NeovimEditorSession private constructor(
             val event = maybeExecIdeaActionEvent(push)
             if (event?.bufferId == bufferId) {
                 actionHandler.executeAction(event.actionId)
+            }
+        }
+
+        client.registerPushHandler { push ->
+            val event = maybeVisualSelectionEvent(push)
+            if (event?.bufferId == bufferId) {
+                selectionHandler.applyVisualSelectionEvent(event)
             }
         }
     }

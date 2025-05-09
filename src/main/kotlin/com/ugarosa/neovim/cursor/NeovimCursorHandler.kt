@@ -46,7 +46,9 @@ class NeovimCursorHandler private constructor(
             bufferId: BufferId,
         ): NeovimCursorHandler {
             val handler = NeovimCursorHandler(scope, editor, disposable, bufferId)
-            handler.changeCursorShape(NeovimMode.default)
+            withContext(Dispatchers.EDT) {
+                editor.settings.isBlockCursor = true
+            }
             handler.enableCursorListener()
             return handler
         }
@@ -148,7 +150,8 @@ class NeovimCursorHandler private constructor(
 
     suspend fun changeCursorShape(mode: NeovimMode) {
         withContext(Dispatchers.EDT) {
-            editor.settings.isBlockCursor = mode.isBlock()
+            val option = optionManager.getLocal(bufferId)
+            editor.settings.isBlockCursor = mode.isBlock(option.selection)
         }
     }
 

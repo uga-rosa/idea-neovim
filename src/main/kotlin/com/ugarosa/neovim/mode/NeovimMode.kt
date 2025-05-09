@@ -1,5 +1,7 @@
 package com.ugarosa.neovim.mode
 
+import com.ugarosa.neovim.config.neovim.option.Selection
+
 data class NeovimMode(
     val kind: NeovimModeKind,
     val raw: String,
@@ -22,17 +24,20 @@ data class NeovimMode(
         val default = NeovimMode(NeovimModeKind.NORMAL, "n")
     }
 
-    fun isBlock(): Boolean =
+    fun isBlock(selection: Selection): Boolean =
         when (kind) {
             NeovimModeKind.NORMAL,
-            NeovimModeKind.VISUAL,
             NeovimModeKind.SELECT,
             -> true
+
+            NeovimModeKind.VISUAL -> selection == Selection.INCLUSIVE
 
             else -> false
         }
 
     fun isInsert(): Boolean = kind == NeovimModeKind.INSERT
+
+    fun isVisual(): Boolean = kind == NeovimModeKind.VISUAL
 }
 
 enum class NeovimModeKind {

@@ -29,6 +29,9 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
             hookModeChangeEvent(client)
             logger.debug("Hooked mode change")
 
+            hookVisualSelectionEvent(client)
+            logger.debug("Hooked visual selection event")
+
             createExecIdeaActionCommand(client)
             logger.debug("Created command")
 
