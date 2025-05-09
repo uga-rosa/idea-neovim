@@ -4,14 +4,12 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
-import com.intellij.openapi.editor.LogicalPosition
 import com.intellij.openapi.editor.colors.EditorFontType
-import com.intellij.openapi.util.TextRange
 import com.ugarosa.neovim.common.ListenerGuard
-import com.ugarosa.neovim.common.charOffsetToUtf8ByteOffset
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.common.getOptionManager
-import com.ugarosa.neovim.common.utf8ByteOffsetToCharOffset
+import com.ugarosa.neovim.common.toLogicalPosition
+import com.ugarosa.neovim.common.toNeovimPosition
 import com.ugarosa.neovim.config.neovim.option.Scrolloff
 import com.ugarosa.neovim.config.neovim.option.Sidescrolloff
 import com.ugarosa.neovim.mode.NeovimMode
@@ -65,7 +63,7 @@ class NeovimCursorHandler private constructor(
     }
 
     suspend fun syncNeovimToIdea(event: CursorMoveEvent) {
-        val pos = toLogicalPosition(event.line, event.column)
+        val pos = event.position.toLogicalPosition(editor.document)
         caretListenerGuard.runWithoutListenerSuspend {
             withContext(Dispatchers.EDT) {
                 editor.caretModel.moveToLogicalPosition(pos)
@@ -144,8 +142,8 @@ class NeovimCursorHandler private constructor(
 
     suspend fun syncIdeaToNeovim() {
         val logicalPosition = editor.caretModel.logicalPosition
-        val (row, col) = logicalPosition.toNeovimPosition()
-        setCursor(client, row, col)
+        val neovimPosition = logicalPosition.toNeovimPosition(editor.document)
+        setCursor(client, neovimPosition.row, neovimPosition.col)
     }
 
     suspend fun changeCursorShape(mode: NeovimMode) {
@@ -153,39 +151,5 @@ class NeovimCursorHandler private constructor(
             val option = optionManager.getLocal(bufferId)
             editor.settings.isBlockCursor = mode.isBlock(option.selection)
         }
-    }
-
-    private fun toLogicalPosition(
-        nvimRow: Int,
-        nvimCol: Int,
-    ): LogicalPosition {
-        // Neovim uses (1, 0) byte-based indexing
-        // IntelliJ uses 0-based line indexing
-        val document = editor.document
-        val lineIndex = nvimRow - 1
-        if (lineIndex < 0 || lineIndex >= document.lineCount) {
-            return LogicalPosition(0, 0)
-        }
-
-        val lineStartOffset = document.getLineStartOffset(lineIndex)
-        val lineEndOffset = document.getLineEndOffset(lineIndex)
-        val lineText = document.getText(TextRange(lineStartOffset, lineEndOffset))
-        val correctedCol = utf8ByteOffsetToCharOffset(lineText, nvimCol)
-
-        return LogicalPosition(lineIndex, correctedCol)
-    }
-
-    private fun LogicalPosition.toNeovimPosition(): Pair<Int, Int> {
-        // Neovim uses (1, 0) byte-based indexing
-        // IntelliJ uses 0-based line indexing
-        val document = editor.document
-        val line = this.line
-
-        val lineStartOffset = document.getLineStartOffset(line)
-        val lineEndOffset = document.getLineEndOffset(line)
-        val lineText = document.getText(TextRange(lineStartOffset, lineEndOffset))
-        val byteCol = charOffsetToUtf8ByteOffset(lineText, this.column)
-
-        return line + 1 to byteCol
     }
 }

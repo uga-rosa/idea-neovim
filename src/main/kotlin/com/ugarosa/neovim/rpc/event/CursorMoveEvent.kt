@@ -1,5 +1,6 @@
 package com.ugarosa.neovim.rpc.event
 
+import com.ugarosa.neovim.common.NeovimPosition
 import com.ugarosa.neovim.common.decode
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
@@ -10,8 +11,7 @@ import com.ugarosa.neovim.rpc.function.readLuaCode
 // Neovim cursor position is (1,0) byte-indexed
 data class CursorMoveEvent(
     val bufferId: BufferId,
-    val line: Int,
-    val column: Int,
+    val position: NeovimPosition,
 )
 
 suspend fun hookCursorMoveEvent(client: NeovimRpcClient) {
@@ -29,8 +29,8 @@ fun maybeCursorMoveEvent(push: NeovimRpcClient.PushNotification): CursorMoveEven
         val bufferId =
             params[0].asIntegerValue().toInt()
                 .let { BufferId(it) }
-        val line = params[1].asIntegerValue().toInt()
-        val column = params[2].asIntegerValue().toInt()
-        CursorMoveEvent(bufferId, line, column)
+        val row = params[1].asIntegerValue().toInt()
+        val col = params[2].asIntegerValue().toInt()
+        CursorMoveEvent(bufferId, NeovimPosition(row, col))
     }
 }

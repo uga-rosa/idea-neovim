@@ -8,9 +8,9 @@ import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.util.TextRange
 import com.ugarosa.neovim.common.GroupIdGenerator
 import com.ugarosa.neovim.common.ListenerGuard
-import com.ugarosa.neovim.common.charOffsetToUtf8ByteOffset
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.common.getModeManager
+import com.ugarosa.neovim.common.toNeovimPosition
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.event.BufLinesEvent
 import com.ugarosa.neovim.rpc.function.BufferSetTextParams
@@ -182,27 +182,15 @@ class NeovimDocumentHandler private constructor(
 
     // Apply multiline text change
     private fun sendBufferSetText(event: DocumentEvent) {
-        val document = event.document
-
-        val startOffset = event.offset
-        val startRow = document.getLineNumber(startOffset)
-        val startLineStartOffset = document.getLineStartOffset(startRow)
-        val startCharCol = startOffset - startLineStartOffset
-        val startLineText = document.getText(TextRange(startLineStartOffset, document.getLineEndOffset(startRow)))
-        val startByteCol = charOffsetToUtf8ByteOffset(startLineText, startCharCol)
-
-        val endRow = document.getLineNumber(startOffset + event.oldLength)
-        val endLineStartOffset = document.getLineStartOffset(endRow)
-        val endCharCol = startOffset + event.oldLength - endLineStartOffset
-        val endLineText = document.getText(TextRange(endLineStartOffset, document.getLineEndOffset(endRow)))
-        val endByteCol = charOffsetToUtf8ByteOffset(endLineText, endCharCol)
-
+        val start = event.offset.toNeovimPosition(event.document)
+        val endOffset = event.offset + event.oldLength
+        val end = endOffset.toNeovimPosition(event.document)
         val replacement =
             event.newFragment.toString()
                 .replace("\r\n", "\n")
                 .split("\n")
 
-        val params = BufferSetTextParams(bufferId, startRow, startByteCol, endRow, endByteCol, replacement)
+        val params = BufferSetTextParams(bufferId, start.row, start.col, end.row, end.col, replacement)
         scope.launch {
             getChangedTick(client, bufferId)
                 ?.let { ignoreChangedTicks.add(it + 1) }
