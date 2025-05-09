@@ -3,7 +3,6 @@ package com.ugarosa.neovim.config.neovim
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.ugarosa.neovim.common.getClient
-import com.ugarosa.neovim.common.tryComplete
 import com.ugarosa.neovim.config.neovim.option.Filetype
 import com.ugarosa.neovim.config.neovim.option.getOrElse
 import com.ugarosa.neovim.rpc.BufferId
@@ -37,18 +36,15 @@ class NeovimOptionManagerImpl : NeovimOptionManager {
 
     override suspend fun initializeGlobal() {
         globalOptionsManager.initialize()
-        globalInit.tryComplete(Unit)
+        globalInit.complete(Unit)
     }
 
     override suspend fun initializeLocal(bufferId: BufferId) {
-        val initDeferred =
-            localInits.computeIfAbsent(bufferId) {
-                CompletableDeferred()
-            }
-        localOptionsManagers
-            .computeIfAbsent(bufferId) { NeovimLocalOptionsManager() }
-            .initialize(bufferId)
-        initDeferred.tryComplete(Unit)
+        val initDeferred = CompletableDeferred<Unit>()
+        localInits[bufferId] = initDeferred
+        val localOptionsManager = NeovimLocalOptionsManager().apply { initialize(bufferId) }
+        localOptionsManagers[bufferId] = localOptionsManager
+        initDeferred.complete(Unit)
     }
 
     override suspend fun getGlobal(): NeovimGlobalOptions {

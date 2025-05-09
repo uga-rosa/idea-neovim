@@ -8,7 +8,6 @@ import com.intellij.openapi.editor.Editor
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.common.getKeymapSettings
 import com.ugarosa.neovim.common.getModeManager
-import com.ugarosa.neovim.common.setIfDifferent
 import com.ugarosa.neovim.config.idea.KeyMappingAction
 import com.ugarosa.neovim.keymap.dispatcher.NeovimEventDispatcher
 import com.ugarosa.neovim.keymap.notation.NeovimKeyNotation
@@ -47,7 +46,8 @@ class NeovimKeyRouterImpl(
         editor: Editor,
     ): Boolean {
         // If the editor is different, clear the buffer
-        if (currentEditor.setIfDifferent(editor)) {
+        val oldEditor = currentEditor.getAndUpdate { if (it == editor) it else editor }
+        if (oldEditor != editor) {
             logger.trace("Clearing buffer due to editor change")
             buffer.clear()
         }
