@@ -8,10 +8,9 @@ import com.intellij.openapi.editor.colors.EditorFontType
 import com.ugarosa.neovim.common.ListenerGuard
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.common.getOptionManager
-import com.ugarosa.neovim.common.toLogicalPosition
-import com.ugarosa.neovim.common.toNeovimPosition
 import com.ugarosa.neovim.config.neovim.option.Scrolloff
 import com.ugarosa.neovim.config.neovim.option.Sidescrolloff
+import com.ugarosa.neovim.domain.NeovimPosition
 import com.ugarosa.neovim.mode.NeovimMode
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.event.CursorMoveEvent
@@ -142,7 +141,7 @@ class NeovimCursorHandler private constructor(
 
     suspend fun syncIdeaToNeovim() {
         val logicalPosition = editor.caretModel.logicalPosition
-        val neovimPosition = logicalPosition.toNeovimPosition(editor.document)
+        val neovimPosition = NeovimPosition.fromLogicalPosition(logicalPosition, editor.document)
         setCursor(client, neovimPosition.row, neovimPosition.col)
     }
 

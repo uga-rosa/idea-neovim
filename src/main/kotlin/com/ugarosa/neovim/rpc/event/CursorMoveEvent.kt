@@ -1,7 +1,7 @@
 package com.ugarosa.neovim.rpc.event
 
-import com.ugarosa.neovim.common.NeovimPosition
 import com.ugarosa.neovim.common.decode
+import com.ugarosa.neovim.domain.NeovimPosition
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 import com.ugarosa.neovim.rpc.function.ChanIdManager

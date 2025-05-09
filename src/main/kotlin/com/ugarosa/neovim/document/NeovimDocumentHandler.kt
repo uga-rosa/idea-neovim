@@ -10,7 +10,7 @@ import com.ugarosa.neovim.common.GroupIdGenerator
 import com.ugarosa.neovim.common.ListenerGuard
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.common.getModeManager
-import com.ugarosa.neovim.common.toNeovimPosition
+import com.ugarosa.neovim.domain.NeovimPosition
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.event.BufLinesEvent
 import com.ugarosa.neovim.rpc.function.BufferSetTextParams
@@ -182,9 +182,9 @@ class NeovimDocumentHandler private constructor(
 
     // Apply multiline text change
     private fun sendBufferSetText(event: DocumentEvent) {
-        val start = event.offset.toNeovimPosition(event.document)
+        val start = NeovimPosition.fromOffset(event.offset, editor.document)
         val endOffset = event.offset + event.oldLength
-        val end = endOffset.toNeovimPosition(event.document)
+        val end = NeovimPosition.fromOffset(endOffset, editor.document)
         val replacement =
             event.newFragment.toString()
                 .replace("\r\n", "\n")
