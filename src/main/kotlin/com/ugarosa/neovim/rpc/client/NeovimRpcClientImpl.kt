@@ -5,6 +5,7 @@ import com.intellij.openapi.diagnostic.thisLogger
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.TabPageId
 import com.ugarosa.neovim.rpc.WindowId
+import com.ugarosa.neovim.rpc.function.ChanIdManager
 import com.ugarosa.neovim.rpc.process.AutoNeovimProcessManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -83,6 +84,9 @@ class NeovimRpcClientImpl(
             try {
                 requestInternal("nvim_get_api_info", emptyList(), 5000)
                     ?.let {
+                        val chanId = it.result.asArrayValue().list()[0].asIntegerValue().toInt()
+                        ChanIdManager.set(chanId)
+
                         logger.info("Connected to Neovim: $it")
                         healthCheck.complete(Unit)
                     } ?: throw IllegalStateException("Failed to connect to Neovim")

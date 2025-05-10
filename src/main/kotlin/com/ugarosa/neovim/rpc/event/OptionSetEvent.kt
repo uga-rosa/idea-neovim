@@ -32,7 +32,7 @@ enum class OptionScope {
 }
 
 suspend fun hookGlobalOptionSetEvent(client: NeovimRpcClient) {
-    val chanId = ChanIdManager.fetch(client)
+    val chanId = ChanIdManager.get()
     val luaCode = readLuaCode("/lua/hookGlobalOptionSetEvent.lua") ?: return
     execLuaNotify(client, luaCode, listOf(chanId))
 }
@@ -41,7 +41,7 @@ suspend fun hookLocalOptionSetEvent(
     client: NeovimRpcClient,
     bufferId: BufferId,
 ) {
-    val chanId = ChanIdManager.fetch(client)
+    val chanId = ChanIdManager.get()
     val luaCode = readLuaCode("/lua/hookLocalOptionSetEvent.lua") ?: return
     execLuaNotify(client, luaCode, listOf(chanId, bufferId))
 }

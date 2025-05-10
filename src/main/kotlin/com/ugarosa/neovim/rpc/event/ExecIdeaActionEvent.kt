@@ -13,7 +13,7 @@ data class ExecIdeaActionEvent(
 )
 
 suspend fun createExecIdeaActionCommand(client: NeovimRpcClient) {
-    val chanId = ChanIdManager.fetch(client)
+    val chanId = ChanIdManager.get()
     val luaCode = readLuaCode("/lua/createExecIdeaActionCommand.lua") ?: return
     execLuaNotify(client, luaCode, listOf(chanId))
 }

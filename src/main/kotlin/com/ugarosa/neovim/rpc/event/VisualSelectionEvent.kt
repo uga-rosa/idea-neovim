@@ -14,7 +14,7 @@ data class VisualSelectionEvent(
 )
 
 suspend fun hookVisualSelectionEvent(client: NeovimRpcClient) {
-    val chanId = ChanIdManager.fetch(client)
+    val chanId = ChanIdManager.get()
     val luaCode = readLuaCode("/lua/hookVisualSelectionEvent.lua") ?: return
     execLuaNotify(client, luaCode, listOf(chanId))
 }
