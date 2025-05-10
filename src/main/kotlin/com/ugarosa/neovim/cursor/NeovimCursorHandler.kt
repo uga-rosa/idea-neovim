@@ -135,6 +135,25 @@ class NeovimCursorHandler private constructor(
         }
     }
 
+    /**
+     * Adjusts the document offset to account for folded regions when moving the cursor.
+     *
+     * Example:
+     *
+     * ```text
+     * Before folding:
+     * 5 | fun main() {
+     * 6 |     println("Hello, World!")
+     * 7 | }
+     *
+     * After folding:
+     * 5 | fun main() { … }
+     * 8 | // this line represents the line after the folded region
+     * ```
+     *
+     * - Moving from line 5 to line 6 should land at line 8.
+     * - Moving from line 8 to line 7 should land at line 5.
+     */
     private fun adjustOffsetForFoldedRegion(
         offset: Int,
         curswant: Int,
@@ -151,6 +170,16 @@ class NeovimCursorHandler private constructor(
         val foldRegion =
             foldingModel.getCollapsedRegionAtOffset(offset)
                 ?: return offset
+
+        // When moving DOWN into the first folded line, if the folded line is short and the cursor ends up at the end of
+        // the line, it may be mistakenly judged as having entered the fold region.
+        if (direction == MoveDirection.DOWN) {
+            val startLine = editor.document.getLineNumber(offset)
+            val foldStartLine = editor.document.getLineNumber(foldRegion.startOffset)
+            if (startLine == foldStartLine) {
+                return offset
+            }
+        }
 
         val adjustedLine =
             if (direction == MoveDirection.UP) {
