@@ -48,7 +48,7 @@ class NeovimEditorSession private constructor(
             disposable: Disposable,
             bufferId: BufferId,
         ): NeovimEditorSession {
-            val documentHandler = NeovimDocumentHandler.create(scope, editor, bufferId)
+            val documentHandler = NeovimDocumentHandler.create(scope, editor, project, bufferId)
             val cursorHandler = NeovimCursorHandler.create(scope, editor, disposable, bufferId)
             val statusLineHandler = StatusLineHandler(project)
             val actionHandler = NeovimActionHandler(editor)
@@ -122,6 +122,10 @@ class NeovimEditorSession private constructor(
         documentHandler.activateBuffer()
         cursorHandler.syncIdeaToNeovim()
         cursorHandler.changeCursorShape()
+    }
+
+    suspend fun changeModifiable() {
+        documentHandler.changeModifiable()
     }
 
     suspend fun executeAction(actionId: String) {

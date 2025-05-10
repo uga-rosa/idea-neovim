@@ -5,8 +5,14 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.event.EditorFactoryEvent
 import com.intellij.openapi.editor.event.EditorFactoryListener
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
+import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.vfs.VirtualFileManager
+import com.intellij.openapi.vfs.newvfs.BulkFileListener
+import com.intellij.openapi.vfs.newvfs.events.VFileEvent
+import com.intellij.openapi.vfs.newvfs.events.VFilePropertyChangeEvent
 import com.ugarosa.neovim.common.getSessionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -25,6 +31,7 @@ class NeovimProjectActivity(
         setupEditorFactoryListener(project, disposable)
         initializeExistingEditors(project, disposable)
         setupBufferActivationOnEditorSwitch()
+        setupWritablePropertyChangeListener(project, disposable)
     }
 
     private fun setupEditorFactoryListener(
@@ -76,5 +83,29 @@ class NeovimProjectActivity(
                 }
             }
         }
+    }
+
+    private fun setupWritablePropertyChangeListener(
+        project: Project,
+        disposable: Disposable,
+    ) {
+        val connection = project.messageBus.connect(disposable)
+        connection.subscribe(
+            VirtualFileManager.VFS_CHANGES,
+            object : BulkFileListener {
+                override fun after(events: List<VFileEvent>) {
+                    events
+                        .filterIsInstance<VFilePropertyChangeEvent>()
+                        .filter { it.propertyName == VirtualFile.PROP_WRITABLE }
+                        .mapNotNull { FileDocumentManager.getInstance().getDocument(it.file) }
+                        .flatMap { EditorFactory.getInstance().getEditors(it).toList() }
+                        .forEach { editor ->
+                            scope.launch {
+                                sessionManager.get(editor).changeModifiable()
+                            }
+                        }
+                }
+            },
+        )
     }
 }

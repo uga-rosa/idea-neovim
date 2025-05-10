@@ -62,3 +62,19 @@ suspend fun setFiletype(
     val luaCode = readLuaCode("/lua/setFiletype.lua") ?: return
     execLuaNotify(client, luaCode, listOf(bufferId, path))
 }
+
+suspend fun noModifiable(
+    client: NeovimRpcClient,
+    bufferId: BufferId,
+) {
+    val luaCode = readLuaCode("/lua/noModifiable.lua") ?: return
+    execLuaNotify(client, luaCode, listOf(bufferId))
+}
+
+suspend fun modifiable(
+    client: NeovimRpcClient,
+    bufferId: BufferId,
+) {
+    val luaCode = readLuaCode("/lua/modifiable.lua") ?: return
+    execLuaNotify(client, luaCode, listOf(bufferId))
+}

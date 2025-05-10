@@ -6,6 +6,7 @@ import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.fileEditor.FileDocumentManager
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.ugarosa.neovim.common.GroupIdGenerator
 import com.ugarosa.neovim.common.ListenerGuard
@@ -15,13 +16,15 @@ import com.ugarosa.neovim.domain.NeovimPosition
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.event.BufLinesEvent
 import com.ugarosa.neovim.rpc.function.BufferSetTextParams
+import com.ugarosa.neovim.rpc.function.activateBuffer
 import com.ugarosa.neovim.rpc.function.bufferAttach
 import com.ugarosa.neovim.rpc.function.bufferSetLines
 import com.ugarosa.neovim.rpc.function.bufferSetText
 import com.ugarosa.neovim.rpc.function.getChangedTick
 import com.ugarosa.neovim.rpc.function.input
+import com.ugarosa.neovim.rpc.function.modifiable
+import com.ugarosa.neovim.rpc.function.noModifiable
 import com.ugarosa.neovim.rpc.function.setFiletype
-import com.ugarosa.neovim.rpc.function.activateBuffer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -31,6 +34,7 @@ import java.util.concurrent.ConcurrentHashMap
 class NeovimDocumentHandler private constructor(
     private val scope: CoroutineScope,
     private val editor: Editor,
+    private val project: Project,
     private val bufferId: BufferId,
 ) {
     private val logger = thisLogger()
@@ -48,9 +52,10 @@ class NeovimDocumentHandler private constructor(
         suspend fun create(
             scope: CoroutineScope,
             editor: Editor,
+            project: Project,
             bufferId: BufferId,
         ): NeovimDocumentHandler {
-            val handler = NeovimDocumentHandler(scope, editor, bufferId)
+            val handler = NeovimDocumentHandler(scope, editor, project, bufferId)
             handler.initializeBuffer()
             handler.enableListener()
             return handler
@@ -65,8 +70,21 @@ class NeovimDocumentHandler private constructor(
         if (virtualFile != null && virtualFile.isInLocalFileSystem) {
             setFiletype(client, bufferId, virtualFile.path)
         }
+
+        changeModifiable()
+
         bufferAttach(client, bufferId)
     }
+
+    suspend fun changeModifiable() {
+        if (isWritable()) {
+            modifiable(client, bufferId)
+        } else {
+            noModifiable(client, bufferId)
+        }
+    }
+
+    private fun isWritable() = !editor.isViewer && editor.document.isWritable
 
     private fun enableListener() {
         logger.trace("Enabling document listener for buffer: $bufferId")
