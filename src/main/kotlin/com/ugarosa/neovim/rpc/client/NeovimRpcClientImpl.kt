@@ -29,6 +29,7 @@ class NeovimRpcClientImpl(
 ) : NeovimRpcClient {
     private val logger = thisLogger()
     private val processManager = AutoNeovimProcessManager()
+    private val healthCheck = CompletableDeferred<Unit>()
     private val packer = MessagePack.newDefaultPacker(processManager.getOutputStream())
     private val unpacker = MessagePack.newDefaultUnpacker(processManager.getInputStream())
     private val messageIdGenerator = AtomicInteger(0)
@@ -77,9 +78,31 @@ class NeovimRpcClientImpl(
                 }
             }
         }
+
+        scope.launch {
+            try {
+                requestInternal("nvim_get_api_info", emptyList(), 5000)
+                    ?.let {
+                        logger.info("Connected to Neovim: $it")
+                        healthCheck.complete(Unit)
+                    } ?: throw IllegalStateException("Failed to connect to Neovim")
+            } catch (e: Exception) {
+                healthCheck.completeExceptionally(e)
+            }
+        }
     }
 
     override suspend fun request(
+        method: String,
+        params: List<Any?>,
+        timeoutMills: Long?,
+    ): NeovimRpcClient.Response? {
+        healthCheck.await()
+
+        return requestInternal(method, params, timeoutMills)
+    }
+
+    private suspend fun requestInternal(
         method: String,
         params: List<Any?>,
         timeoutMills: Long?,
@@ -119,6 +142,8 @@ class NeovimRpcClientImpl(
         method: String,
         params: List<Any?>,
     ) {
+        healthCheck.await()
+
         logger.trace("Sending notification: method: $method, params: $params")
 
         try {
