@@ -9,8 +9,9 @@ vim.api.nvim_create_autocmd("ModeChanged", {
 		-- If the new mode is insert mode, we need to send the cursor position
 		-- since CursorMoved event will not be triggered.
 		if vim.startswith(vim.v.event.new_mode, "i") then
-			local cursor = vim.api.nvim_win_get_cursor(0)
-			vim.rpcnotify(chanId, "nvim_cursor_move_event", bufferId, cursor[1], cursor[2])
+			local pos = vim.fn.getcurpos()
+			local _, lnum, col, _, curswant = unpack(pos)
+			vim.rpcnotify(chanId, "nvim_cursor_move_event", bufferId, lnum, col - 1, curswant)
 		end
 	end,
 })

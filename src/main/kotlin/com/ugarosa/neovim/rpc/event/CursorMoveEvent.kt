@@ -24,13 +24,12 @@ fun maybeCursorMoveEvent(push: NeovimRpcClient.PushNotification): CursorMoveEven
     if (push.method != "nvim_cursor_move_event") {
         return null
     }
-    return push.params.decode {
-        val params = it.asArrayValue().list()
-        val bufferId =
-            params[0].asIntegerValue().toInt()
-                .let { BufferId(it) }
-        val row = params[1].asIntegerValue().toInt()
+    return push.params.decode { value ->
+        val params = value.asArrayValue().list()
+        val bufferId = params[0].asIntegerValue().toInt().let { BufferId(it) }
+        val lnum = params[1].asIntegerValue().toInt()
         val col = params[2].asIntegerValue().toInt()
-        CursorMoveEvent(bufferId, NeovimPosition(row, col))
+        val curswant = params[3].asIntegerValue().toInt()
+        CursorMoveEvent(bufferId, NeovimPosition(lnum, col, curswant))
     }
 }

@@ -5,12 +5,13 @@ import com.intellij.openapi.application.EDT
 import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
-import com.intellij.openapi.editor.LogicalPosition
 import com.intellij.openapi.editor.colors.EditorFontType
+import com.intellij.openapi.util.TextRange
 import com.ugarosa.neovim.common.ListenerGuard
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.common.getModeManager
 import com.ugarosa.neovim.common.getOptionManager
+import com.ugarosa.neovim.common.takeByte
 import com.ugarosa.neovim.config.neovim.option.Scrolloff
 import com.ugarosa.neovim.config.neovim.option.Sidescrolloff
 import com.ugarosa.neovim.domain.NeovimPosition
@@ -76,7 +77,8 @@ class NeovimCursorHandler private constructor(
         val rawOffset = runReadAction { event.position.toOffset(editor.document) }
         val direction = runReadAction { determineDirection(originalOffset, rawOffset) }
 
-        val adjustedOffset = runReadAction { adjustOffsetForFoldedRegion(rawOffset, direction) }
+        val curswant = event.position.curswant
+        val adjustedOffset = runReadAction { adjustOffsetForFoldedRegion(rawOffset, curswant, direction) }
         val (scrolloff, sidescrolloff) = getScrollOptions()
 
         caretListenerGuard.runWithoutListenerSuspend {
@@ -101,7 +103,14 @@ class NeovimCursorHandler private constructor(
 
         if (adjustedOffset != rawOffset) {
             // If the offset was adjusted, we need to update the cursor position in Neovim
-            syncIdeaToNeovim()
+            // Restore the original curswant
+            val position =
+                runReadAction {
+                    val offset = editor.caretModel.offset
+                    NeovimPosition.fromOffset(offset, editor.document)
+                        .copy(curswant = curswant)
+                }
+            syncIdeaToNeovim(position)
         }
     }
 
@@ -128,11 +137,11 @@ class NeovimCursorHandler private constructor(
 
     private fun adjustOffsetForFoldedRegion(
         offset: Int,
+        curswant: Int,
         direction: MoveDirection,
     ): Int {
         if (modeManager.getMode().isInsert()) return offset
 
-        val originalOffset = editor.caretModel.offset
         if (direction == MoveDirection.LEFT || direction == MoveDirection.RIGHT) {
             return offset
         }
@@ -143,18 +152,20 @@ class NeovimCursorHandler private constructor(
             foldingModel.getCollapsedRegionAtOffset(offset)
                 ?: return offset
 
-        val originalPos = editor.offsetToLogicalPosition(originalOffset)
-        val adjustedPos =
+        val adjustedLine =
             if (direction == MoveDirection.UP) {
                 val startLine = editor.document.getLineNumber(foldRegion.startOffset)
-                val adjustedLine = startLine
-                LogicalPosition(adjustedLine, originalPos.column)
+                startLine
             } else {
-                val endLine = editor.document.getLineNumber(foldRegion.endOffset)
-                val adjustedLine = (endLine + 1).coerceAtMost(editor.document.lineCount - 1)
-                LogicalPosition(adjustedLine, originalPos.column)
+                val endOffset = foldRegion.endOffset + 1
+                val endLine = editor.document.getLineNumber(endOffset)
+                (endLine + 1).coerceAtMost(editor.document.lineCount - 1)
             }
-        return editor.logicalPositionToOffset(adjustedPos)
+        val lineStartOffset = editor.document.getLineStartOffset(adjustedLine)
+        val lineEndOffset = editor.document.getLineEndOffset(adjustedLine)
+        val lineText = editor.document.getText(TextRange(lineStartOffset, lineEndOffset))
+        val curswantOffset = lineText.takeByte(curswant - 1).length.coerceAtMost(lineText.length - 1)
+        return lineStartOffset + curswantOffset
     }
 
     private suspend fun getScrollOptions(): Pair<Scrolloff, Sidescrolloff> {
@@ -217,13 +228,13 @@ class NeovimCursorHandler private constructor(
         }
     }
 
-    suspend fun syncIdeaToNeovim() {
+    suspend fun syncIdeaToNeovim(position: NeovimPosition? = null) {
         val pos =
-            runReadAction {
+            position ?: runReadAction {
                 val offset = editor.caretModel.offset
                 NeovimPosition.fromOffset(offset, editor.document)
             }
-        setCursor(client, pos.row, pos.col)
+        setCursor(client, pos)
     }
 
     suspend fun changeCursorShape(mode: NeovimMode) {

@@ -11,8 +11,9 @@ vim.api.nvim_create_autocmd("CursorMoved", {
 			return
 		end
 		local bufferId = vim.api.nvim_get_current_buf()
-		local cursor = vim.api.nvim_win_get_cursor(0)
+		local pos = vim.fn.getcurpos()
+		local _, lnum, col, _, curswant = unpack(pos)
 		-- [bufferId, line, column]
-		vim.rpcnotify(chanId, "nvim_cursor_move_event", bufferId, cursor[1], cursor[2])
+		vim.rpcnotify(chanId, "nvim_cursor_move_event", bufferId, lnum, col - 1, curswant)
 	end,
 })

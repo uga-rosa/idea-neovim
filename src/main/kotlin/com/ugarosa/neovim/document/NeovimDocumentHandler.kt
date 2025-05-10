@@ -190,7 +190,7 @@ class NeovimDocumentHandler private constructor(
                 .replace("\r\n", "\n")
                 .split("\n")
 
-        val params = BufferSetTextParams(bufferId, start.row, start.col, end.row, end.col, replacement)
+        val params = BufferSetTextParams(bufferId, start.lnum, start.col, end.lnum, end.col, replacement)
         scope.launch {
             getChangedTick(client, bufferId)
                 ?.let { ignoreChangedTicks.add(it + 1) }
