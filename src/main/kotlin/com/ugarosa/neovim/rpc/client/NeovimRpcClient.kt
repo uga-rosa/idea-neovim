@@ -9,7 +9,6 @@ interface NeovimRpcClient {
     suspend fun request(
         method: String,
         params: List<Any?> = emptyList(),
-        timeoutMills: Long? = 500,
     ): Response?
 
     data class Response(

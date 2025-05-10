@@ -82,7 +82,7 @@ class NeovimRpcClientImpl(
 
         scope.launch {
             try {
-                requestInternal("nvim_get_api_info", emptyList(), 5000)
+                requestInternal("nvim_get_api_info", emptyList())
                     ?.let {
                         val chanId = it.result.asArrayValue().list()[0].asIntegerValue().toInt()
                         ChanIdManager.set(chanId)
@@ -99,17 +99,15 @@ class NeovimRpcClientImpl(
     override suspend fun request(
         method: String,
         params: List<Any?>,
-        timeoutMills: Long?,
     ): NeovimRpcClient.Response? {
         healthCheck.await()
 
-        return requestInternal(method, params, timeoutMills)
+        return requestInternal(method, params)
     }
 
     private suspend fun requestInternal(
         method: String,
         params: List<Any?>,
-        timeoutMills: Long?,
     ): NeovimRpcClient.Response? {
         val msgId = messageIdGenerator.getAndIncrement()
         val deferred = CompletableDeferred<NeovimRpcClient.Response>()
@@ -129,11 +127,7 @@ class NeovimRpcClientImpl(
                 }
             }
 
-            return if (timeoutMills == null) {
-                deferred.await()
-            } else {
-                withTimeout(timeoutMills) { deferred.await() }
-            }
+            return withTimeout(3_000) { deferred.await() }
         } catch (e: Exception) {
             handleException(e, msgId)
             return null
