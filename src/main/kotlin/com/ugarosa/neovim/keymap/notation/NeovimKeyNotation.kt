@@ -104,11 +104,14 @@ data class NeovimKeyNotation(
                 val inner = text.substring(1, text.length - 1)
                 val parts = inner.split("-")
 
-                val key = parts.last()
-                if (supportedKeys.none { it.neovimName.equals(key, ignoreCase = true) }) {
-                    logger.warn("Unknown key: $key")
-                    return null
-                }
+                val rawKey = parts.last()
+                val key =
+                    supportedKeys.firstOrNull { it.neovimName.equals(rawKey, ignoreCase = true) }
+                        ?.neovimName
+                        ?: run {
+                            logger.warn("Unknown key: $rawKey")
+                            return null
+                        }
 
                 val mods =
                     parts.dropLast(1).map { token ->
