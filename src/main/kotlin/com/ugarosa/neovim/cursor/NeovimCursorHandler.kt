@@ -185,14 +185,16 @@ class NeovimCursorHandler private constructor(
                 val startLine = editor.document.getLineNumber(foldRegion.startOffset)
                 startLine
             } else {
-                val endOffset = foldRegion.endOffset + 1
+                val endOffset = foldRegion.endOffset
                 val endLine = editor.document.getLineNumber(endOffset)
-                (endLine + 1).coerceAtMost(editor.document.lineCount - 1)
+                val maxLine = (editor.document.lineCount - 1).coerceAtLeast(0)
+                (endLine + 1).coerceAtMost(maxLine)
             }
         val lineStartOffset = editor.document.getLineStartOffset(adjustedLine)
         val lineEndOffset = editor.document.getLineEndOffset(adjustedLine)
         val lineText = editor.document.getText(TextRange(lineStartOffset, lineEndOffset))
-        val curswantOffset = lineText.takeByte(curswant - 1).length.coerceAtMost(lineText.length - 1)
+        val maxCol = (lineText.length - 1).coerceAtLeast(0)
+        val curswantOffset = lineText.takeByte(curswant - 1).length.coerceAtMost(maxCol)
         return lineStartOffset + curswantOffset
     }
 
