@@ -20,7 +20,7 @@ import com.ugarosa.neovim.rpc.function.bufferSetLines
 import com.ugarosa.neovim.rpc.function.bufferSetText
 import com.ugarosa.neovim.rpc.function.getChangedTick
 import com.ugarosa.neovim.rpc.function.input
-import com.ugarosa.neovim.rpc.function.setBufferName
+import com.ugarosa.neovim.rpc.function.setFiletype
 import com.ugarosa.neovim.rpc.function.setCurrentBuffer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -60,9 +60,10 @@ class NeovimDocumentHandler private constructor(
     private suspend fun initializeBuffer() {
         val liens = editor.document.text.split("\n")
         bufferSetLines(client, bufferId, 0, -1, liens)
+
         val virtualFile = FileDocumentManager.getInstance().getFile(editor.document)
         if (virtualFile != null && virtualFile.isInLocalFileSystem) {
-            setBufferName(client, bufferId, virtualFile.path)
+            setFiletype(client, bufferId, virtualFile.path)
         }
         bufferAttach(client, bufferId)
     }
