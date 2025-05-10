@@ -5,20 +5,31 @@ import com.intellij.openapi.diagnostic.thisLogger
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.common.getKeyRouter
 import com.ugarosa.neovim.common.getOptionManager
+import com.ugarosa.neovim.common.getSessionManager
 import com.ugarosa.neovim.rpc.event.createExecIdeaActionCommand
 import com.ugarosa.neovim.rpc.event.hookCursorMoveEvent
 import com.ugarosa.neovim.rpc.event.hookModeChangeEvent
 import com.ugarosa.neovim.rpc.event.hookVisualSelectionEvent
+import com.ugarosa.neovim.rpc.event.maybeBufLinesEvent
+import com.ugarosa.neovim.rpc.event.maybeCursorMoveEvent
+import com.ugarosa.neovim.rpc.event.maybeExecIdeaActionEvent
+import com.ugarosa.neovim.rpc.event.maybeModeChangeEvent
+import com.ugarosa.neovim.rpc.event.maybeVisualSelectionEvent
 import com.ugarosa.neovim.rpc.function.enforceSingleWindow
 import kotlinx.coroutines.launch
 
 class NeovimAppLifecycleListener : AppLifecycleListener {
     private val logger = thisLogger()
+    private val client = getClient()
+    private val sessionManager = getSessionManager()
 
     // Hooks that should be called only once at application startup.
     override fun appFrameCreated(commandLineArgs: List<String>) {
-        val client = getClient()
+        initialize()
+        registerPushHandlers()
+    }
 
+    private fun initialize() {
         client.scope.launch {
             enforceSingleWindow(client)
             logger.debug("Enforced single window")
@@ -42,6 +53,43 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
             val keyRouter = getKeyRouter()
             keyRouter.start()
             logger.trace("Start Neovim key router")
+        }
+    }
+
+    private fun registerPushHandlers() {
+        client.registerPushHandler { push ->
+            maybeBufLinesEvent(push)?.let { event ->
+                val session = sessionManager.get(event.bufferId)
+                session.handleBufferLinesEvent(event)
+            }
+        }
+
+        client.registerPushHandler { push ->
+            maybeCursorMoveEvent(push)?.let { event ->
+                val session = sessionManager.get(event.bufferId)
+                session.handleCursorMoveEvent(event)
+            }
+        }
+
+        client.registerPushHandler { push ->
+            maybeModeChangeEvent(push)?.let { event ->
+                val session = sessionManager.get(event.bufferId)
+                session.handleModeChangeEvent(event)
+            }
+        }
+
+        client.registerPushHandler { push ->
+            maybeVisualSelectionEvent(push)?.let { event ->
+                val session = sessionManager.get(event.bufferId)
+                session.handleVisualSelectionEvent(event)
+            }
+        }
+
+        client.registerPushHandler { push ->
+            maybeExecIdeaActionEvent(push)?.let { event ->
+                val session = sessionManager.get(event.bufferId)
+                session.handleExecIdeaActionEvent(event)
+            }
         }
     }
 }

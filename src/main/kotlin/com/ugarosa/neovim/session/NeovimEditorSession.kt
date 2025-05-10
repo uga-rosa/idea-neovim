@@ -7,17 +7,16 @@ import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.ugarosa.neovim.action.NeovimActionHandler
-import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.common.getModeManager
 import com.ugarosa.neovim.common.getOptionManager
 import com.ugarosa.neovim.cursor.NeovimCursorHandler
 import com.ugarosa.neovim.document.NeovimDocumentHandler
 import com.ugarosa.neovim.rpc.BufferId
-import com.ugarosa.neovim.rpc.event.maybeBufLinesEvent
-import com.ugarosa.neovim.rpc.event.maybeCursorMoveEvent
-import com.ugarosa.neovim.rpc.event.maybeExecIdeaActionEvent
-import com.ugarosa.neovim.rpc.event.maybeModeChangeEvent
-import com.ugarosa.neovim.rpc.event.maybeVisualSelectionEvent
+import com.ugarosa.neovim.rpc.event.BufLinesEvent
+import com.ugarosa.neovim.rpc.event.CursorMoveEvent
+import com.ugarosa.neovim.rpc.event.ExecIdeaActionEvent
+import com.ugarosa.neovim.rpc.event.ModeChangeEvent
+import com.ugarosa.neovim.rpc.event.VisualSelectionEvent
 import com.ugarosa.neovim.selection.NeovimSelectionHandler
 import com.ugarosa.neovim.statusline.StatusLineHandler
 import kotlinx.coroutines.CoroutineScope
@@ -39,7 +38,6 @@ class NeovimEditorSession private constructor(
     private val selectionHandler: NeovimSelectionHandler,
 ) {
     private val logger = thisLogger()
-    private val client = getClient()
     private val modeManager = getModeManager()
 
     companion object {
@@ -66,71 +64,58 @@ class NeovimEditorSession private constructor(
                     selectionHandler,
                 )
 
-            session.initializePushHandler()
-
             getOptionManager().initializeLocal(bufferId)
 
             return session
         }
     }
 
-    private fun initializePushHandler() {
-        client.registerPushHandler { push ->
-            val event = maybeBufLinesEvent(push)
-            if (event?.bufferId == bufferId) {
-                documentHandler.applyBufferLinesEvent(event)
+    suspend fun handleBufferLinesEvent(event: BufLinesEvent) {
+        require(event.bufferId == bufferId) { "Buffer ID mismatch" }
+        documentHandler.applyBufferLinesEvent(event)
+    }
+
+    suspend fun handleCursorMoveEvent(event: CursorMoveEvent) {
+        require(event.bufferId == bufferId) { "Buffer ID mismatch" }
+        cursorHandler.syncNeovimToIdea(event)
+    }
+
+    suspend fun handleModeChangeEvent(event: ModeChangeEvent) {
+        require(event.bufferId == bufferId) { "Buffer ID mismatch" }
+
+        if (!modeManager.setMode(event.mode)) {
+            logger.trace("No mode change, already in ${event.mode}")
+            return
+        }
+        logger.trace("Change mode to ${event.mode}")
+
+        cursorHandler.changeCursorShape(event.mode)
+        statusLineHandler.updateStatusLine(event.mode)
+
+        if (event.mode.isInsert()) {
+            cursorHandler.disableCursorListener()
+        } else {
+            // Close completion popup
+            withContext(Dispatchers.EDT) {
+                LookupManager.getActiveLookup(editor)
+                    ?.hideLookup(true)
             }
+            cursorHandler.enableCursorListener()
         }
 
-        client.registerPushHandler { push ->
-            val event = maybeCursorMoveEvent(push)
-            if (event?.bufferId == bufferId) {
-                cursorHandler.syncNeovimToIdea(event)
-            }
+        if (!event.mode.isVisual()) {
+            selectionHandler.resetSelection()
         }
+    }
 
-        client.registerPushHandler { push ->
-            val event = maybeModeChangeEvent(push)
-            if (event?.bufferId == bufferId) {
-                if (!modeManager.setMode(event.mode)) {
-                    logger.trace("No mode change, already in ${event.mode}")
-                    return@registerPushHandler
-                }
-                logger.trace("Change mode to ${event.mode}")
+    suspend fun handleVisualSelectionEvent(event: VisualSelectionEvent) {
+        require(event.bufferId == bufferId) { "Buffer ID mismatch" }
+        selectionHandler.applyVisualSelectionEvent(event)
+    }
 
-                cursorHandler.changeCursorShape(event.mode)
-                statusLineHandler.updateStatusLine(event.mode)
-
-                if (event.mode.isInsert()) {
-                    cursorHandler.disableCursorListener()
-                } else {
-                    // Close completion popup
-                    withContext(Dispatchers.EDT) {
-                        LookupManager.getActiveLookup(editor)
-                            ?.hideLookup(true)
-                    }
-                    cursorHandler.enableCursorListener()
-                }
-
-                if (!event.mode.isVisual()) {
-                    selectionHandler.resetSelection()
-                }
-            }
-        }
-
-        client.registerPushHandler { push ->
-            val event = maybeExecIdeaActionEvent(push)
-            if (event?.bufferId == bufferId) {
-                actionHandler.executeAction(event.actionId)
-            }
-        }
-
-        client.registerPushHandler { push ->
-            val event = maybeVisualSelectionEvent(push)
-            if (event?.bufferId == bufferId) {
-                selectionHandler.applyVisualSelectionEvent(event)
-            }
-        }
+    suspend fun handleExecIdeaActionEvent(event: ExecIdeaActionEvent) {
+        require(event.bufferId == bufferId) { "Buffer ID mismatch" }
+        actionHandler.executeAction(event.actionId)
     }
 
     suspend fun activateBuffer() {
