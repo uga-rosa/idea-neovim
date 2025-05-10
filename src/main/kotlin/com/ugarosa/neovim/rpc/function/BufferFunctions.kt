@@ -50,3 +50,12 @@ suspend fun bufferAttach(
     client: NeovimRpcClient,
     bufferId: BufferId,
 ): Unit = client.notify("nvim_buf_attach", listOf(bufferId, false, emptyMap<String, Any>()))
+
+suspend fun setBufferName(
+    client: NeovimRpcClient,
+    bufferId: BufferId,
+    path: String,
+) {
+    val luaCode = readLuaCode("/lua/setBufferName.lua") ?: return
+    execLuaNotify(client, luaCode, listOf(bufferId, path))
+}

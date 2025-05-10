@@ -5,6 +5,7 @@ import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.event.DocumentEvent
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.util.TextRange
 import com.ugarosa.neovim.common.GroupIdGenerator
 import com.ugarosa.neovim.common.ListenerGuard
@@ -19,6 +20,7 @@ import com.ugarosa.neovim.rpc.function.bufferSetLines
 import com.ugarosa.neovim.rpc.function.bufferSetText
 import com.ugarosa.neovim.rpc.function.getChangedTick
 import com.ugarosa.neovim.rpc.function.input
+import com.ugarosa.neovim.rpc.function.setBufferName
 import com.ugarosa.neovim.rpc.function.setCurrentBuffer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -58,6 +60,10 @@ class NeovimDocumentHandler private constructor(
     private suspend fun initializeBuffer() {
         val liens = editor.document.text.split("\n")
         bufferSetLines(client, bufferId, 0, -1, liens)
+        val virtualFile = FileDocumentManager.getInstance().getFile(editor.document)
+        if (virtualFile != null && virtualFile.isInLocalFileSystem) {
+            setBufferName(client, bufferId, virtualFile.path)
+        }
         bufferAttach(client, bufferId)
     }
 

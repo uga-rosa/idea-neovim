@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 @Service(Service.Level.APP)
 class NeovimSessionManagerImpl : NeovimSessionManager {
+    private val client = getClient()
     private val byEditor = ConcurrentHashMap<Editor, CompletableDeferred<NeovimEditorSession>>()
     private val byBufferId = ConcurrentHashMap<BufferId, CompletableDeferred<NeovimEditorSession>>()
 
@@ -36,7 +37,7 @@ class NeovimSessionManagerImpl : NeovimSessionManager {
         val deferred = CompletableDeferred<NeovimEditorSession>()
         byEditor[editor] = deferred
         scope.launch {
-            val bufferId = createBuffer(getClient()) ?: error("Failed to create buffer")
+            val bufferId = createBuffer(client) ?: error("Failed to create buffer")
             byBufferId[bufferId] = deferred
             val session = NeovimEditorSession.create(scope, editor, project, disposable, bufferId)
             deferred.complete(session)
