@@ -105,7 +105,7 @@ data class NeovimKeyNotation(
                 val parts = inner.split("-")
 
                 val key = parts.last()
-                if (supportedKeys.none { it.neovimName == key }) {
+                if (supportedKeys.none { it.neovimName.equals(key, ignoreCase = true) }) {
                     logger.warn("Unknown key: $key")
                     return null
                 }
