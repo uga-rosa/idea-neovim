@@ -1,6 +1,7 @@
 package com.ugarosa.neovim.rpc.function
 
 import com.ugarosa.neovim.domain.NeovimPosition
+import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 
 suspend fun input(
@@ -10,8 +11,9 @@ suspend fun input(
 
 suspend fun setCursor(
     client: NeovimRpcClient,
+    bufferId: BufferId,
     pos: NeovimPosition,
 ) {
-    val luaCode = readLuaCode("/lua/setCursorWithoutEvent.lua") ?: return
-    execLuaNotify(client, luaCode, listOf(pos.lnum, pos.col + 1, pos.curswant))
+    val luaCode = readLuaCode("/lua/setCursorEventIgnore.lua") ?: return
+    execLuaNotify(client, luaCode, listOf(bufferId, pos.lnum, pos.col + 1, pos.curswant))
 }

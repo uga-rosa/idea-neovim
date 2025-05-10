@@ -268,7 +268,7 @@ class NeovimCursorHandler private constructor(
                 val offset = editor.caretModel.offset
                 NeovimPosition.fromOffset(offset, editor.document)
             }
-        setCursor(client, pos)
+        setCursor(client, bufferId, pos)
     }
 
     suspend fun changeCursorShape() {

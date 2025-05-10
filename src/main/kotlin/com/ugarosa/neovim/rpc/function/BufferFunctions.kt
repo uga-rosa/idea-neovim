@@ -8,10 +8,13 @@ suspend fun createBuffer(client: NeovimRpcClient): BufferId? =
     client.request("nvim_create_buf", listOf(true, false))
         ?.decode { it.asBufferId() }
 
-suspend fun setCurrentBuffer(
+suspend fun activateBuffer(
     client: NeovimRpcClient,
     bufferId: BufferId,
-): Unit = client.notify("nvim_set_current_buf", listOf(bufferId))
+) {
+    val luaCode = readLuaCode("/lua/activateBufferEventIgnore.lua") ?: return
+    execLuaNotify(client, luaCode, listOf(bufferId))
+}
 
 suspend fun bufferSetLines(
     client: NeovimRpcClient,

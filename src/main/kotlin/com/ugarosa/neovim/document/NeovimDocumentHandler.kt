@@ -21,7 +21,7 @@ import com.ugarosa.neovim.rpc.function.bufferSetText
 import com.ugarosa.neovim.rpc.function.getChangedTick
 import com.ugarosa.neovim.rpc.function.input
 import com.ugarosa.neovim.rpc.function.setFiletype
-import com.ugarosa.neovim.rpc.function.setCurrentBuffer
+import com.ugarosa.neovim.rpc.function.activateBuffer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -74,7 +74,7 @@ class NeovimDocumentHandler private constructor(
     }
 
     suspend fun activateBuffer() {
-        setCurrentBuffer(client, bufferId)
+        activateBuffer(client, bufferId)
     }
 
     suspend fun applyBufferLinesEvent(e: BufLinesEvent) {
