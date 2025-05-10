@@ -83,16 +83,16 @@ class NeovimEditorSession private constructor(
     suspend fun handleModeChangeEvent(event: ModeChangeEvent) {
         require(event.bufferId == bufferId) { "Buffer ID mismatch" }
 
-        if (!modeManager.setMode(event.mode)) {
+        if (!modeManager.set(event.mode)) {
             logger.trace("No mode change, already in ${event.mode}")
             return
         }
         logger.trace("Change mode to ${event.mode}")
 
-        cursorHandler.changeCursorShape(event.mode)
-        statusLineHandler.updateStatusLine(event.mode)
+        cursorHandler.changeCursorShape()
+        statusLineHandler.updateStatusLine()
 
-        if (event.mode.isInsert()) {
+        if (modeManager.get().isInsert()) {
             cursorHandler.disableCursorListener()
         } else {
             // Close completion popup
@@ -103,7 +103,7 @@ class NeovimEditorSession private constructor(
             cursorHandler.enableCursorListener()
         }
 
-        if (!event.mode.isVisual()) {
+        if (!modeManager.get().isVisual()) {
             selectionHandler.resetSelection()
         }
     }
@@ -121,7 +121,7 @@ class NeovimEditorSession private constructor(
     suspend fun activateBuffer() {
         documentHandler.activateBuffer()
         cursorHandler.syncIdeaToNeovim()
-        cursorHandler.changeCursorShape(modeManager.getMode())
+        cursorHandler.changeCursorShape()
     }
 
     suspend fun executeAction(actionId: String) {

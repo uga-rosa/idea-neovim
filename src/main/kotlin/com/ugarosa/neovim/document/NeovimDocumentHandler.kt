@@ -107,8 +107,7 @@ class NeovimDocumentHandler private constructor(
 
     // Must be called before the document is changed
     fun syncDocumentChange(event: DocumentEvent) {
-        val mode = modeManager.getMode()
-        if (mode.isInsert() && isSingleLineChange(event)) {
+        if (modeManager.get().isInsert() && isSingleLineChange(event)) {
             sendInput(event)
         } else {
             sendBufferSetText(event)

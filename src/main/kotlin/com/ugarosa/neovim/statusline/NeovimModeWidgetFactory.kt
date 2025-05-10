@@ -7,6 +7,7 @@ import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.openapi.wm.StatusBarWidgetFactory
 import com.intellij.ui.JBColor
 import com.intellij.util.ui.JBUI
+import com.ugarosa.neovim.common.getModeManager
 import com.ugarosa.neovim.mode.NeovimMode
 import com.ugarosa.neovim.mode.NeovimModeKind
 import javax.swing.JLabel
@@ -53,7 +54,8 @@ class NeovimModeWidget : CustomStatusBarWidget {
 
     override fun getComponent() = label
 
-    fun updateMode(newMode: NeovimMode) {
+    fun updateMode() {
+        val newMode = getModeManager().get()
         if (mode != newMode) {
             mode = newMode
             label.text = newMode.kind.name

@@ -58,7 +58,7 @@ class NeovimKeyRouterImpl(
     }
 
     private fun processBuffer(editor: Editor): Boolean {
-        val mode = modeManager.getMode()
+        val mode = modeManager.get()
         val snapshot = buffer.toList()
 
         logger.trace("Processing buffer: $snapshot in mode: $mode")

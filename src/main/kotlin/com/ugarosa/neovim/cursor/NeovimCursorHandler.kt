@@ -15,7 +15,6 @@ import com.ugarosa.neovim.common.takeByte
 import com.ugarosa.neovim.config.neovim.option.Scrolloff
 import com.ugarosa.neovim.config.neovim.option.Sidescrolloff
 import com.ugarosa.neovim.domain.NeovimPosition
-import com.ugarosa.neovim.mode.NeovimMode
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.event.CursorMoveEvent
 import com.ugarosa.neovim.rpc.function.setCursor
@@ -159,7 +158,7 @@ class NeovimCursorHandler private constructor(
         curswant: Int,
         direction: MoveDirection,
     ): Int {
-        if (modeManager.getMode().isInsert()) return offset
+        if (modeManager.get().isInsert()) return offset
 
         if (direction == MoveDirection.LEFT || direction == MoveDirection.RIGHT) {
             return offset
@@ -266,10 +265,10 @@ class NeovimCursorHandler private constructor(
         setCursor(client, pos)
     }
 
-    suspend fun changeCursorShape(mode: NeovimMode) {
+    suspend fun changeCursorShape() {
         val option = optionManager.getLocal(bufferId)
         withContext(Dispatchers.EDT) {
-            editor.settings.isBlockCursor = mode.isBlock(option.selection)
+            editor.settings.isBlockCursor = modeManager.get().isBlock(option.selection)
         }
     }
 }

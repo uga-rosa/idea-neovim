@@ -7,12 +7,12 @@ import java.util.concurrent.atomic.AtomicReference
 class NeovimModeManagerImpl : NeovimModeManager {
     private val mode = AtomicReference(NeovimMode.default)
 
-    override fun getMode(): NeovimMode {
+    override fun get(): NeovimMode {
         return mode.get()
     }
 
     // Returns true if the value was different and was updated
-    override fun setMode(newMode: NeovimMode): Boolean {
+    override fun set(newMode: NeovimMode): Boolean {
         val old =
             mode.getAndUpdate { cur ->
                 if (cur == newMode) {

@@ -1,7 +1,7 @@
 package com.ugarosa.neovim.mode
 
 interface NeovimModeManager {
-    fun getMode(): NeovimMode
+    fun get(): NeovimMode
 
-    fun setMode(newMode: NeovimMode): Boolean
+    fun set(newMode: NeovimMode): Boolean
 }
