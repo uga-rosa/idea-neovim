@@ -2,19 +2,17 @@ package com.ugarosa.neovim.startup
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.service
-import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.event.EditorFactoryEvent
 import com.intellij.openapi.editor.event.EditorFactoryListener
-import com.intellij.openapi.fileEditor.FileEditorManager
-import com.intellij.openapi.fileEditor.FileEditorManagerEvent
-import com.intellij.openapi.fileEditor.FileEditorManagerListener
-import com.intellij.openapi.fileEditor.TextEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
 import com.ugarosa.neovim.common.getSessionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import java.awt.Component
+import java.awt.KeyboardFocusManager
+import javax.swing.SwingUtilities
 
 class NeovimProjectActivity(
     private val scope: CoroutineScope,
@@ -26,7 +24,7 @@ class NeovimProjectActivity(
 
         setupEditorFactoryListener(project, disposable)
         initializeExistingEditors(project, disposable)
-        setupBufferActivationOnEditorSwitch(project, disposable)
+        setupBufferActivationOnEditorSwitch()
     }
 
     private fun setupEditorFactoryListener(
@@ -36,7 +34,7 @@ class NeovimProjectActivity(
         EditorFactory.getInstance().addEditorFactoryListener(
             object : EditorFactoryListener {
                 override fun editorCreated(event: EditorFactoryEvent) {
-                    initializeEditor(event.editor, project, disposable)
+                    sessionManager.register(scope, event.editor, project, disposable)
                 }
             },
             disposable,
@@ -48,41 +46,35 @@ class NeovimProjectActivity(
         disposable: Disposable,
     ) {
         EditorFactory.getInstance().allEditors.forEach { editor ->
-            initializeEditor(editor, project, disposable)
+            sessionManager.register(scope, editor, project, disposable)
         }
     }
 
-    private fun initializeEditor(
-        editor: Editor,
-        project: Project,
-        disposable: Disposable,
-    ) {
-        sessionManager.register(scope, editor, project, disposable)
-    }
+    private suspend fun setupBufferActivationOnEditorSwitch() {
+        val focusManager = KeyboardFocusManager.getCurrentKeyboardFocusManager()
 
-    private suspend fun setupBufferActivationOnEditorSwitch(
-        project: Project,
-        disposable: Disposable,
-    ) {
         // Activate the buffer in the currently selected editor
-        val fileEditorManager = FileEditorManager.getInstance(project)
-        fileEditorManager.selectedTextEditor?.let {
+        val focusOwner = focusManager.focusOwner
+        val focusedEditor =
+            EditorFactory.getInstance().allEditors.firstOrNull { editor ->
+                SwingUtilities.isDescendingFrom(focusOwner, editor.contentComponent)
+            }
+        focusedEditor?.let {
             sessionManager.get(it).activateBuffer()
         }
+
         // Activate the buffer when the editor selection changes
-        project.messageBus.connect(disposable).subscribe(
-            FileEditorManagerListener.FILE_EDITOR_MANAGER,
-            object : FileEditorManagerListener {
-                override fun selectionChanged(event: FileEditorManagerEvent) {
-                    val newEditor = event.newEditor
-                    if (newEditor is TextEditor) {
-                        scope.launch {
-                            sessionManager.get(newEditor.editor).activateBuffer()
-                        }
-                    }
-                    super.selectionChanged(event)
+        focusManager.addPropertyChangeListener("focusOwner") { evt ->
+            val newFocus = evt.newValue as? Component ?: return@addPropertyChangeListener
+            val editor =
+                EditorFactory.getInstance().allEditors.firstOrNull {
+                    SwingUtilities.isDescendingFrom(newFocus, it.contentComponent)
                 }
-            },
-        )
+            if (editor != null) {
+                scope.launch {
+                    sessionManager.get(editor).activateBuffer()
+                }
+            }
+        }
     }
 }
