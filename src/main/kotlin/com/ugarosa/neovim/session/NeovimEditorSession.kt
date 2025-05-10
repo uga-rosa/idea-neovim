@@ -6,7 +6,6 @@ import com.intellij.openapi.application.EDT
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.Key
 import com.ugarosa.neovim.action.NeovimActionHandler
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.common.getModeManager
@@ -19,21 +18,11 @@ import com.ugarosa.neovim.rpc.event.maybeCursorMoveEvent
 import com.ugarosa.neovim.rpc.event.maybeExecIdeaActionEvent
 import com.ugarosa.neovim.rpc.event.maybeModeChangeEvent
 import com.ugarosa.neovim.rpc.event.maybeVisualSelectionEvent
-import com.ugarosa.neovim.rpc.function.createBuffer
 import com.ugarosa.neovim.selection.NeovimSelectionHandler
 import com.ugarosa.neovim.statusline.StatusLineHandler
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
-
-val NEOVIM_SESSION_KEY = Key.create<Deferred<NeovimEditorSession?>>("NEOVIM_SESSION_KEY")
-
-suspend fun Editor.getSession(): NeovimEditorSession {
-    return getUserData(NEOVIM_SESSION_KEY)?.await()
-        ?: throw IllegalStateException("Neovim session not found")
-}
 
 /**
  * Represents a session of Neovim editor.
@@ -54,29 +43,13 @@ class NeovimEditorSession private constructor(
     private val modeManager = getModeManager()
 
     companion object {
-        fun create(
+        suspend fun create(
             scope: CoroutineScope,
             editor: Editor,
             project: Project,
             disposable: Disposable,
-        ) {
-            editor.putUserData(
-                NEOVIM_SESSION_KEY,
-                scope.async {
-                    createInternal(scope, editor, project, disposable)
-                },
-            )
-        }
-
-        private suspend fun createInternal(
-            scope: CoroutineScope,
-            editor: Editor,
-            project: Project,
-            disposable: Disposable,
+            bufferId: BufferId,
         ): NeovimEditorSession {
-            val bufferId =
-                createBuffer(getClient())
-                    ?: throw IllegalStateException("Failed to create buffer")
             val documentHandler = NeovimDocumentHandler.create(scope, editor, bufferId)
             val cursorHandler = NeovimCursorHandler.create(scope, editor, disposable, bufferId)
             val statusLineHandler = StatusLineHandler(project)

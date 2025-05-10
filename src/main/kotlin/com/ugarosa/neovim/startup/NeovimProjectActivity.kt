@@ -12,14 +12,15 @@ import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.fileEditor.TextEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
-import com.ugarosa.neovim.session.NeovimEditorSession
-import com.ugarosa.neovim.session.getSession
+import com.ugarosa.neovim.common.getSessionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 class NeovimProjectActivity(
     private val scope: CoroutineScope,
 ) : ProjectActivity {
+    private val sessionManager = getSessionManager()
+
     override suspend fun execute(project: Project) {
         val disposable = project.service<ProjectDisposable>()
 
@@ -56,7 +57,7 @@ class NeovimProjectActivity(
         project: Project,
         disposable: Disposable,
     ) {
-        NeovimEditorSession.create(scope, editor, project, disposable)
+        sessionManager.register(scope, editor, project, disposable)
     }
 
     private suspend fun setupBufferActivationOnEditorSwitch(
@@ -65,8 +66,9 @@ class NeovimProjectActivity(
     ) {
         // Activate the buffer in the currently selected editor
         val fileEditorManager = FileEditorManager.getInstance(project)
-        val selectedEditor = fileEditorManager.selectedTextEditor
-        selectedEditor?.getSession()?.activateBuffer()
+        fileEditorManager.selectedTextEditor?.let {
+            sessionManager.get(it).activateBuffer()
+        }
         // Activate the buffer when the editor selection changes
         project.messageBus.connect(disposable).subscribe(
             FileEditorManagerListener.FILE_EDITOR_MANAGER,
@@ -75,7 +77,7 @@ class NeovimProjectActivity(
                     val newEditor = event.newEditor
                     if (newEditor is TextEditor) {
                         scope.launch {
-                            newEditor.editor.getSession().activateBuffer()
+                            sessionManager.get(newEditor.editor).activateBuffer()
                         }
                     }
                     super.selectionChanged(event)

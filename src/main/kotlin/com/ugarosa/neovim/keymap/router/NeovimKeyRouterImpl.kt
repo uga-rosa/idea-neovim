@@ -8,11 +8,11 @@ import com.intellij.openapi.editor.Editor
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.common.getKeymapSettings
 import com.ugarosa.neovim.common.getModeManager
+import com.ugarosa.neovim.common.getSessionManager
 import com.ugarosa.neovim.config.idea.KeyMappingAction
 import com.ugarosa.neovim.keymap.dispatcher.NeovimEventDispatcher
 import com.ugarosa.neovim.keymap.notation.NeovimKeyNotation
 import com.ugarosa.neovim.rpc.function.input
-import com.ugarosa.neovim.session.getSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentLinkedDeque
@@ -26,6 +26,7 @@ class NeovimKeyRouterImpl(
 
     private val eventDispatcher = NeovimEventDispatcher(this)
     private val client = getClient()
+    private val sessionManager = getSessionManager()
     private val modeManager = getModeManager()
     private val settings = getKeymapSettings()
 
@@ -108,7 +109,7 @@ class NeovimKeyRouterImpl(
         actions: List<KeyMappingAction>,
         editor: Editor,
     ) {
-        val session = editor.getSession()
+        val session = sessionManager.get(editor)
         actions.forEach { action ->
             when (action) {
                 is KeyMappingAction.SendToNeovim -> {

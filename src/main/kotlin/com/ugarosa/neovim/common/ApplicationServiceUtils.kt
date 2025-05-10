@@ -11,8 +11,12 @@ import com.ugarosa.neovim.mode.NeovimModeManager
 import com.ugarosa.neovim.mode.NeovimModeManagerImpl
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 import com.ugarosa.neovim.rpc.client.NeovimRpcClientImpl
+import com.ugarosa.neovim.session.NeovimSessionManager
+import com.ugarosa.neovim.session.NeovimSessionManagerImpl
 
 fun getClient(): NeovimRpcClient = service<NeovimRpcClientImpl>()
+
+fun getSessionManager(): NeovimSessionManager = service<NeovimSessionManagerImpl>()
 
 fun getOptionManager(): NeovimOptionManager = service<NeovimOptionManagerImpl>()
 
