@@ -209,21 +209,25 @@ class NeovimCursorHandler private constructor(
         val visibleArea = scrollingModel.visibleArea
         val lineHeight = editor.lineHeight
 
+        // Use VisualLine to respect the folded region
+        val offset = editor.document.getLineStartOffset(line)
+        val visualLine = editor.offsetToVisualLine(offset, false)
+
         val firstVisibleLine = editor.yToVisualLine(visibleArea.y)
         val lastVisibleLine = editor.yToVisualLine(visibleArea.y + visibleArea.height)
 
-        val targetTop = line - scrolloff.value
-        val targetBottom = line + scrolloff.value
+        val topLine = (visualLine - scrolloff.value).coerceAtLeast(0)
+        val bottomLine = visualLine + scrolloff.value
 
         when {
-            targetTop < firstVisibleLine -> {
-                val scrollToY = targetTop.coerceAtLeast(0) * lineHeight
-                scrollingModel.scrollVertically(scrollToY)
+            topLine < firstVisibleLine -> {
+                val y = topLine * lineHeight
+                scrollingModel.scrollVertically(y)
             }
 
-            targetBottom > lastVisibleLine -> {
-                val linesToScroll = targetBottom - lastVisibleLine
-                scrollingModel.scrollVertically(visibleArea.y + linesToScroll * lineHeight)
+            bottomLine >= lastVisibleLine -> {
+                val y = bottomLine * lineHeight - visibleArea.height + lineHeight
+                scrollingModel.scrollVertically(y)
             }
             // already in view
         }
