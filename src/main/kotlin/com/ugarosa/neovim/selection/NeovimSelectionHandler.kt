@@ -17,10 +17,10 @@ class NeovimSelectionHandler(
     private val editor: Editor,
 ) {
     private val logger = thisLogger()
-    private val globalScheme = EditorColorsManager.getInstance().globalScheme
-    private val selectionColor = globalScheme.getColor(EditorColors.SELECTION_BACKGROUND_COLOR)
     private val attributes =
         TextAttributes().apply {
+            val globalScheme = EditorColorsManager.getInstance().globalScheme
+            val selectionColor = globalScheme.getColor(EditorColors.SELECTION_BACKGROUND_COLOR)
             backgroundColor = selectionColor
         }
     private val highlighters = mutableListOf<RangeHighlighter>()
