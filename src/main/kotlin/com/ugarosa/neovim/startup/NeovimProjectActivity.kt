@@ -13,6 +13,7 @@ import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import com.intellij.openapi.vfs.newvfs.events.VFilePropertyChangeEvent
+import com.ugarosa.neovim.common.getCmdlinePopup
 import com.ugarosa.neovim.common.getSessionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -24,6 +25,7 @@ class NeovimProjectActivity(
     private val scope: CoroutineScope,
 ) : ProjectActivity {
     private val sessionManager = getSessionManager()
+    private val cmdlinePopup = getCmdlinePopup()
 
     override suspend fun execute(project: Project) {
         val disposable = project.service<ProjectDisposable>()
@@ -68,6 +70,7 @@ class NeovimProjectActivity(
             }
         focusedEditor?.let {
             sessionManager.getSession(it).activateBuffer()
+            cmdlinePopup.attachTo(it)
         }
 
         // Activate the buffer when the editor selection changes
@@ -80,6 +83,7 @@ class NeovimProjectActivity(
             if (editor != null) {
                 scope.launch {
                     sessionManager.getSession(editor).activateBuffer()
+                    cmdlinePopup.attachTo(editor)
                 }
             }
         }

@@ -66,7 +66,7 @@ class NeovimEventDispatcher(
                 // Special case for space
                 if (c == ' ') {
                     val notation = NeovimKeyNotation.fromModsAndKey(mods, "Space")
-                    logger.debug("Pressed key: $notation")
+                    logger.debug("Typed Space key: $notation")
                     return keyRouter.enqueueKey(notation, editor)
                 }
 

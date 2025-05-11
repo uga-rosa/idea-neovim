@@ -4,6 +4,7 @@ import com.intellij.ide.AppLifecycleListener
 import com.intellij.openapi.diagnostic.thisLogger
 import com.ugarosa.neovim.common.getActionManager
 import com.ugarosa.neovim.common.getClient
+import com.ugarosa.neovim.common.getCmdlinePopup
 import com.ugarosa.neovim.common.getKeyRouter
 import com.ugarosa.neovim.common.getOptionManager
 import com.ugarosa.neovim.common.getSessionManager
@@ -16,7 +17,10 @@ import com.ugarosa.neovim.rpc.event.maybeCursorMoveEvent
 import com.ugarosa.neovim.rpc.event.maybeExecIdeaActionEvent
 import com.ugarosa.neovim.rpc.event.maybeModeChangeEvent
 import com.ugarosa.neovim.rpc.event.maybeVisualSelectionEvent
+import com.ugarosa.neovim.rpc.event.redraw.maybeCmdlineEvent
+import com.ugarosa.neovim.rpc.event.redraw.maybeRedrawEvent
 import com.ugarosa.neovim.rpc.function.enforceSingleWindow
+import com.ugarosa.neovim.rpc.function.uiAttach
 import kotlinx.coroutines.launch
 
 class NeovimAppLifecycleListener : AppLifecycleListener {
@@ -24,6 +28,7 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
     private val client = getClient()
     private val sessionManager = getSessionManager()
     private val actionHandler = getActionManager()
+    private val cmdlinePopup = getCmdlinePopup()
 
     // Hooks that should be called only once at application startup.
     override fun appFrameCreated(commandLineArgs: List<String>) {
@@ -33,6 +38,9 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
 
     private fun initialize() {
         client.scope.launch {
+            uiAttach(client)
+            logger.debug("Attached UI")
+
             enforceSingleWindow(client)
             logger.debug("Enforced single window")
 
@@ -91,6 +99,14 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
             maybeExecIdeaActionEvent(push)?.let { event ->
                 val editor = sessionManager.getEditor(event.bufferId)
                 actionHandler.executeAction(event.actionId, editor)
+            }
+        }
+
+        client.registerPushHandler { push ->
+            maybeRedrawEvent(push)?.forEach { event ->
+                maybeCmdlineEvent(event)?.let { event ->
+                    cmdlinePopup.handleEvent(event)
+                }
             }
         }
     }

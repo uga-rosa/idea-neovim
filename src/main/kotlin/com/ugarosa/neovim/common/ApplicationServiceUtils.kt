@@ -3,6 +3,8 @@ package com.ugarosa.neovim.common
 import com.intellij.openapi.components.service
 import com.ugarosa.neovim.action.NeovimActionManager
 import com.ugarosa.neovim.action.NeovimActionManagerImpl
+import com.ugarosa.neovim.cmdline.NeovimCmdlinePopup
+import com.ugarosa.neovim.cmdline.NeovimCmdlinePopupImpl
 import com.ugarosa.neovim.config.idea.NeovimKeymapSettings
 import com.ugarosa.neovim.config.idea.NeovimKeymapSettingsImpl
 import com.ugarosa.neovim.config.neovim.NeovimOptionManager
@@ -29,3 +31,5 @@ fun getKeyRouter(): NeovimKeyRouter = service<NeovimKeyRouterImpl>()
 fun getKeymapSettings(): NeovimKeymapSettings = service<NeovimKeymapSettingsImpl>()
 
 fun getActionManager(): NeovimActionManager = service<NeovimActionManagerImpl>()
+
+fun getCmdlinePopup(): NeovimCmdlinePopup = service<NeovimCmdlinePopupImpl>()
