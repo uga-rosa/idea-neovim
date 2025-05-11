@@ -31,7 +31,6 @@ class CmdlinePanel : JPanel() {
         specialChar: String? = null,
         blockShow: List<List<CmdlineEvent.ShowChunk>>? = null,
         blockAppend: List<CmdlineEvent.ShowChunk>? = null,
-        blockHide: Boolean = false,
     ) {
         show?.let {
             textChunks = it.content
@@ -52,15 +51,17 @@ class CmdlinePanel : JPanel() {
             blockLines = blockLines ?: mutableListOf()
             blockLines!!.add(it)
         }
-        if (blockHide) blockLines = null
     }
 
-    fun clear() {
+    fun clearSingle() {
         textChunks = emptyList()
         cursorPos = 0
         firstChar = ""
         indent = 0
         specialChar = null
+    }
+
+    fun clearBlock() {
         blockLines = null
     }
 

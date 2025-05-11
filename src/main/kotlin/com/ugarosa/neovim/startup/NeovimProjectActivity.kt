@@ -6,6 +6,8 @@ import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.event.EditorFactoryEvent
 import com.intellij.openapi.editor.event.EditorFactoryListener
 import com.intellij.openapi.fileEditor.FileDocumentManager
+import com.intellij.openapi.fileEditor.FileEditorManagerEvent
+import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
 import com.intellij.openapi.vfs.VirtualFile
@@ -13,13 +15,11 @@ import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import com.intellij.openapi.vfs.newvfs.events.VFilePropertyChangeEvent
+import com.ugarosa.neovim.common.focusEditor
 import com.ugarosa.neovim.common.getCmdlinePopup
 import com.ugarosa.neovim.common.getSessionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import java.awt.Component
-import java.awt.KeyboardFocusManager
-import javax.swing.SwingUtilities
 
 class NeovimProjectActivity(
     private val scope: CoroutineScope,
@@ -32,7 +32,7 @@ class NeovimProjectActivity(
 
         setupEditorFactoryListener(project, disposable)
         initializeExistingEditors(project, disposable)
-        setupBufferActivationOnEditorSwitch()
+        setupBufferActivationOnEditorSwitch(project, disposable)
         setupWritablePropertyChangeListener(project, disposable)
     }
 
@@ -59,42 +59,36 @@ class NeovimProjectActivity(
         }
     }
 
-    private suspend fun setupBufferActivationOnEditorSwitch() {
-        val focusManager = KeyboardFocusManager.getCurrentKeyboardFocusManager()
-
-        // Activate the buffer in the currently selected editor
-        val focusOwner = focusManager.focusOwner
-        val focusedEditor =
-            EditorFactory.getInstance().allEditors.firstOrNull { editor ->
-                SwingUtilities.isDescendingFrom(focusOwner, editor.contentComponent)
-            }
-        focusedEditor?.let {
-            sessionManager.getSession(it).activateBuffer()
+    private suspend fun setupBufferActivationOnEditorSwitch(
+        project: Project,
+        disposable: Disposable,
+    ) {
+        // Activate the buffer in the currently focused editor
+        focusEditor()?.let {
             cmdlinePopup.attachTo(it)
+            sessionManager.getSession(it).activateBuffer()
         }
 
         // Activate the buffer when the editor selection changes
-        focusManager.addPropertyChangeListener("focusOwner") { evt ->
-            val newFocus = evt.newValue as? Component ?: return@addPropertyChangeListener
-            val editor =
-                EditorFactory.getInstance().allEditors.firstOrNull {
-                    SwingUtilities.isDescendingFrom(newFocus, it.contentComponent)
-                }
-            if (editor != null) {
-                scope.launch {
-                    sessionManager.getSession(editor).activateBuffer()
+        project.messageBus.connect(disposable).subscribe(
+            FileEditorManagerListener.FILE_EDITOR_MANAGER,
+            object : FileEditorManagerListener {
+                override fun selectionChanged(event: FileEditorManagerEvent) {
+                    val editor = event.manager.selectedTextEditor ?: return
                     cmdlinePopup.attachTo(editor)
+                    scope.launch {
+                        sessionManager.getSession(editor).activateBuffer()
+                    }
                 }
-            }
-        }
+            },
+        )
     }
 
     private fun setupWritablePropertyChangeListener(
         project: Project,
         disposable: Disposable,
     ) {
-        val connection = project.messageBus.connect(disposable)
-        connection.subscribe(
+        project.messageBus.connect(disposable).subscribe(
             VirtualFileManager.VFS_CHANGES,
             object : BulkFileListener {
                 override fun after(events: List<VFileEvent>) {
