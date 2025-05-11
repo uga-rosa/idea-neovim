@@ -12,14 +12,13 @@ import com.ugarosa.neovim.common.getOptionManager
 import com.ugarosa.neovim.common.getSessionManager
 import com.ugarosa.neovim.rpc.event.createExecIdeaActionCommand
 import com.ugarosa.neovim.rpc.event.hookCursorMoveEvent
-import com.ugarosa.neovim.rpc.event.hookModeChangeEvent
 import com.ugarosa.neovim.rpc.event.hookVisualSelectionEvent
 import com.ugarosa.neovim.rpc.event.maybeBufLinesEvent
 import com.ugarosa.neovim.rpc.event.maybeCursorMoveEvent
 import com.ugarosa.neovim.rpc.event.maybeExecIdeaActionEvent
-import com.ugarosa.neovim.rpc.event.maybeModeChangeEvent
 import com.ugarosa.neovim.rpc.event.maybeVisualSelectionEvent
 import com.ugarosa.neovim.rpc.event.redraw.maybeCmdlineEvent
+import com.ugarosa.neovim.rpc.event.redraw.maybeModeChangeEvent
 import com.ugarosa.neovim.rpc.event.redraw.maybeRedrawEvent
 import com.ugarosa.neovim.rpc.function.enforceSingleWindow
 import com.ugarosa.neovim.rpc.function.uiAttach
@@ -56,18 +55,6 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
         }
 
         client.registerPushHandler { push ->
-            maybeModeChangeEvent(push)?.let { event ->
-                val session = sessionManager.getSession(event.bufferId)
-                session.handleModeChangeEvent(event)
-
-                // Update all status lines
-                ProjectManager.getInstance().openProjects.forEach { project ->
-                    project.service<StatusLineManager>().updateStatusLine()
-                }
-            }
-        }
-
-        client.registerPushHandler { push ->
             maybeVisualSelectionEvent(push)?.let { event ->
                 val session = sessionManager.getSession(event.bufferId)
                 session.handleVisualSelectionEvent(event)
@@ -83,6 +70,20 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
 
         client.registerPushHandler { push ->
             maybeRedrawEvent(push)?.forEach { event ->
+                maybeModeChangeEvent(event)?.let { event ->
+                    val session = sessionManager.getSession()
+                    session?.handleModeChangeEvent(event)
+
+                    // Update all status lines
+                    ProjectManager.getInstance().openProjects.forEach { project ->
+                        project.service<StatusLineManager>().updateStatusLine()
+                    }
+
+                    // Close cmdline popup if needed
+                    if (!event.mode.isCommand()) {
+                        cmdlinePopup.destroy()
+                    }
+                }
                 maybeCmdlineEvent(event)?.let { event ->
                     cmdlinePopup.handleEvent(event)
                 }
@@ -100,9 +101,6 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
 
             hookCursorMoveEvent(client)
             logger.debug("Hooked cursor move")
-
-            hookModeChangeEvent(client)
-            logger.debug("Hooked mode change")
 
             hookVisualSelectionEvent(client)
             logger.debug("Hooked visual selection event")

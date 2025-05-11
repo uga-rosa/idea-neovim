@@ -13,8 +13,8 @@ import com.ugarosa.neovim.mode.setMode
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.event.BufLinesEvent
 import com.ugarosa.neovim.rpc.event.CursorMoveEvent
-import com.ugarosa.neovim.rpc.event.ModeChangeEvent
 import com.ugarosa.neovim.rpc.event.VisualSelectionEvent
+import com.ugarosa.neovim.rpc.event.redraw.ModeChangeEvent
 import com.ugarosa.neovim.selection.NeovimSelectionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -70,7 +70,6 @@ class NeovimEditorSession private constructor(
     }
 
     suspend fun handleModeChangeEvent(event: ModeChangeEvent) {
-        require(event.bufferId == bufferId) { "Buffer ID mismatch" }
         logger.trace("Change mode to ${event.mode}")
 
         setMode(event.mode)

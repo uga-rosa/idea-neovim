@@ -38,6 +38,8 @@ data class NeovimMode(
     fun isInsert(): Boolean = kind == NeovimModeKind.INSERT
 
     fun isVisual(): Boolean = kind == NeovimModeKind.VISUAL
+
+    fun isCommand(): Boolean = kind == NeovimModeKind.COMMAND
 }
 
 enum class NeovimModeKind {

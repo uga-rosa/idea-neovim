@@ -7,6 +7,8 @@ import com.ugarosa.neovim.rpc.BufferId
 import kotlinx.coroutines.CoroutineScope
 
 interface NeovimSessionManager {
+    suspend fun getSession(): NeovimEditorSession?
+
     suspend fun getSession(editor: Editor): NeovimEditorSession
 
     suspend fun getSession(bufferId: BufferId): NeovimEditorSession
