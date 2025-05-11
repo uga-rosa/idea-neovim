@@ -6,7 +6,6 @@ import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 import com.ugarosa.neovim.rpc.function.ChanIdManager
 import com.ugarosa.neovim.rpc.function.execLuaNotify
-import com.ugarosa.neovim.rpc.function.readLuaCode
 
 data class VisualSelectionEvent(
     val bufferId: BufferId,
@@ -15,8 +14,7 @@ data class VisualSelectionEvent(
 
 suspend fun hookVisualSelectionEvent(client: NeovimRpcClient) {
     val chanId = ChanIdManager.get()
-    val luaCode = readLuaCode("/lua/hookVisualSelectionEvent.lua") ?: return
-    execLuaNotify(client, luaCode, listOf(chanId))
+    execLuaNotify(client, "hook", "visual_selection", listOf(chanId))
 }
 
 fun maybeVisualSelectionEvent(push: NeovimRpcClient.PushNotification): VisualSelectionEvent? {

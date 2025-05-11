@@ -5,7 +5,6 @@ import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 import com.ugarosa.neovim.rpc.function.ChanIdManager
 import com.ugarosa.neovim.rpc.function.execLuaNotify
-import com.ugarosa.neovim.rpc.function.readLuaCode
 
 data class ExecIdeaActionEvent(
     val bufferId: BufferId,
@@ -14,8 +13,7 @@ data class ExecIdeaActionEvent(
 
 suspend fun createExecIdeaActionCommand(client: NeovimRpcClient) {
     val chanId = ChanIdManager.get()
-    val luaCode = readLuaCode("/lua/createExecIdeaActionCommand.lua") ?: return
-    execLuaNotify(client, luaCode, listOf(chanId))
+    execLuaNotify(client, "command", "create_exec_action", listOf(chanId))
 }
 
 fun maybeExecIdeaActionEvent(push: NeovimRpcClient.PushNotification): ExecIdeaActionEvent? {

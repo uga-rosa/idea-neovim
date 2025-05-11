@@ -11,7 +11,7 @@ import com.ugarosa.neovim.common.getKeyRouter
 import com.ugarosa.neovim.common.getOptionManager
 import com.ugarosa.neovim.common.getSessionManager
 import com.ugarosa.neovim.rpc.event.createExecIdeaActionCommand
-import com.ugarosa.neovim.rpc.event.hookCursorMoveEvent
+import com.ugarosa.neovim.rpc.event.hookCursorMovedEvent
 import com.ugarosa.neovim.rpc.event.hookVisualSelectionEvent
 import com.ugarosa.neovim.rpc.event.maybeBufLinesEvent
 import com.ugarosa.neovim.rpc.event.maybeCursorMoveEvent
@@ -20,7 +20,7 @@ import com.ugarosa.neovim.rpc.event.maybeVisualSelectionEvent
 import com.ugarosa.neovim.rpc.event.redraw.maybeCmdlineEvent
 import com.ugarosa.neovim.rpc.event.redraw.maybeModeChangeEvent
 import com.ugarosa.neovim.rpc.event.redraw.maybeRedrawEvent
-import com.ugarosa.neovim.rpc.function.enforceSingleWindow
+import com.ugarosa.neovim.rpc.function.addRuntimePath
 import com.ugarosa.neovim.rpc.function.uiAttach
 import com.ugarosa.neovim.statusline.StatusLineManager
 import kotlinx.coroutines.launch
@@ -91,13 +91,12 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
 
     private fun initialize() {
         client.scope.launch {
+            addRuntimePath(client)
+
             uiAttach(client)
             logger.debug("Attached UI")
 
-            enforceSingleWindow(client)
-            logger.debug("Enforced single window")
-
-            hookCursorMoveEvent(client)
+            hookCursorMovedEvent(client)
             logger.debug("Hooked cursor move")
 
             hookVisualSelectionEvent(client)

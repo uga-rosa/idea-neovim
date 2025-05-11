@@ -19,19 +19,20 @@ fun <T> NeovimRpcClient.Response.decode(f: (Value) -> T): T? = unpack()?.decode(
 
 suspend fun execLua(
     client: NeovimRpcClient,
-    code: String,
+    packageName: String,
+    method: String,
     args: List<Any> = emptyList(),
-): NeovimRpcClient.Response? = client.request("nvim_exec_lua", listOf(code, args))
+): NeovimRpcClient.Response? {
+    val code = "return require('intellij.$packageName').$method(...)"
+    return client.request("nvim_exec_lua", listOf(code, args))
+}
 
 suspend fun execLuaNotify(
     client: NeovimRpcClient,
-    code: String,
+    packageName: String,
+    method: String,
     args: List<Any> = emptyList(),
-): Unit = client.notify("nvim_exec_lua", listOf(code, args))
-
-fun readLuaCode(resourcePath: String): String? =
-    object {}.javaClass.getResource(resourcePath)?.readText()
-        ?: run {
-            logger.warn("Lua script not found: $resourcePath")
-            null
-        }
+) {
+    val code = "require('intellij.$packageName').$method(...)"
+    client.notify("nvim_exec_lua", listOf(code, args))
+}

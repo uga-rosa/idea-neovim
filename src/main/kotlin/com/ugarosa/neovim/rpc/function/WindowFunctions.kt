@@ -15,8 +15,3 @@ suspend fun uiAttach(client: NeovimRpcClient) {
         ),
     )
 }
-
-suspend fun enforceSingleWindow(client: NeovimRpcClient) {
-    val luaCode = readLuaCode("/lua/enforceSingleWindow.lua") ?: return
-    execLuaNotify(client, luaCode)
-}

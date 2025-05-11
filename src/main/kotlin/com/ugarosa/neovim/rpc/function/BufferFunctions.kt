@@ -12,8 +12,7 @@ suspend fun activateBuffer(
     client: NeovimRpcClient,
     bufferId: BufferId,
 ) {
-    val luaCode = readLuaCode("/lua/activateBufferEventIgnore.lua") ?: return
-    execLuaNotify(client, luaCode, listOf(bufferId))
+    execLuaNotify(client, "buffer", "activate", listOf(bufferId))
 }
 
 suspend fun bufferSetLines(
@@ -22,7 +21,9 @@ suspend fun bufferSetLines(
     start: Int,
     end: Int,
     lines: List<String>,
-): Unit = client.notify("nvim_buf_set_lines", listOf(bufferId, start, end, false, lines))
+) {
+    client.notify("nvim_buf_set_lines", listOf(bufferId, start, end, false, lines))
+}
 
 data class BufferSetTextParams(
     val bufferId: BufferId,
@@ -36,7 +37,7 @@ data class BufferSetTextParams(
 suspend fun bufferSetText(
     client: NeovimRpcClient,
     params: BufferSetTextParams,
-): Unit =
+) {
     client.notify(
         "nvim_buf_set_text",
         listOf(
@@ -48,33 +49,33 @@ suspend fun bufferSetText(
             params.replacement,
         ),
     )
+}
 
 suspend fun bufferAttach(
     client: NeovimRpcClient,
     bufferId: BufferId,
-): Unit = client.notify("nvim_buf_attach", listOf(bufferId, false, emptyMap<String, Any>()))
+) {
+    client.notify("nvim_buf_attach", listOf(bufferId, false, emptyMap<String, Any>()))
+}
 
 suspend fun setFiletype(
     client: NeovimRpcClient,
     bufferId: BufferId,
     path: String,
 ) {
-    val luaCode = readLuaCode("/lua/setFiletype.lua") ?: return
-    execLuaNotify(client, luaCode, listOf(bufferId, path))
+    execLuaNotify(client, "option", "set_filetype", listOf(bufferId, path))
 }
 
 suspend fun noModifiable(
     client: NeovimRpcClient,
     bufferId: BufferId,
 ) {
-    val luaCode = readLuaCode("/lua/noModifiable.lua") ?: return
-    execLuaNotify(client, luaCode, listOf(bufferId))
+    execLuaNotify(client, "option", "set_no_writable", listOf(bufferId))
 }
 
 suspend fun modifiable(
     client: NeovimRpcClient,
     bufferId: BufferId,
 ) {
-    val luaCode = readLuaCode("/lua/modifiable.lua") ?: return
-    execLuaNotify(client, luaCode, listOf(bufferId))
+    execLuaNotify(client, "option", "set_writable", listOf(bufferId))
 }
