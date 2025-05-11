@@ -6,25 +6,16 @@ import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.ui.popup.JBPopup
 import com.intellij.openapi.ui.popup.JBPopupFactory
-import com.intellij.openapi.ui.popup.JBPopupListener
-import com.intellij.openapi.ui.popup.LightweightWindowEvent
 import com.intellij.ui.awt.RelativePoint
-import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.rpc.event.redraw.CmdlineEvent
-import com.ugarosa.neovim.rpc.function.input
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.awt.Dimension
 import java.awt.Point
 
 @Service(Service.Level.APP)
-class NeovimCmdlinePopupImpl(
-    private val scope: CoroutineScope,
-) : NeovimCmdlinePopup {
+class NeovimCmdlinePopupImpl() : NeovimCmdlinePopup {
     private val logger = thisLogger()
-    private val client = getClient()
 
     private var editor: Editor? = null
     private var popup: JBPopup? = null
@@ -38,61 +29,63 @@ class NeovimCmdlinePopupImpl(
         logger.trace("Handling CmdlineEvent: $event")
         withContext(Dispatchers.EDT) {
             when (event) {
-                is CmdlineEvent.Show -> panel.showCmdline(event)
-                is CmdlineEvent.Pos -> panel.updateCursor(event.pos)
-                is CmdlineEvent.SpecialChar -> panel.showSpecialChar(event.c, event.shift)
-                is CmdlineEvent.Hide -> {
-                    hide()
-                    return@withContext
+                is CmdlineEvent.Show -> panel.updateModel(show = event)
+                is CmdlineEvent.Pos -> panel.updateModel(pos = event.pos)
+                is CmdlineEvent.SpecialChar -> panel.updateModel(specialChar = event.c)
+                is CmdlineEvent.Hide -> panel.clear()
+                is CmdlineEvent.BlockShow -> panel.updateModel(blockShow = event.lines)
+                is CmdlineEvent.BlockAppend -> panel.updateModel(blockAppend = event.line)
+                is CmdlineEvent.BlockHide -> panel.updateModel(blockHide = true)
+                is CmdlineEvent.Flush -> {
+                    if (panel.isHidden()) {
+                        logger.debug("Cmdline is hidden, not showing popup")
+                        destroy()
+                    } else if (popup == null || popup!!.isDisposed) {
+                        logger.debug("Cmdline is shown, creating popup")
+                        showPopup()
+                    } else {
+                        logger.debug("Cmdline is shown, updating popup")
+                        panel.flush()
+                        resize()
+                    }
                 }
-
-                is CmdlineEvent.BlockShow -> panel.showBlock(event.lines)
-                is CmdlineEvent.BlockAppend -> panel.appendBlockLine(event.line)
-                is CmdlineEvent.BlockHide -> panel.hideBlock()
-            }
-
-            if (popup == null || popup!!.isDisposed) {
-                showPopup()
-            } else {
-                panel.repaint()
             }
         }
     }
 
     private fun showPopup() {
-        val component = editor?.component ?: return
-        val size = component.size
-        val popupWidth = (size.width * 0.8).toInt()
-        val popupHeight = panel.preferredSize.height
-
         popup =
             JBPopupFactory.getInstance()
                 .createComponentPopupBuilder(panel, null)
-                .setResizable(false)
+                .setResizable(true)
                 .setMovable(false)
                 .setFocusable(false)
                 .setRequestFocus(false)
-                .setMinSize(Dimension(popupWidth, popupHeight))
                 .createPopup()
-                .also { jBPopup ->
-                    jBPopup.addListener(
-                        object : JBPopupListener {
-                            override fun onClosed(event: LightweightWindowEvent) {
-                                scope.launch { input(client, "<Esc>") }
-                            }
-                        },
-                    )
-                }
 
-        val x = (size.width - popupWidth) / 2
-        val y = (size.height - popupHeight) / 2
-        popup?.show(RelativePoint(component, Point(x, y)))
+        val (loc, size) = centerLocationAndSize()
+        popup?.show(RelativePoint(editor!!.component, loc))
+        popup?.size = size
     }
 
-    private fun hide() {
-        logger.debug("Hiding CmdlinePopup")
-        popup?.cancel()
-        popup = null
-        panel.clear()
+    private fun resize() {
+        popup?.size = panel.preferredSize
+        val (loc, size) = centerLocationAndSize()
+        popup?.setSize(loc, size)
     }
+
+    private fun centerLocationAndSize(): Pair<Point, Dimension> {
+        val component = editor?.component ?: error("Editor didn't attached")
+        val width = (component.width * 0.8).toInt()
+        val height = panel.preferredSize.height
+        val x = (component.width - width) / 2
+        val y = (component.height - height) / 2
+        return Point(x, y) to Dimension(width, height)
+    }
+
+    override suspend fun destroy() =
+        withContext(Dispatchers.EDT) {
+            popup?.cancel()
+            popup = null
+        }
 }

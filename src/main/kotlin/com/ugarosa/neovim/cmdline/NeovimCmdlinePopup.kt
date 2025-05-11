@@ -7,4 +7,6 @@ interface NeovimCmdlinePopup {
     fun attachTo(editor: Editor)
 
     suspend fun handleEvent(event: CmdlineEvent)
+
+    suspend fun destroy()
 }

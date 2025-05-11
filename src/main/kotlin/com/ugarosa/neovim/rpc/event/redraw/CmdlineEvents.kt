@@ -38,7 +38,7 @@ sealed interface CmdlineEvent {
      * 	has a higher level than the edited command line.
      */
     data class Show(
-        val content: List<ShowContent>,
+        val content: List<ShowChunk>,
         val pos: Int,
         val firstChar: String,
         val prompt: String,
@@ -46,7 +46,7 @@ sealed interface CmdlineEvent {
         val level: Int,
     ) : CmdlineEvent
 
-    data class ShowContent(
+    data class ShowChunk(
         val highlightAttributes: HighlightAttributes,
         val text: String,
     )
@@ -92,7 +92,7 @@ sealed interface CmdlineEvent {
      * 	the "cmdline_show" `contents` parameter.
      */
     data class BlockShow(
-        val lines: List<List<ShowContent>>,
+        val lines: List<List<ShowChunk>>,
     ) : CmdlineEvent
 
     /**
@@ -100,19 +100,29 @@ sealed interface CmdlineEvent {
      * 	Append a line at the end of the currently shown block.
      */
     data class BlockAppend(
-        val line: List<ShowContent>,
+        val line: List<ShowChunk>,
     ) : CmdlineEvent
 
     /**
      * ["cmdline_block_hide"] ~
      * 	Hide the block.
      */
-    object BlockHide : CmdlineEvent
+    data object BlockHide : CmdlineEvent
+
+    /**
+     * This is a global event.
+     *
+     * ["flush"]
+     * 	Nvim is done redrawing the screen. For an implementation that renders
+     * 	to an internal buffer, this is the time to display the redrawn parts
+     * 	to the user.
+     */
+    data object Flush : CmdlineEvent
 }
 
-private fun Value.asShowContent(): CmdlineEvent.ShowContent {
+private fun Value.asShowContent(): CmdlineEvent.ShowChunk {
     val content = asArrayValue().list()
-    return CmdlineEvent.ShowContent(
+    return CmdlineEvent.ShowChunk(
         HighlightAttributes.Companion.fromMap(content[0].asStringMap()),
         content[1].asStringValue().asString(),
     )
@@ -187,6 +197,10 @@ fun maybeCmdlineEvent(event: RedrawEvent): CmdlineEvent? {
 
         "cmdline_block_hide" -> {
             return CmdlineEvent.BlockHide
+        }
+
+        "flush" -> {
+            return CmdlineEvent.Flush
         }
 
         else -> null

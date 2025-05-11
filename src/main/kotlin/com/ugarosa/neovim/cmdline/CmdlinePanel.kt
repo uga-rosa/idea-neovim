@@ -12,10 +12,12 @@ import java.awt.Graphics2D
 import javax.swing.JPanel
 
 class CmdlinePanel : JPanel() {
-    private var textChunks: List<CmdlineEvent.ShowContent> = emptyList()
+    private var textChunks: List<CmdlineEvent.ShowChunk> = emptyList()
     private var cursorPos: Int = 0
+    private var firstChar: String = ""
+    private var indent: Int = 0
     private var specialChar: String? = null
-    private var blockLines: MutableList<List<CmdlineEvent.ShowContent>>? = null
+    private var blockLines: MutableList<List<CmdlineEvent.ShowChunk>>? = null
 
     init {
         isOpaque = true
@@ -23,69 +25,72 @@ class CmdlinePanel : JPanel() {
         border = JBUI.Borders.empty()
     }
 
-    fun showCmdline(show: CmdlineEvent.Show) {
-        textChunks = show.content
-        cursorPos = show.pos
-        specialChar = null
-        revalidate()
-        repaint()
-    }
-
-    fun updateCursor(pos: Int) {
-        cursorPos = pos
-        repaint()
-    }
-
-    fun showSpecialChar(
-        c: String,
-        shift: Boolean,
+    fun updateModel(
+        show: CmdlineEvent.Show? = null,
+        pos: Int? = null,
+        specialChar: String? = null,
+        blockShow: List<List<CmdlineEvent.ShowChunk>>? = null,
+        blockAppend: List<CmdlineEvent.ShowChunk>? = null,
+        blockHide: Boolean = false,
     ) {
-        specialChar = c
-        repaint()
-    }
-
-    fun showBlock(lines: List<List<CmdlineEvent.ShowContent>>) {
-        blockLines = lines.toMutableList()
-        textChunks = emptyList()
-        specialChar = null
-        revalidate()
-        repaint()
-    }
-
-    fun appendBlockLine(line: List<CmdlineEvent.ShowContent>) {
-        if (blockLines == null) blockLines = mutableListOf()
-        blockLines!!.add(line)
-        revalidate()
-        repaint()
-    }
-
-    fun hideBlock() {
-        blockLines = null
-        clear()
+        show?.let {
+            textChunks = it.content
+            cursorPos = it.pos
+            firstChar = it.firstChar
+            indent = it.indent
+        }
+        pos?.let {
+            cursorPos = it
+        }
+        specialChar?.let {
+            this.specialChar = it
+        }
+        blockShow?.let {
+            blockLines = it.toMutableList()
+        }
+        blockAppend?.let {
+            blockLines = blockLines ?: mutableListOf()
+            blockLines!!.add(it)
+        }
+        if (blockHide) blockLines = null
     }
 
     fun clear() {
         textChunks = emptyList()
-        specialChar = null
         cursorPos = 0
+        firstChar = ""
+        indent = 0
+        specialChar = null
+        blockLines = null
+    }
+
+    fun isHidden(): Boolean {
+        return textChunks.isEmpty() && blockLines == null
+    }
+
+    fun flush() {
         revalidate()
         repaint()
     }
 
     override fun getPreferredSize(): Dimension {
         val fm = getFontMetrics(font)
-        return if (blockLines != null) {
-            val widths =
-                blockLines!!.map { line ->
-                    line.sumOf { it.text.length * fm.charWidth('W') } + JBUI.scale(20)
+        val lineHeight = fm.height
+        val charWidth = fm.charWidth('W')
+        blockLines?.let { lines ->
+            val blockWidths =
+                lines.map { line ->
+                    line.sumOf { it.text.length * charWidth } + JBUI.scale(20)
                 }
-            val maxWidth = widths.maxOrNull() ?: JBUI.scale(100)
-            val height = blockLines!!.size * fm.height + JBUI.scale(8)
-            Dimension(maxWidth, height)
-        } else {
-            val width = textChunks.sumOf { it.text.length * fm.charWidth('W') } + JBUI.scale(20)
-            Dimension(width, fm.height + JBUI.scale(8))
+            val mainWidth = textChunks.sumOf { it.text.length * charWidth } + JBUI.scale(20)
+            val maxWidth = (blockWidths + mainWidth).maxOrNull() ?: JBUI.scale(100)
+            val totalLines = lines.size + 1
+            val height = totalLines * lineHeight + JBUI.scale(8)
+            return Dimension(maxWidth, height)
         }
+        // Single line
+        val width = textChunks.sumOf { it.text.length * charWidth } + JBUI.scale(20)
+        return Dimension(width, fm.height + JBUI.scale(8))
     }
 
     override fun paintComponent(g: Graphics) {
@@ -96,11 +101,9 @@ class CmdlinePanel : JPanel() {
 
         blockLines?.let { lines ->
             lines.forEach { line ->
-                val x = JBUI.scale(10)
-                drawSegments(g2, fm, line, x, y, null)
+                drawSegments(g2, fm, line, JBUI.scale(10), y, null)
                 y += fm.height
             }
-            return
         }
 
         var x = JBUI.scale(10)
@@ -114,7 +117,7 @@ class CmdlinePanel : JPanel() {
     private fun drawSegments(
         g2: Graphics2D,
         fm: FontMetrics,
-        segments: List<CmdlineEvent.ShowContent>,
+        segments: List<CmdlineEvent.ShowChunk>,
         startX: Int,
         y: Int,
         cursorIndex: Int?,
