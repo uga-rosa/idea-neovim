@@ -1,17 +1,24 @@
 package com.ugarosa.neovim.cmdline
 
+import com.intellij.openapi.application.runReadAction
+import com.intellij.openapi.diagnostic.thisLogger
+import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.editor.markup.EffectType
 import com.intellij.ui.JBColor
 import com.intellij.util.ui.JBUI
 import com.ugarosa.neovim.rpc.event.redraw.CmdlineEvent
 import java.awt.Color
 import java.awt.Dimension
+import java.awt.Font
 import java.awt.FontMetrics
 import java.awt.Graphics
 import java.awt.Graphics2D
+import java.awt.RenderingHints
 import javax.swing.JPanel
 
 class CmdlinePanel : JPanel() {
+    private val logger = thisLogger()
+
     private var textChunks: List<CmdlineEvent.ShowChunk> = emptyList()
     private var cursorPos: Int = 0
     private var firstChar: String = ""
@@ -23,6 +30,14 @@ class CmdlinePanel : JPanel() {
         isOpaque = true
         background = JBColor.PanelBackground
         border = JBUI.Borders.empty()
+
+        font =
+            runReadAction {
+                val scheme = EditorColorsManager.getInstance().globalScheme
+                val fontName = scheme.editorFontName
+                val fontSize = scheme.editorFontSize
+                Font(fontName, Font.PLAIN, fontSize)
+            }
     }
 
     fun updateModel(
@@ -70,44 +85,73 @@ class CmdlinePanel : JPanel() {
     }
 
     fun flush() {
+        logger.debug("Flushing CmdlinePanel: $textChunks, $blockLines")
         revalidate()
         repaint()
     }
+
+    private val widthOffset = JBUI.scale(20)
+    private val heightOffset = JBUI.scale(8)
 
     override fun getPreferredSize(): Dimension {
         val fm = getFontMetrics(font)
         val lineHeight = fm.height
         val charWidth = fm.charWidth('W')
+        val prefixWidth = fm.stringWidth(firstChar)
+        val indentWidth = indent * charWidth
+
         blockLines?.let { lines ->
             val blockWidths =
                 lines.map { line ->
-                    line.sumOf { it.text.length * charWidth } + JBUI.scale(20)
+                    line.sumOf { it.text.length * charWidth }
                 }
-            val mainWidth = textChunks.sumOf { it.text.length * charWidth } + JBUI.scale(20)
-            val maxWidth = (blockWidths + mainWidth).maxOrNull() ?: JBUI.scale(100)
+            val mainContentWidth = indentWidth + textChunks.sumOf { it.text.length * charWidth }
+            val maxWidth = prefixWidth + (blockWidths + mainContentWidth).max()
             val totalLines = lines.size + 1
-            val height = totalLines * lineHeight + JBUI.scale(8)
-            return Dimension(maxWidth, height)
+            val height = totalLines * lineHeight
+            return Dimension(maxWidth + widthOffset, height + heightOffset)
         }
-        // Single line
-        val width = textChunks.sumOf { it.text.length * charWidth } + JBUI.scale(20)
-        return Dimension(width, fm.height + JBUI.scale(8))
+
+        val lineWidth = indentWidth + prefixWidth + textChunks.sumOf { it.text.length * charWidth }
+        return Dimension(lineWidth + widthOffset, fm.height + heightOffset)
     }
 
     override fun paintComponent(g: Graphics) {
         super.paintComponent(g)
         val g2 = g as Graphics2D
-        val fm = g2.fontMetrics
-        var y = JBUI.scale(4) + fm.ascent
 
+        // Apply anti-aliasing for better text rendering
+        g2.setRenderingHint(
+            RenderingHints.KEY_TEXT_ANTIALIASING,
+            RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB,
+        )
+        g2.setRenderingHint(
+            RenderingHints.KEY_FRACTIONALMETRICS,
+            RenderingHints.VALUE_FRACTIONALMETRICS_ON,
+        )
+
+        val fm = g2.fontMetrics
+        val charWidth = fm.charWidth('W')
+        var y = fm.ascent + heightOffset / 2
+
+        fun writeFirstChar(x: Int): Int {
+            if (firstChar.isEmpty()) return x
+            g2.color = JBColor.foreground()
+            g2.drawString(firstChar, x, y)
+            return x + fm.stringWidth(firstChar)
+        }
+
+        val prefixX = widthOffset / 2
         blockLines?.let { lines ->
             lines.forEach { line ->
-                drawSegments(g2, fm, line, JBUI.scale(10), y, null)
+                val x = writeFirstChar(prefixX)
+                drawSegments(g2, fm, line, x, y, null)
                 y += fm.height
             }
         }
 
-        var x = JBUI.scale(10)
+        var x = writeFirstChar(prefixX)
+        x += indent * charWidth
         x = drawSegments(g2, fm, textChunks, x, y, cursorPos)
         specialChar?.let {
             g2.color = JBColor.GREEN
