@@ -5,10 +5,10 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
+import com.ugarosa.neovim.common.getActionManager
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.common.getKeymapSettings
 import com.ugarosa.neovim.common.getModeManager
-import com.ugarosa.neovim.common.getSessionManager
 import com.ugarosa.neovim.config.idea.KeyMappingAction
 import com.ugarosa.neovim.keymap.dispatcher.NeovimEventDispatcher
 import com.ugarosa.neovim.keymap.notation.NeovimKeyNotation
@@ -26,12 +26,12 @@ class NeovimKeyRouterImpl(
 
     private val eventDispatcher = NeovimEventDispatcher(this)
     private val client = getClient()
-    private val sessionManager = getSessionManager()
     private val modeManager = getModeManager()
     private val settings = getKeymapSettings()
+    private val actionHandler = getActionManager()
 
     private val buffer = ConcurrentLinkedDeque<NeovimKeyNotation>()
-    private val currentEditor = AtomicReference<Editor>()
+    private val currentEditor = AtomicReference<Editor?>()
 
     override fun start() {
         IdeEventQueue.getInstance().addDispatcher(eventDispatcher, this)
@@ -44,7 +44,7 @@ class NeovimKeyRouterImpl(
 
     override fun enqueueKey(
         key: NeovimKeyNotation,
-        editor: Editor,
+        editor: Editor?,
     ): Boolean {
         // If the editor is different, clear the buffer
         val oldEditor = currentEditor.getAndUpdate { if (it == editor) it else editor }
@@ -57,7 +57,7 @@ class NeovimKeyRouterImpl(
         return processBuffer(editor)
     }
 
-    private fun processBuffer(editor: Editor): Boolean {
+    private fun processBuffer(editor: Editor?): Boolean {
         val mode = modeManager.get()
         val snapshot = buffer.toList()
 
@@ -107,9 +107,8 @@ class NeovimKeyRouterImpl(
 
     private suspend fun executeRhs(
         actions: List<KeyMappingAction>,
-        editor: Editor,
+        editor: Editor?,
     ) {
-        val session = sessionManager.get(editor)
         actions.forEach { action ->
             when (action) {
                 is KeyMappingAction.SendToNeovim -> {
@@ -119,7 +118,7 @@ class NeovimKeyRouterImpl(
 
                 is KeyMappingAction.ExecuteIdeaAction -> {
                     logger.trace("Executing action: ${action.actionId}")
-                    session.executeAction(action.actionId)
+                    actionHandler.executeAction(action.actionId, editor)
                 }
             }
         }

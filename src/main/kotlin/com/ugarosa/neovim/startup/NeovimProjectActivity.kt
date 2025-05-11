@@ -67,7 +67,7 @@ class NeovimProjectActivity(
                 SwingUtilities.isDescendingFrom(focusOwner, editor.contentComponent)
             }
         focusedEditor?.let {
-            sessionManager.get(it).activateBuffer()
+            sessionManager.getSession(it).activateBuffer()
         }
 
         // Activate the buffer when the editor selection changes
@@ -79,7 +79,7 @@ class NeovimProjectActivity(
                 }
             if (editor != null) {
                 scope.launch {
-                    sessionManager.get(editor).activateBuffer()
+                    sessionManager.getSession(editor).activateBuffer()
                 }
             }
         }
@@ -101,7 +101,7 @@ class NeovimProjectActivity(
                         .flatMap { EditorFactory.getInstance().getEditors(it).toList() }
                         .forEach { editor ->
                             scope.launch {
-                                sessionManager.get(editor).changeModifiable()
+                                sessionManager.getSession(editor).changeModifiable()
                             }
                         }
                 }

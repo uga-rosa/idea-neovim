@@ -15,17 +15,29 @@ import java.util.concurrent.ConcurrentHashMap
 @Service(Service.Level.APP)
 class NeovimSessionManagerImpl : NeovimSessionManager {
     private val client = getClient()
-    private val byEditor = ConcurrentHashMap<Editor, CompletableDeferred<NeovimEditorSession>>()
-    private val byBufferId = ConcurrentHashMap<BufferId, CompletableDeferred<NeovimEditorSession>>()
 
-    override suspend fun get(bufferId: BufferId): NeovimEditorSession {
-        return byBufferId[bufferId]?.await()
-            ?: error("Neovim session not found for bufferId: $bufferId")
+    private data class Entry(
+        val editor: Editor,
+        val deferredSession: CompletableDeferred<NeovimEditorSession>,
+        val bufferId: BufferId? = null,
+    )
+
+    private val byEditor = ConcurrentHashMap<Editor, Entry>()
+    private val bufferIdToEditor = ConcurrentHashMap<BufferId, Editor>()
+
+    override suspend fun getSession(editor: Editor): NeovimEditorSession {
+        return byEditor[editor]?.deferredSession?.await()
+            ?: error("Neovim session not found for editor: $editor")
     }
 
-    override suspend fun get(editor: Editor): NeovimEditorSession {
-        return byEditor[editor]?.await()
-            ?: error("Neovim session not found for editor: $editor")
+    override suspend fun getSession(bufferId: BufferId): NeovimEditorSession {
+        val bufferId = bufferIdToEditor[bufferId] ?: error("BufferId not found: $bufferId")
+        return getSession(bufferId)
+    }
+
+    override suspend fun getEditor(bufferId: BufferId): Editor {
+        return bufferIdToEditor[bufferId]
+            ?: error("Editor not found for bufferId: $bufferId")
     }
 
     override fun register(
@@ -35,10 +47,11 @@ class NeovimSessionManagerImpl : NeovimSessionManager {
         disposable: Disposable,
     ) {
         val deferred = CompletableDeferred<NeovimEditorSession>()
-        byEditor[editor] = deferred
+        byEditor[editor] = Entry(editor, deferred)
         scope.launch {
             val bufferId = createBuffer(client) ?: error("Failed to create buffer")
-            byBufferId[bufferId] = deferred
+            byEditor[editor] = Entry(editor, deferred, bufferId)
+            bufferIdToEditor[bufferId] = editor
             val session = NeovimEditorSession.create(scope, editor, project, disposable, bufferId)
             deferred.complete(session)
         }

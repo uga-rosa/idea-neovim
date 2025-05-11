@@ -2,6 +2,7 @@ package com.ugarosa.neovim.startup
 
 import com.intellij.ide.AppLifecycleListener
 import com.intellij.openapi.diagnostic.thisLogger
+import com.ugarosa.neovim.common.getActionManager
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.common.getKeyRouter
 import com.ugarosa.neovim.common.getOptionManager
@@ -22,6 +23,7 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
     private val logger = thisLogger()
     private val client = getClient()
     private val sessionManager = getSessionManager()
+    private val actionHandler = getActionManager()
 
     // Hooks that should be called only once at application startup.
     override fun appFrameCreated(commandLineArgs: List<String>) {
@@ -59,36 +61,36 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
     private fun registerPushHandlers() {
         client.registerPushHandler { push ->
             maybeBufLinesEvent(push)?.let { event ->
-                val session = sessionManager.get(event.bufferId)
+                val session = sessionManager.getSession(event.bufferId)
                 session.handleBufferLinesEvent(event)
             }
         }
 
         client.registerPushHandler { push ->
             maybeCursorMoveEvent(push)?.let { event ->
-                val session = sessionManager.get(event.bufferId)
+                val session = sessionManager.getSession(event.bufferId)
                 session.handleCursorMoveEvent(event)
             }
         }
 
         client.registerPushHandler { push ->
             maybeModeChangeEvent(push)?.let { event ->
-                val session = sessionManager.get(event.bufferId)
+                val session = sessionManager.getSession(event.bufferId)
                 session.handleModeChangeEvent(event)
             }
         }
 
         client.registerPushHandler { push ->
             maybeVisualSelectionEvent(push)?.let { event ->
-                val session = sessionManager.get(event.bufferId)
+                val session = sessionManager.getSession(event.bufferId)
                 session.handleVisualSelectionEvent(event)
             }
         }
 
         client.registerPushHandler { push ->
             maybeExecIdeaActionEvent(push)?.let { event ->
-                val session = sessionManager.get(event.bufferId)
-                session.handleExecIdeaActionEvent(event)
+                val editor = sessionManager.getEditor(event.bufferId)
+                actionHandler.executeAction(event.actionId, editor)
             }
         }
     }

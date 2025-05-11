@@ -32,11 +32,7 @@ class NeovimEventDispatcher(
     private fun hijackKeyEvent(e: KeyEvent): Boolean {
         logger.trace("Received key event: $e")
 
-        val editor =
-            searchEditor() ?: run {
-                logger.debug("No editor found for key event")
-                return false
-            }
+        val editor = searchEditor()
 
         when (e.id) {
             KeyEvent.KEY_PRESSED -> {

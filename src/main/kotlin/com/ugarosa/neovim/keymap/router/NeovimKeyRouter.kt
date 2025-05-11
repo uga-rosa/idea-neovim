@@ -12,6 +12,6 @@ interface NeovimKeyRouter {
      */
     fun enqueueKey(
         key: NeovimKeyNotation,
-        editor: Editor,
+        editor: Editor?,
     ): Boolean
 }

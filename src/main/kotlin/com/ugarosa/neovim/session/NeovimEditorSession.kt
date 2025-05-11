@@ -6,7 +6,6 @@ import com.intellij.openapi.application.EDT
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
-import com.ugarosa.neovim.action.NeovimActionHandler
 import com.ugarosa.neovim.common.getModeManager
 import com.ugarosa.neovim.common.getOptionManager
 import com.ugarosa.neovim.cursor.NeovimCursorHandler
@@ -14,7 +13,6 @@ import com.ugarosa.neovim.document.NeovimDocumentHandler
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.event.BufLinesEvent
 import com.ugarosa.neovim.rpc.event.CursorMoveEvent
-import com.ugarosa.neovim.rpc.event.ExecIdeaActionEvent
 import com.ugarosa.neovim.rpc.event.ModeChangeEvent
 import com.ugarosa.neovim.rpc.event.VisualSelectionEvent
 import com.ugarosa.neovim.selection.NeovimSelectionHandler
@@ -34,7 +32,6 @@ class NeovimEditorSession private constructor(
     private val documentHandler: NeovimDocumentHandler,
     private val cursorHandler: NeovimCursorHandler,
     private val statusLineHandler: StatusLineHandler,
-    private val actionHandler: NeovimActionHandler,
     private val selectionHandler: NeovimSelectionHandler,
 ) {
     private val logger = thisLogger()
@@ -51,7 +48,6 @@ class NeovimEditorSession private constructor(
             val documentHandler = NeovimDocumentHandler.create(scope, editor, project, bufferId)
             val cursorHandler = NeovimCursorHandler.create(scope, editor, disposable, bufferId)
             val statusLineHandler = StatusLineHandler(project)
-            val actionHandler = NeovimActionHandler(editor)
             val selectionHandler = NeovimSelectionHandler(editor)
             val session =
                 NeovimEditorSession(
@@ -60,7 +56,6 @@ class NeovimEditorSession private constructor(
                     documentHandler,
                     cursorHandler,
                     statusLineHandler,
-                    actionHandler,
                     selectionHandler,
                 )
 
@@ -113,11 +108,6 @@ class NeovimEditorSession private constructor(
         selectionHandler.applyVisualSelectionEvent(event)
     }
 
-    suspend fun handleExecIdeaActionEvent(event: ExecIdeaActionEvent) {
-        require(event.bufferId == bufferId) { "Buffer ID mismatch" }
-        actionHandler.executeAction(event.actionId)
-    }
-
     suspend fun activateBuffer() {
         documentHandler.activateBuffer()
         cursorHandler.syncIdeaToNeovim()
@@ -126,9 +116,5 @@ class NeovimEditorSession private constructor(
 
     suspend fun changeModifiable() {
         documentHandler.changeModifiable()
-    }
-
-    suspend fun executeAction(actionId: String) {
-        actionHandler.executeAction(actionId)
     }
 }
