@@ -73,6 +73,12 @@ class NeovimCursorHandler private constructor(
     suspend fun syncNeovimToIdea(event: CursorMoveEvent) {
         val originalOffset = runReadAction { editor.caretModel.offset }
         val rawOffset = runReadAction { event.position.toOffset(editor.document) }
+
+        if (originalOffset == rawOffset) {
+            logger.trace("No cursor move detected")
+            return
+        }
+
         val direction = runReadAction { determineDirection(originalOffset, rawOffset) }
 
         val curswant = event.position.curswant
@@ -81,14 +87,6 @@ class NeovimCursorHandler private constructor(
 
         caretListenerGuard.runWithoutListenerSuspend {
             withContext(Dispatchers.EDT) {
-                if (direction == MoveDirection.LEFT || direction == MoveDirection.RIGHT) {
-                    editor.foldingModel.getCollapsedRegionAtOffset(adjustedOffset)?.let { region ->
-                        editor.foldingModel.runBatchFoldingOperation {
-                            region.isExpanded = true
-                        }
-                    }
-                }
-
                 // LogicalPosition does not strictly match the number of characters, such as counting a hard tab as
                 // multiple characters. Since it is difficult to calculate the appropriate position considering this, a
                 // simpler and more accurate offset is used instead.
