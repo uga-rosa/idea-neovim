@@ -32,38 +32,9 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
 
     // Hooks that should be called only once at application startup.
     override fun appFrameCreated(commandLineArgs: List<String>) {
-        initialize()
+        // You must register the push handlers before calling any other functions
         registerPushHandlers()
-    }
-
-    private fun initialize() {
-        client.scope.launch {
-            uiAttach(client)
-            logger.debug("Attached UI")
-
-            enforceSingleWindow(client)
-            logger.debug("Enforced single window")
-
-            hookCursorMoveEvent(client)
-            logger.debug("Hooked cursor move")
-
-            hookModeChangeEvent(client)
-            logger.debug("Hooked mode change")
-
-            hookVisualSelectionEvent(client)
-            logger.debug("Hooked visual selection event")
-
-            createExecIdeaActionCommand(client)
-            logger.debug("Created command")
-
-            val optionManager = getOptionManager()
-            optionManager.initializeGlobal()
-            logger.debug("Initialized global options")
-
-            val keyRouter = getKeyRouter()
-            keyRouter.start()
-            logger.trace("Start Neovim key router")
-        }
+        initialize()
     }
 
     private fun registerPushHandlers() {
@@ -108,6 +79,36 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
                     cmdlinePopup.handleEvent(event)
                 }
             }
+        }
+    }
+
+    private fun initialize() {
+        client.scope.launch {
+            uiAttach(client)
+            logger.debug("Attached UI")
+
+            enforceSingleWindow(client)
+            logger.debug("Enforced single window")
+
+            hookCursorMoveEvent(client)
+            logger.debug("Hooked cursor move")
+
+            hookModeChangeEvent(client)
+            logger.debug("Hooked mode change")
+
+            hookVisualSelectionEvent(client)
+            logger.debug("Hooked visual selection event")
+
+            createExecIdeaActionCommand(client)
+            logger.debug("Created command")
+
+            val optionManager = getOptionManager()
+            optionManager.initializeGlobal()
+            logger.debug("Initialized global options")
+
+            val keyRouter = getKeyRouter()
+            keyRouter.start()
+            logger.trace("Start Neovim key router")
         }
     }
 }
