@@ -9,12 +9,12 @@ import com.intellij.openapi.editor.colors.EditorFontType
 import com.intellij.openapi.util.TextRange
 import com.ugarosa.neovim.common.ListenerGuard
 import com.ugarosa.neovim.common.getClient
-import com.ugarosa.neovim.common.getModeManager
 import com.ugarosa.neovim.common.getOptionManager
 import com.ugarosa.neovim.common.takeByte
 import com.ugarosa.neovim.config.neovim.option.Scrolloff
 import com.ugarosa.neovim.config.neovim.option.Sidescrolloff
 import com.ugarosa.neovim.domain.NeovimPosition
+import com.ugarosa.neovim.mode.getMode
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.event.CursorMoveEvent
 import com.ugarosa.neovim.rpc.function.setCursor
@@ -31,7 +31,6 @@ class NeovimCursorHandler private constructor(
 ) {
     private val logger = thisLogger()
     private val client = getClient()
-    private val modeManager = getModeManager()
     private val optionManager = getOptionManager()
     private val caretListenerGuard =
         ListenerGuard(
@@ -158,7 +157,7 @@ class NeovimCursorHandler private constructor(
         curswant: Int,
         direction: MoveDirection,
     ): Int {
-        if (modeManager.get().isInsert()) return offset
+        if (getMode().isInsert()) return offset
 
         if (direction == MoveDirection.LEFT || direction == MoveDirection.RIGHT) {
             return offset
@@ -274,7 +273,7 @@ class NeovimCursorHandler private constructor(
     suspend fun changeCursorShape() {
         val option = optionManager.getLocal(bufferId)
         withContext(Dispatchers.EDT) {
-            editor.settings.isBlockCursor = modeManager.get().isBlock(option.selection)
+            editor.settings.isBlockCursor = getMode().isBlock(option.selection)
         }
     }
 }

@@ -8,10 +8,10 @@ import com.intellij.openapi.editor.Editor
 import com.ugarosa.neovim.common.getActionManager
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.common.getKeymapSettings
-import com.ugarosa.neovim.common.getModeManager
 import com.ugarosa.neovim.config.idea.KeyMappingAction
 import com.ugarosa.neovim.keymap.dispatcher.NeovimEventDispatcher
 import com.ugarosa.neovim.keymap.notation.NeovimKeyNotation
+import com.ugarosa.neovim.mode.getMode
 import com.ugarosa.neovim.rpc.function.input
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -26,7 +26,6 @@ class NeovimKeyRouterImpl(
 
     private val eventDispatcher = NeovimEventDispatcher(this)
     private val client = getClient()
-    private val modeManager = getModeManager()
     private val settings = getKeymapSettings()
     private val actionHandler = getActionManager()
 
@@ -58,7 +57,7 @@ class NeovimKeyRouterImpl(
     }
 
     private fun processBuffer(editor: Editor?): Boolean {
-        val mode = modeManager.get()
+        val mode = getMode()
         val snapshot = buffer.toList()
 
         logger.trace("Processing buffer: $snapshot in mode: $mode")

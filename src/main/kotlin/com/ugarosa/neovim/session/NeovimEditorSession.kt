@@ -5,11 +5,11 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
-import com.intellij.openapi.project.Project
-import com.ugarosa.neovim.common.getModeManager
 import com.ugarosa.neovim.common.getOptionManager
 import com.ugarosa.neovim.cursor.NeovimCursorHandler
 import com.ugarosa.neovim.document.NeovimDocumentHandler
+import com.ugarosa.neovim.mode.getMode
+import com.ugarosa.neovim.mode.setMode
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.event.BufLinesEvent
 import com.ugarosa.neovim.rpc.event.CursorMoveEvent
@@ -33,17 +33,15 @@ class NeovimEditorSession private constructor(
     private val selectionHandler: NeovimSelectionHandler,
 ) {
     private val logger = thisLogger()
-    private val modeManager = getModeManager()
 
     companion object {
         suspend fun create(
             scope: CoroutineScope,
             editor: Editor,
-            project: Project,
             disposable: Disposable,
             bufferId: BufferId,
         ): NeovimEditorSession {
-            val documentHandler = NeovimDocumentHandler.create(scope, editor, project, bufferId)
+            val documentHandler = NeovimDocumentHandler.create(scope, editor, bufferId)
             val cursorHandler = NeovimCursorHandler.create(scope, editor, disposable, bufferId)
             val selectionHandler = NeovimSelectionHandler(editor)
             val session =
@@ -75,11 +73,11 @@ class NeovimEditorSession private constructor(
         require(event.bufferId == bufferId) { "Buffer ID mismatch" }
         logger.trace("Change mode to ${event.mode}")
 
-        modeManager.set(event.mode)
+        setMode(event.mode)
 
         cursorHandler.changeCursorShape()
 
-        if (modeManager.get().isInsert()) {
+        if (getMode().isInsert()) {
             cursorHandler.disableCursorListener()
         } else {
             // Close completion popup
@@ -90,7 +88,7 @@ class NeovimEditorSession private constructor(
             cursorHandler.enableCursorListener()
         }
 
-        if (!modeManager.get().isVisual()) {
+        if (!getMode().isVisual()) {
             selectionHandler.resetSelection()
         }
     }

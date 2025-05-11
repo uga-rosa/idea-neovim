@@ -6,13 +6,12 @@ import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.fileEditor.FileDocumentManager
-import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.ugarosa.neovim.common.GroupIdGenerator
 import com.ugarosa.neovim.common.ListenerGuard
 import com.ugarosa.neovim.common.getClient
-import com.ugarosa.neovim.common.getModeManager
 import com.ugarosa.neovim.domain.NeovimPosition
+import com.ugarosa.neovim.mode.getMode
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.event.BufLinesEvent
 import com.ugarosa.neovim.rpc.function.BufferSetTextParams
@@ -34,12 +33,10 @@ import java.util.concurrent.ConcurrentHashMap
 class NeovimDocumentHandler private constructor(
     private val scope: CoroutineScope,
     private val editor: Editor,
-    private val project: Project,
     private val bufferId: BufferId,
 ) {
     private val logger = thisLogger()
     private val client = getClient()
-    private val modeManager = getModeManager()
     private val documentListenerGuard =
         ListenerGuard(
             NeovimDocumentListener(this),
@@ -52,10 +49,9 @@ class NeovimDocumentHandler private constructor(
         suspend fun create(
             scope: CoroutineScope,
             editor: Editor,
-            project: Project,
             bufferId: BufferId,
         ): NeovimDocumentHandler {
-            val handler = NeovimDocumentHandler(scope, editor, project, bufferId)
+            val handler = NeovimDocumentHandler(scope, editor, bufferId)
             handler.initializeBuffer()
             handler.enableListener()
             return handler
@@ -132,7 +128,7 @@ class NeovimDocumentHandler private constructor(
 
     // Must be called before the document is changed
     fun syncDocumentChange(event: DocumentEvent) {
-        if (modeManager.get().isInsert() && isSingleLineChange(event)) {
+        if (getMode().isInsert() && isSingleLineChange(event)) {
             sendInput(event)
         } else {
             sendBufferSetText(event)

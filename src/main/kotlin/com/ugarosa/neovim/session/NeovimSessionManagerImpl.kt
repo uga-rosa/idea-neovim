@@ -52,7 +52,7 @@ class NeovimSessionManagerImpl : NeovimSessionManager {
             val bufferId = createBuffer(client) ?: error("Failed to create buffer")
             byEditor[editor] = Entry(editor, deferred, bufferId)
             bufferIdToEditor[bufferId] = editor
-            val session = NeovimEditorSession.create(scope, editor, project, disposable, bufferId)
+            val session = NeovimEditorSession.create(scope, editor, disposable, bufferId)
             deferred.complete(session)
         }
     }
