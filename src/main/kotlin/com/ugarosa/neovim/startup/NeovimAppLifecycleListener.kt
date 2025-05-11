@@ -20,7 +20,6 @@ import com.ugarosa.neovim.rpc.event.maybeVisualSelectionEvent
 import com.ugarosa.neovim.rpc.event.redraw.maybeCmdlineEvent
 import com.ugarosa.neovim.rpc.event.redraw.maybeModeChangeEvent
 import com.ugarosa.neovim.rpc.event.redraw.maybeRedrawEvent
-import com.ugarosa.neovim.rpc.function.addRuntimePath
 import com.ugarosa.neovim.rpc.function.uiAttach
 import com.ugarosa.neovim.statusline.StatusLineManager
 import kotlinx.coroutines.launch
@@ -91,8 +90,6 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
 
     private fun initialize() {
         client.scope.launch {
-            addRuntimePath(client)
-
             uiAttach(client)
             logger.debug("Attached UI")
 
