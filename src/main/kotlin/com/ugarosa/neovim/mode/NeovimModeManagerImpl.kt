@@ -5,22 +5,13 @@ import java.util.concurrent.atomic.AtomicReference
 
 @Service(Service.Level.APP)
 class NeovimModeManagerImpl : NeovimModeManager {
-    private val mode = AtomicReference(NeovimMode.default)
+    private val atomicMode = AtomicReference(NeovimMode.default)
 
     override fun get(): NeovimMode {
-        return mode.get()
+        return atomicMode.get()
     }
 
-    // Returns true if the value was different and was updated
-    override fun set(newMode: NeovimMode): Boolean {
-        val old =
-            mode.getAndUpdate { cur ->
-                if (cur == newMode) {
-                    cur
-                } else {
-                    newMode
-                }
-            }
-        return old != newMode
+    override fun set(newMode: NeovimMode) {
+        atomicMode.set(newMode)
     }
 }

@@ -1,7 +1,9 @@
 package com.ugarosa.neovim.startup
 
 import com.intellij.ide.AppLifecycleListener
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
+import com.intellij.openapi.project.ProjectManager
 import com.ugarosa.neovim.common.getActionManager
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.common.getCmdlinePopup
@@ -21,6 +23,7 @@ import com.ugarosa.neovim.rpc.event.redraw.maybeCmdlineEvent
 import com.ugarosa.neovim.rpc.event.redraw.maybeRedrawEvent
 import com.ugarosa.neovim.rpc.function.enforceSingleWindow
 import com.ugarosa.neovim.rpc.function.uiAttach
+import com.ugarosa.neovim.statusline.StatusLineManager
 import kotlinx.coroutines.launch
 
 class NeovimAppLifecycleListener : AppLifecycleListener {
@@ -56,6 +59,11 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
             maybeModeChangeEvent(push)?.let { event ->
                 val session = sessionManager.getSession(event.bufferId)
                 session.handleModeChangeEvent(event)
+
+                // Update all status lines
+                ProjectManager.getInstance().openProjects.forEach { project ->
+                    project.service<StatusLineManager>().updateStatusLine()
+                }
             }
         }
 

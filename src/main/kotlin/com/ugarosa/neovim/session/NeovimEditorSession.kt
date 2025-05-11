@@ -16,7 +16,6 @@ import com.ugarosa.neovim.rpc.event.CursorMoveEvent
 import com.ugarosa.neovim.rpc.event.ModeChangeEvent
 import com.ugarosa.neovim.rpc.event.VisualSelectionEvent
 import com.ugarosa.neovim.selection.NeovimSelectionHandler
-import com.ugarosa.neovim.statusline.StatusLineHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -31,7 +30,6 @@ class NeovimEditorSession private constructor(
     private val bufferId: BufferId,
     private val documentHandler: NeovimDocumentHandler,
     private val cursorHandler: NeovimCursorHandler,
-    private val statusLineHandler: StatusLineHandler,
     private val selectionHandler: NeovimSelectionHandler,
 ) {
     private val logger = thisLogger()
@@ -47,7 +45,6 @@ class NeovimEditorSession private constructor(
         ): NeovimEditorSession {
             val documentHandler = NeovimDocumentHandler.create(scope, editor, project, bufferId)
             val cursorHandler = NeovimCursorHandler.create(scope, editor, disposable, bufferId)
-            val statusLineHandler = StatusLineHandler(project)
             val selectionHandler = NeovimSelectionHandler(editor)
             val session =
                 NeovimEditorSession(
@@ -55,7 +52,6 @@ class NeovimEditorSession private constructor(
                     bufferId,
                     documentHandler,
                     cursorHandler,
-                    statusLineHandler,
                     selectionHandler,
                 )
 
@@ -77,15 +73,11 @@ class NeovimEditorSession private constructor(
 
     suspend fun handleModeChangeEvent(event: ModeChangeEvent) {
         require(event.bufferId == bufferId) { "Buffer ID mismatch" }
-
-        if (!modeManager.set(event.mode)) {
-            logger.trace("No mode change, already in ${event.mode}")
-            return
-        }
         logger.trace("Change mode to ${event.mode}")
 
+        modeManager.set(event.mode)
+
         cursorHandler.changeCursorShape()
-        statusLineHandler.updateStatusLine()
 
         if (modeManager.get().isInsert()) {
             cursorHandler.disableCursorListener()

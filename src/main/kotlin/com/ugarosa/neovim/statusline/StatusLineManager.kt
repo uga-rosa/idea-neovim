@@ -1,10 +1,12 @@
 package com.ugarosa.neovim.statusline
 
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.WindowManager
 
-class StatusLineHandler(
+@Service(Service.Level.PROJECT)
+class StatusLineManager(
     private val project: Project,
 ) {
     private val logger = thisLogger()
