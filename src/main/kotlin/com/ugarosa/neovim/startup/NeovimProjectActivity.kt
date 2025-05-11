@@ -16,7 +16,6 @@ import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import com.intellij.openapi.vfs.newvfs.events.VFilePropertyChangeEvent
 import com.ugarosa.neovim.common.focusEditor
-import com.ugarosa.neovim.common.getCmdlinePopup
 import com.ugarosa.neovim.common.getSessionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -25,7 +24,6 @@ class NeovimProjectActivity(
     private val scope: CoroutineScope,
 ) : ProjectActivity {
     private val sessionManager = getSessionManager()
-    private val cmdlinePopup = getCmdlinePopup()
 
     override suspend fun execute(project: Project) {
         val disposable = project.service<ProjectDisposable>()
@@ -65,7 +63,6 @@ class NeovimProjectActivity(
     ) {
         // Activate the buffer in the currently focused editor
         focusEditor()?.let {
-            cmdlinePopup.attachTo(it)
             sessionManager.getSession(it).activateBuffer()
         }
 
@@ -75,7 +72,6 @@ class NeovimProjectActivity(
             object : FileEditorManagerListener {
                 override fun selectionChanged(event: FileEditorManagerEvent) {
                     val editor = event.manager.selectedTextEditor ?: return
-                    cmdlinePopup.attachTo(editor)
                     scope.launch {
                         sessionManager.getSession(editor).activateBuffer()
                     }

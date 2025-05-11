@@ -1,10 +1,9 @@
 package com.ugarosa.neovim.rpc.event.redraw
 
-import com.intellij.openapi.editor.markup.EffectType
-import com.intellij.openapi.editor.markup.TextAttributes
-import com.intellij.ui.JBColor
 import java.awt.Color
-import java.awt.Font
+import javax.swing.text.AttributeSet
+import javax.swing.text.SimpleAttributeSet
+import javax.swing.text.StyleConstants
 
 data class HighlightAttributes(
     val foreground: String? = null,
@@ -39,47 +38,26 @@ data class HighlightAttributes(
         }
     }
 
-    fun toTextAttributes(): TextAttributes {
-        val fg = foreground?.let { parseColor(it) }
-        val bg = background?.let { parseColor(it) }
-
-        val effectColor = special?.let { parseColor(it) }
-
-        val effectType =
-            when {
-                underline -> EffectType.LINE_UNDERSCORE
-                strikethrough -> EffectType.STRIKEOUT
-                undercurl -> EffectType.WAVE_UNDERSCORE
-                underdouble -> EffectType.BOLD_LINE_UNDERSCORE
-                underdotted -> EffectType.BOXED
-                underdashed -> EffectType.BOLD_DOTTED_LINE
-                else -> null
+    fun toAttributeSet(): AttributeSet =
+        SimpleAttributeSet().apply {
+            foreground?.let { StyleConstants.setForeground(this, Color.decode(it)) }
+            background?.let { StyleConstants.setBackground(this, Color.decode(it)) }
+            // Don't support special (color to use for various underlines, when present).
+            if (reverse) {
+                val fg = StyleConstants.getForeground(this)
+                val bg = StyleConstants.getBackground(this)
+                StyleConstants.setForeground(this, bg)
+                StyleConstants.setBackground(this, fg)
             }
-
-        val fontType =
-            when {
-                bold && italic -> Font.BOLD or Font.ITALIC
-                bold -> Font.BOLD
-                italic -> Font.ITALIC
-                else -> Font.PLAIN
-            }
-
-        return TextAttributes(
-            fg,
-            bg,
-            effectColor,
-            effectType,
-            fontType,
-        )
-    }
-
-    private fun parseColor(hex: String): JBColor {
-        val color =
-            try {
-                Color.decode(hex)
-            } catch (e: Exception) {
-                JBColor.foreground()
-            }
-        return JBColor(color, color)
-    }
+            if (italic) StyleConstants.setItalic(this, true)
+            if (bold) StyleConstants.setBold(this, true)
+            if (strikethrough) StyleConstants.setStrikeThrough(this, true)
+            if (underline) StyleConstants.setUnderline(this, true)
+            // Don't support undercurl, underdouble, underdotted, and underdashed
+            // Fallback to underline
+            if (undercurl) StyleConstants.setUnderline(this, true)
+            if (underdouble) StyleConstants.setUnderline(this, true)
+            if (underdotted) StyleConstants.setUnderline(this, true)
+            if (underdashed) StyleConstants.setUnderline(this, true)
+        }
 }

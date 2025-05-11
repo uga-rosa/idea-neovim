@@ -3,7 +3,7 @@ package com.ugarosa.neovim.startup
 import com.intellij.ide.AppLifecycleListener
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
-import com.intellij.openapi.project.ProjectManager
+import com.ugarosa.neovim.common.focusProject
 import com.ugarosa.neovim.common.getActionManager
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.common.getCmdlinePopup
@@ -28,9 +28,9 @@ import kotlinx.coroutines.launch
 class NeovimAppLifecycleListener : AppLifecycleListener {
     private val logger = thisLogger()
     private val client = getClient()
+    private val cmdlinePopup = getCmdlinePopup()
     private val sessionManager = getSessionManager()
     private val actionHandler = getActionManager()
-    private val cmdlinePopup = getCmdlinePopup()
 
     // Hooks that should be called only once at application startup.
     override fun appFrameCreated(commandLineArgs: List<String>) {
@@ -74,10 +74,8 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
                     val session = sessionManager.getSession()
                     session?.handleModeChangeEvent(event)
 
-                    // Update all status lines
-                    ProjectManager.getInstance().openProjects.forEach { project ->
-                        project.service<StatusLineManager>().updateStatusLine()
-                    }
+                    // Update status line
+                    focusProject()?.service<StatusLineManager>()?.updateStatusLine()
 
                     // Close cmdline popup if needed
                     if (!event.mode.isCommand()) {

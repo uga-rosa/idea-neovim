@@ -9,6 +9,7 @@ import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.openapi.ui.popup.JBPopupListener
 import com.intellij.openapi.ui.popup.LightweightWindowEvent
 import com.intellij.ui.awt.RelativePoint
+import com.ugarosa.neovim.common.focusEditor
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.mode.getMode
 import com.ugarosa.neovim.rpc.event.redraw.CmdlineEvent
@@ -26,48 +27,51 @@ class NeovimCmdlinePopupImpl(
 ) : NeovimCmdlinePopup {
     private val logger = thisLogger()
 
-    private var editor: Editor? = null
     private var popup: JBPopup? = null
-    private val panel = CmdlinePanel()
-
-    override fun attachTo(editor: Editor) {
-        this.editor = editor
-    }
+    private val pane = CmdlinePane()
 
     override suspend fun handleEvent(event: CmdlineEvent) {
+        val editor =
+            focusEditor() ?: run {
+                logger.warn("No focused editor found, cannot handle CmdlineEvent: $event")
+                destroy()
+                return
+            }
+
         logger.debug("Handling CmdlineEvent: $event")
         withContext(Dispatchers.EDT) {
             when (event) {
-                is CmdlineEvent.Show -> panel.updateModel(show = event)
-                is CmdlineEvent.Pos -> panel.updateModel(pos = event.pos)
-                is CmdlineEvent.SpecialChar -> panel.updateModel(specialChar = event.c)
-                is CmdlineEvent.Hide -> panel.clearSingle()
-                is CmdlineEvent.BlockShow -> panel.updateModel(blockShow = event.lines)
-                is CmdlineEvent.BlockAppend -> panel.updateModel(blockAppend = event.line)
-                is CmdlineEvent.BlockHide -> panel.clearBlock()
+                is CmdlineEvent.Show -> pane.updateModel(show = event)
+                is CmdlineEvent.Pos -> pane.updateModel(pos = event.pos)
+                is CmdlineEvent.SpecialChar -> pane.updateModel(specialChar = event.c)
+                is CmdlineEvent.Hide -> pane.clearSingle()
+                is CmdlineEvent.BlockShow -> pane.updateModel(blockShow = event.lines)
+                is CmdlineEvent.BlockAppend -> pane.updateModel(blockAppend = event.line)
+                is CmdlineEvent.BlockHide -> pane.clearBlock()
                 is CmdlineEvent.Flush -> {
-                    if (panel.isHidden()) {
-                        logger.trace("Cmdline is hidden, not showing popup: $event")
+                    if (pane.isHidden()) {
+                        logger.debug("Cmdline is hidden, not showing popup: $event")
                         destroy()
-                    } else if (popup == null || popup!!.isDisposed) {
-                        logger.trace("Cmdline is shown, creating popup: $event")
-                        showPopup()
                     } else {
-                        logger.trace("Cmdline is shown, updating popup: $event")
-                        panel.flush()
-                        resize()
+                        pane.flush()
+                        if (popup == null || popup!!.isDisposed) {
+                            logger.debug("Cmdline is shown, creating popup: $event")
+                            showPopup(editor)
+                        } else {
+                            logger.debug("Cmdline is shown, updating popup: $event")
+                            resize(editor)
+                        }
                     }
                 }
             }
         }
     }
 
-    private fun showPopup() {
-        val (loc, size) = centerLocationAndSize()
-
+    private fun showPopup(editor: Editor) {
+        val (loc, size) = centerLocationAndSize(editor)
         popup =
             JBPopupFactory.getInstance()
-                .createComponentPopupBuilder(panel, null)
+                .createComponentPopupBuilder(pane, null)
                 .setResizable(true)
                 .setMovable(false)
                 .setFocusable(false)
@@ -78,7 +82,7 @@ class NeovimCmdlinePopupImpl(
                     addListener(PopupCloseListener(scope))
                 }
 
-        popup?.show(RelativePoint(editor!!.component, loc))
+        popup?.show(RelativePoint(editor.component, loc))
     }
 
     private class PopupCloseListener(
@@ -93,15 +97,15 @@ class NeovimCmdlinePopupImpl(
         }
     }
 
-    private fun resize() {
-        popup?.size = panel.preferredSize
-        val (_, size) = centerLocationAndSize()
+    private fun resize(editor: Editor) {
+        popup?.size = pane.preferredSize
+        val (_, size) = centerLocationAndSize(editor)
         popup?.size = size
     }
 
-    private fun centerLocationAndSize(): Pair<Point, Dimension> {
-        val component = editor?.component ?: error("Editor didn't attached")
-        val pref = panel.preferredSize
+    private fun centerLocationAndSize(editor: Editor): Pair<Point, Dimension> {
+        val component = editor.component
+        val pref = pane.preferredSize
         val width = (component.width * 0.8).toInt().coerceAtLeast(pref.width)
         val height = pref.height
         val x = (component.width - width) / 2
@@ -111,6 +115,7 @@ class NeovimCmdlinePopupImpl(
 
     override suspend fun destroy() =
         withContext(Dispatchers.EDT) {
+            pane.reset()
             popup?.cancel()
             popup = null
         }
