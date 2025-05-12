@@ -68,8 +68,8 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
         }
 
         client.registerPushHandler { push ->
-            maybeRedrawEvent(push)?.forEach { event ->
-                maybeModeChangeEvent(event)?.let { event ->
+            maybeRedrawEvent(push)?.forEach { redraw ->
+                maybeModeChangeEvent(redraw)?.let { event ->
                     val session = sessionManager.getSession()
                     session?.handleModeChangeEvent(event)
 
@@ -81,7 +81,7 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
                         cmdlinePopup.destroy()
                     }
                 }
-                maybeCmdlineEvent(event)?.let { event ->
+                maybeCmdlineEvent(redraw)?.let { event ->
                     cmdlinePopup.handleEvent(event)
                 }
             }
@@ -108,7 +108,7 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
 
             val keyRouter = getKeyRouter()
             keyRouter.start()
-            logger.trace("Start Neovim key router")
+            logger.debug("Start Neovim key router")
         }
     }
 }
