@@ -36,10 +36,8 @@ class CmdlinePane : JTextPane() {
 
     private val logger = myLogger()
 
-    private var mainLine: List<CmdlineEvent.ShowChunk> = emptyList()
-    private var cursorPos: Int = 0
-    private var firstChar: String = ""
-    private var indent: Int = 0
+    private val emptyShow = CmdlineEvent.Show(emptyList(), 0, "", "", 0, 0)
+    private var show: CmdlineEvent.Show = emptyShow
     private var specialChar: String = ""
     private var blockLines: MutableList<List<CmdlineEvent.ShowChunk>> = mutableListOf()
 
@@ -51,13 +49,12 @@ class CmdlinePane : JTextPane() {
         blockAppend: List<CmdlineEvent.ShowChunk>? = null,
     ) {
         show?.let {
-            mainLine = it.content
-            cursorPos = it.pos
-            firstChar = it.firstChar
-            indent = it.indent
+            this.show = it
+            // Should be hidden at next cmdline_show
+            this.specialChar = ""
         }
         pos?.let {
-            cursorPos = it
+            this.show = this.show.copy(pos = it)
         }
         specialChar?.let {
             this.specialChar = it
@@ -71,10 +68,7 @@ class CmdlinePane : JTextPane() {
     }
 
     fun clearSingle() {
-        mainLine = emptyList()
-        cursorPos = 0
-        firstChar = ""
-        indent = 0
+        show = emptyShow
         specialChar = ""
     }
 
@@ -90,11 +84,11 @@ class CmdlinePane : JTextPane() {
     }
 
     fun isHidden(): Boolean {
-        return mainLine.isEmpty() && blockLines.isEmpty()
+        return show == emptyShow && specialChar == "" && blockLines.isEmpty()
     }
 
     fun flush() {
-        logger.debug("Flushing CmdlinePane: mainLine=$mainLine, blockLines=$blockLines")
+        logger.trace("Flushing CmdlinePane: show=$show, specialChar=$specialChar, blockLines=$blockLines")
 
         val doc = styledDocument
         // Remove all text
@@ -106,9 +100,9 @@ class CmdlinePane : JTextPane() {
         }
 
         val lineStartOffset = offset
-        doc.insertLine(offset, mainLine, indent, specialChar, false)
+        doc.insertLine(offset, show.content, show.indent, specialChar, false)
 
-        val cursorOffset = lineStartOffset + firstChar.length + indent + cursorPos
+        val cursorOffset = lineStartOffset + show.firstChar.length + show.indent + show.pos
         caretPosition = cursorOffset
         requestFocusInWindow()
     }
@@ -122,9 +116,9 @@ class CmdlinePane : JTextPane() {
     ): Int {
         var offset = startOffset
 
-        if (firstChar.isNotEmpty()) {
-            insertString(offset, firstChar, null)
-            offset += firstChar.length
+        if (show.firstChar.isNotEmpty()) {
+            insertString(offset, show.firstChar, null)
+            offset += show.firstChar.length
         }
 
         if (indent > 0) {
