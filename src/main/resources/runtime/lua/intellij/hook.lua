@@ -2,15 +2,23 @@ local M = {}
 
 function M.cursor_moved(chan_id)
 	local group = vim.api.nvim_create_augroup("IdeaNeovim:CursorMoved", { clear = true })
+
+	local on_cursor_moved = vim.schedule_wrap(function()
+		local bufferId = vim.api.nvim_get_current_buf()
+		local pos = vim.fn.getcurpos()
+		local _, lnum, col, _, curswant = unpack(pos)
+		-- [bufferId, line, column]
+		vim.rpcnotify(chan_id, "nvim_cursor_move_event", bufferId, lnum, col - 1, curswant)
+	end)
+
 	vim.api.nvim_create_autocmd("CursorMoved", {
 		group = group,
-		callback = vim.schedule_wrap(function()
-			local bufferId = vim.api.nvim_get_current_buf()
-			local pos = vim.fn.getcurpos()
-			local _, lnum, col, _, curswant = unpack(pos)
-			-- [bufferId, line, column]
-			vim.rpcnotify(chan_id, "nvim_cursor_move_event", bufferId, lnum, col - 1, curswant)
-		end),
+		callback = on_cursor_moved,
+	})
+	vim.api.nvim_create_autocmd("ModeChanged", {
+		group = group,
+		pattern = "*:i",
+		callback = on_cursor_moved,
 	})
 end
 
