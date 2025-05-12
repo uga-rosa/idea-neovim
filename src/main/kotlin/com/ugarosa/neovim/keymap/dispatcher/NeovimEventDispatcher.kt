@@ -1,15 +1,12 @@
 package com.ugarosa.neovim.keymap.dispatcher
 
-import com.intellij.ide.DataManager
 import com.intellij.ide.IdeEventQueue
-import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.editor.Editor
+import com.ugarosa.neovim.common.unsafeFocusEditor
 import com.ugarosa.neovim.keymap.notation.NeovimKeyNotation
 import com.ugarosa.neovim.keymap.notation.printableVKs
 import com.ugarosa.neovim.keymap.router.NeovimKeyRouter
 import com.ugarosa.neovim.logger.myLogger
 import java.awt.AWTEvent
-import java.awt.KeyboardFocusManager
 import java.awt.event.KeyEvent
 
 class NeovimEventDispatcher(
@@ -32,7 +29,8 @@ class NeovimEventDispatcher(
     private fun hijackKeyEvent(e: KeyEvent): Boolean {
         logger.trace("Received key event: $e")
 
-        val editor = searchEditor()
+        // Ignore events not from the editor
+        val editor = unsafeFocusEditor() ?: return false
 
         when (e.id) {
             KeyEvent.KEY_PRESSED -> {
@@ -81,11 +79,5 @@ class NeovimEventDispatcher(
                 return false
             }
         }
-    }
-
-    private fun searchEditor(): Editor? {
-        val focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner
-        return focusOwner?.let { DataManager.getInstance().getDataContext(it) }
-            ?.let { CommonDataKeys.EDITOR.getData(it) }
     }
 }

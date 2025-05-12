@@ -13,11 +13,13 @@ import kotlinx.coroutines.withContext
 
 private val logger = MyLogger.getInstance("com.ugarosa.neovim.common.FocusUtils")
 
-suspend fun focusEditor(): Editor? =
-    withContext(Dispatchers.EDT) {
-        val dataContext = getFocusContext() ?: return@withContext null
-        CommonDataKeys.EDITOR.getData(dataContext)
-    }
+// This function is not safe to call from a non-EDT thread.
+fun unsafeFocusEditor(): Editor? {
+    val dataContext = getFocusContext() ?: return null
+    return CommonDataKeys.EDITOR.getData(dataContext)
+}
+
+suspend fun focusEditor(): Editor? = withContext(Dispatchers.EDT) { unsafeFocusEditor() }
 
 suspend fun focusProject(): Project? =
     withContext(Dispatchers.EDT) {
