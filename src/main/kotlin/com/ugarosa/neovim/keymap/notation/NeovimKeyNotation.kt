@@ -101,6 +101,11 @@ data class NeovimKeyNotation(
             val text = notation.trim()
             // <Xxx> may have modifiers like <C-A-x>
             if (text.startsWith("<") && text.endsWith(">")) {
+                // Special handing for <Nop>
+                if (text.equals("<Nop>", ignoreCase = true)) {
+                    return NeovimKeyNotation(emptyList(), "Nop")
+                }
+
                 val inner = text.substring(1, text.length - 1)
                 val parts = inner.split("-")
 
