@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 fun getMode() = service<NeovimModeManager>().get()
 
-fun setMode(newMode: NeovimMode) = service<NeovimModeManager>().set(newMode)
+fun getAndSetMode(newMode: NeovimMode) = service<NeovimModeManager>().getAndSet(newMode)
 
 @Service(Service.Level.APP)
 class NeovimModeManager {
@@ -16,7 +16,7 @@ class NeovimModeManager {
         return atomicMode.get()
     }
 
-    fun set(newMode: NeovimMode) {
-        atomicMode.set(newMode)
+    fun getAndSet(newMode: NeovimMode): NeovimMode {
+        return atomicMode.getAndSet(newMode)
     }
 }

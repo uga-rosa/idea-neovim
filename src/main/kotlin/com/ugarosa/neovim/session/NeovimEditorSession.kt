@@ -8,8 +8,8 @@ import com.ugarosa.neovim.common.getOptionManager
 import com.ugarosa.neovim.cursor.NeovimCursorHandler
 import com.ugarosa.neovim.document.NeovimDocumentHandler
 import com.ugarosa.neovim.logger.myLogger
+import com.ugarosa.neovim.mode.getAndSetMode
 import com.ugarosa.neovim.mode.getMode
-import com.ugarosa.neovim.mode.setMode
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.event.BufLinesEvent
 import com.ugarosa.neovim.rpc.event.CursorMoveEvent
@@ -72,11 +72,12 @@ class NeovimEditorSession private constructor(
     suspend fun handleModeChangeEvent(event: ModeChangeEvent) {
         logger.trace("Change mode to ${event.mode}")
 
-        setMode(event.mode)
+        val newMode = event.mode
+        val oldMode = getAndSetMode(event.mode)
 
-        cursorHandler.changeCursorShape()
+        cursorHandler.changeCursorShape(oldMode, newMode)
 
-        if (getMode().isInsert()) {
+        if (newMode.isInsert()) {
             cursorHandler.disableCursorListener()
         } else {
             // Close completion popup
@@ -87,7 +88,7 @@ class NeovimEditorSession private constructor(
             cursorHandler.enableCursorListener()
         }
 
-        if (!getMode().isVisual()) {
+        if (!newMode.isVisual()) {
             selectionHandler.resetSelection()
         }
     }
@@ -100,7 +101,8 @@ class NeovimEditorSession private constructor(
     suspend fun activateBuffer() {
         documentHandler.activateBuffer()
         cursorHandler.syncIdeaToNeovim()
-        cursorHandler.changeCursorShape()
+        val mode = getMode()
+        cursorHandler.changeCursorShape(mode, mode)
     }
 
     suspend fun changeModifiable() {

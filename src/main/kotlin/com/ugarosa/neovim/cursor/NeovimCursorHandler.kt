@@ -5,6 +5,7 @@ import com.intellij.openapi.application.EDT
 import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.colors.EditorFontType
+import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.util.TextRange
 import com.ugarosa.neovim.common.ListenerGuard
 import com.ugarosa.neovim.common.getClient
@@ -14,6 +15,7 @@ import com.ugarosa.neovim.config.neovim.option.Scrolloff
 import com.ugarosa.neovim.config.neovim.option.Sidescrolloff
 import com.ugarosa.neovim.domain.NeovimPosition
 import com.ugarosa.neovim.logger.myLogger
+import com.ugarosa.neovim.mode.NeovimMode
 import com.ugarosa.neovim.mode.getMode
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.event.CursorMoveEvent
@@ -268,10 +270,26 @@ class NeovimCursorHandler private constructor(
         setCursor(client, bufferId, pos)
     }
 
-    suspend fun changeCursorShape() {
+    suspend fun changeCursorShape(
+        oldMode: NeovimMode,
+        newMode: NeovimMode,
+    ) {
         val option = optionManager.getLocal(bufferId)
         withContext(Dispatchers.EDT) {
-            editor.settings.isBlockCursor = getMode().isBlock(option.selection)
+            if (oldMode.isCommand() && !newMode.isCommand()) {
+                changeCaretVisible(true)
+            } else if (!oldMode.isCommand() && newMode.isCommand()) {
+                changeCaretVisible(false)
+            }
+
+            editor.settings.isBlockCursor = newMode.isBlock(option.selection)
         }
+    }
+
+    private fun changeCaretVisible(isVisible: Boolean) {
+        val editorEx = editor as? EditorEx ?: return
+        editorEx.setCaretVisible(isVisible)
+        editorEx.setCaretEnabled(isVisible)
+        editorEx.contentComponent.repaint()
     }
 }
