@@ -6,8 +6,8 @@ suspend fun uiAttach(client: NeovimRpcClient) {
     client.notify(
         "nvim_ui_attach",
         listOf(
-            1000,
-            1000,
+            80,
+            40,
             mapOf(
                 "rgb" to true,
                 "ext_cmdline" to true,
