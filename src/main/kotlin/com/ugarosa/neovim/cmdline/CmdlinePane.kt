@@ -84,7 +84,7 @@ class CmdlinePane : JTextPane() {
     }
 
     fun isHidden(): Boolean {
-        return show == emptyShow && specialChar == "" && blockLines.isEmpty()
+        return show.level == 0
     }
 
     fun flush() {
