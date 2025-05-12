@@ -1,8 +1,8 @@
 package com.ugarosa.neovim.keymap.notation
 
-import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.util.xmlb.annotations.Attribute
 import com.intellij.util.xmlb.annotations.XCollection
+import com.ugarosa.neovim.logger.myLogger
 import java.awt.event.KeyEvent
 
 enum class NeovimKeyModifier(val neovimPrefix: String) {
@@ -32,7 +32,7 @@ data class NeovimKeyNotation(
     constructor() : this(emptyList(), "")
 
     companion object {
-        private val logger = thisLogger()
+        private val logger = myLogger()
         private val keyCodeToNeovim: Map<Int, String> =
             supportedKeys.associate { it.awtKeyCode to it.neovimName }
 

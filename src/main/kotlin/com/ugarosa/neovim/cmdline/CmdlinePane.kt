@@ -1,9 +1,9 @@
 package com.ugarosa.neovim.cmdline
 
 import com.intellij.openapi.application.runReadAction
-import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.ui.JBColor
+import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.rpc.event.redraw.CmdlineEvent
 import java.awt.Font
 import javax.swing.JTextPane
@@ -34,7 +34,7 @@ class CmdlinePane : JTextPane() {
         }
     }
 
-    private val logger = thisLogger()
+    private val logger = myLogger()
 
     private var mainLine: List<CmdlineEvent.ShowChunk> = emptyList()
     private var cursorPos: Int = 0

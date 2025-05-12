@@ -1,9 +1,9 @@
 package com.ugarosa.neovim.keymap.notation
 
-import com.intellij.openapi.diagnostic.Logger
+import com.ugarosa.neovim.logger.MyLogger
 import java.awt.event.KeyEvent
 
-private val logger = Logger.getInstance("com.ugarosa.neovim.keymap.notation.SupportedKey")
+private val logger = MyLogger.getInstance("com.ugarosa.neovim.keymap.notation.SupportedKey")
 
 /**
  * Supported key mapping and printability in a single source-of-truth list.

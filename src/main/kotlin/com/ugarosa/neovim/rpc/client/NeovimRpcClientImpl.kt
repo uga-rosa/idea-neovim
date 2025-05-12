@@ -1,7 +1,7 @@
 package com.ugarosa.neovim.rpc.client
 
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.diagnostic.thisLogger
+import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.TabPageId
 import com.ugarosa.neovim.rpc.WindowId
@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger
 class NeovimRpcClientImpl(
     override val scope: CoroutineScope,
 ) : NeovimRpcClient {
-    private val logger = thisLogger()
+    private val logger = myLogger()
     private val processManager = AutoNeovimProcessManager()
     private val healthCheck = CompletableDeferred<Unit>()
     private val packer = MessagePack.newDefaultPacker(processManager.getOutputStream())

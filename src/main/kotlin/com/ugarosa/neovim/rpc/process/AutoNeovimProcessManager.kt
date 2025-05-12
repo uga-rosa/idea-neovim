@@ -1,9 +1,9 @@
 package com.ugarosa.neovim.rpc.process
 
-import com.intellij.openapi.diagnostic.thisLogger
+import com.ugarosa.neovim.logger.myLogger
 
 class AutoNeovimProcessManager : NeovimProcessManager {
-    private val logger = thisLogger()
+    private val logger = myLogger()
 
     private val delegate: NeovimProcessManager =
         run {

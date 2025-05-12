@@ -2,7 +2,6 @@ package com.ugarosa.neovim.cmdline
 
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.ui.popup.JBPopup
 import com.intellij.openapi.ui.popup.JBPopupFactory
@@ -11,6 +10,7 @@ import com.intellij.openapi.ui.popup.LightweightWindowEvent
 import com.intellij.ui.awt.RelativePoint
 import com.ugarosa.neovim.common.focusEditor
 import com.ugarosa.neovim.common.getClient
+import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.mode.getMode
 import com.ugarosa.neovim.rpc.event.redraw.CmdlineEvent
 import com.ugarosa.neovim.rpc.function.input
@@ -25,7 +25,7 @@ import java.awt.Point
 class NeovimCmdlinePopupImpl(
     private val scope: CoroutineScope,
 ) : NeovimCmdlinePopup {
-    private val logger = thisLogger()
+    private val logger = myLogger()
 
     private var popup: JBPopup? = null
     private val pane = CmdlinePane()

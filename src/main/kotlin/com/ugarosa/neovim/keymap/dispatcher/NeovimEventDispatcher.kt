@@ -3,11 +3,11 @@ package com.ugarosa.neovim.keymap.dispatcher
 import com.intellij.ide.DataManager
 import com.intellij.ide.IdeEventQueue
 import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.ugarosa.neovim.keymap.notation.NeovimKeyNotation
 import com.ugarosa.neovim.keymap.notation.printableVKs
 import com.ugarosa.neovim.keymap.router.NeovimKeyRouter
+import com.ugarosa.neovim.logger.myLogger
 import java.awt.AWTEvent
 import java.awt.KeyboardFocusManager
 import java.awt.event.KeyEvent
@@ -15,7 +15,7 @@ import java.awt.event.KeyEvent
 class NeovimEventDispatcher(
     private val keyRouter: NeovimKeyRouter,
 ) : IdeEventQueue.EventDispatcher {
-    private val logger = thisLogger()
+    private val logger = myLogger()
 
     override fun dispatch(e: AWTEvent): Boolean {
         if (e is KeyEvent) {

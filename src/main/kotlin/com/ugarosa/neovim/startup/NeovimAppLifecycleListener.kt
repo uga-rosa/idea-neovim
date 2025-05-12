@@ -2,7 +2,6 @@ package com.ugarosa.neovim.startup
 
 import com.intellij.ide.AppLifecycleListener
 import com.intellij.openapi.components.service
-import com.intellij.openapi.diagnostic.thisLogger
 import com.ugarosa.neovim.common.focusProject
 import com.ugarosa.neovim.common.getActionManager
 import com.ugarosa.neovim.common.getClient
@@ -10,6 +9,7 @@ import com.ugarosa.neovim.common.getCmdlinePopup
 import com.ugarosa.neovim.common.getKeyRouter
 import com.ugarosa.neovim.common.getOptionManager
 import com.ugarosa.neovim.common.getSessionManager
+import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.rpc.event.createExecIdeaActionCommand
 import com.ugarosa.neovim.rpc.event.hookCursorMovedEvent
 import com.ugarosa.neovim.rpc.event.hookVisualSelectionEvent
@@ -25,7 +25,7 @@ import com.ugarosa.neovim.statusline.StatusLineManager
 import kotlinx.coroutines.launch
 
 class NeovimAppLifecycleListener : AppLifecycleListener {
-    private val logger = thisLogger()
+    private val logger = myLogger()
     private val client = getClient()
     private val cmdlinePopup = getCmdlinePopup()
     private val sessionManager = getSessionManager()

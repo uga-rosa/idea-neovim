@@ -1,10 +1,10 @@
 package com.ugarosa.neovim.config.neovim
 
-import com.intellij.openapi.diagnostic.thisLogger
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.config.neovim.option.Filetype
 import com.ugarosa.neovim.config.neovim.option.Scrolloff
 import com.ugarosa.neovim.config.neovim.option.Sidescrolloff
+import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.event.hookLocalOptionSetEvent
 import com.ugarosa.neovim.rpc.function.getLocalOptions
@@ -24,7 +24,7 @@ private data class MutableNeovimLocalOptions(
 ) : NeovimLocalOptions
 
 class NeovimLocalOptionsManager() {
-    private val logger = thisLogger()
+    private val logger = myLogger()
     private val client = getClient()
     private val mutex = Mutex()
     private val options = MutableNeovimLocalOptions()

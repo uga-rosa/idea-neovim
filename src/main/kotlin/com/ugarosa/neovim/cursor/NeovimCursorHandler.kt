@@ -3,7 +3,6 @@ package com.ugarosa.neovim.cursor
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.application.runReadAction
-import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.colors.EditorFontType
 import com.intellij.openapi.util.TextRange
@@ -14,6 +13,7 @@ import com.ugarosa.neovim.common.takeByte
 import com.ugarosa.neovim.config.neovim.option.Scrolloff
 import com.ugarosa.neovim.config.neovim.option.Sidescrolloff
 import com.ugarosa.neovim.domain.NeovimPosition
+import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.mode.getMode
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.event.CursorMoveEvent
@@ -29,7 +29,7 @@ class NeovimCursorHandler private constructor(
     private val bufferId: BufferId,
     private val charWidth: Int,
 ) {
-    private val logger = thisLogger()
+    private val logger = myLogger()
     private val client = getClient()
     private val optionManager = getOptionManager()
     private val caretListenerGuard =

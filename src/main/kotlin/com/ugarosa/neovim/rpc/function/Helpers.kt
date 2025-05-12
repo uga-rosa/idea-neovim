@@ -1,11 +1,11 @@
 package com.ugarosa.neovim.rpc.function
 
-import com.intellij.openapi.diagnostic.Logger
 import com.ugarosa.neovim.common.decode
+import com.ugarosa.neovim.logger.MyLogger
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 import org.msgpack.value.Value
 
-val logger = Logger.getInstance("com.ugarosa.neovim.rpc.function")
+val logger = MyLogger.getInstance("com.ugarosa.neovim.rpc.function")
 
 fun NeovimRpcClient.Response.unpack(): Value? =
     if (error.isNilValue) {

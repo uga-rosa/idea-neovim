@@ -1,10 +1,10 @@
 package com.ugarosa.neovim.config.neovim
 
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.diagnostic.thisLogger
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.config.neovim.option.Filetype
 import com.ugarosa.neovim.config.neovim.option.getOrElse
+import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.event.OptionScope
 import com.ugarosa.neovim.rpc.event.maybeOptionSetEvent
@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 @Service(Service.Level.APP)
 class NeovimOptionManagerImpl : NeovimOptionManager {
-    private val logger = thisLogger()
+    private val logger = myLogger()
     private val client = getClient()
 
     private val globalOptionsManager = NeovimGlobalOptionsManager()

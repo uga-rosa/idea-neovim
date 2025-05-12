@@ -3,11 +3,11 @@ package com.ugarosa.neovim.session
 import com.intellij.codeInsight.lookup.LookupManager
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.EDT
-import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.ugarosa.neovim.common.getOptionManager
 import com.ugarosa.neovim.cursor.NeovimCursorHandler
 import com.ugarosa.neovim.document.NeovimDocumentHandler
+import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.mode.getMode
 import com.ugarosa.neovim.mode.setMode
 import com.ugarosa.neovim.rpc.BufferId
@@ -32,7 +32,7 @@ class NeovimEditorSession private constructor(
     private val cursorHandler: NeovimCursorHandler,
     private val selectionHandler: NeovimSelectionHandler,
 ) {
-    private val logger = thisLogger()
+    private val logger = myLogger()
 
     companion object {
         suspend fun create(

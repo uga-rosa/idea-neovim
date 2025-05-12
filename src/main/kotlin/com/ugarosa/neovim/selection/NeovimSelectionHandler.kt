@@ -1,7 +1,6 @@
 package com.ugarosa.neovim.selection
 
 import com.intellij.openapi.application.EDT
-import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.editor.colors.EditorColorsManager
@@ -9,6 +8,7 @@ import com.intellij.openapi.editor.markup.HighlighterLayer
 import com.intellij.openapi.editor.markup.HighlighterTargetArea
 import com.intellij.openapi.editor.markup.RangeHighlighter
 import com.intellij.openapi.editor.markup.TextAttributes
+import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.rpc.event.VisualSelectionEvent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -16,7 +16,7 @@ import kotlinx.coroutines.withContext
 class NeovimSelectionHandler(
     private val editor: Editor,
 ) {
-    private val logger = thisLogger()
+    private val logger = myLogger()
     private val attributes =
         TextAttributes().apply {
             val globalScheme = EditorColorsManager.getInstance().globalScheme

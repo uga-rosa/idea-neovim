@@ -4,14 +4,14 @@ import com.intellij.ide.DataManager
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.application.EDT
-import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.IdeFocusManager
+import com.ugarosa.neovim.logger.MyLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-private val logger = Logger.getInstance("com.ugarosa.neovim.common.FocusUtils")
+private val logger = MyLogger.getInstance("com.ugarosa.neovim.common.FocusUtils")
 
 suspend fun focusEditor(): Editor? =
     withContext(Dispatchers.EDT) {

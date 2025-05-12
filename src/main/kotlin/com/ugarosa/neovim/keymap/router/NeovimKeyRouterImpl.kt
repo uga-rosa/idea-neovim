@@ -3,7 +3,6 @@ package com.ugarosa.neovim.keymap.router
 import com.intellij.ide.IdeEventQueue
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.ugarosa.neovim.common.getActionManager
 import com.ugarosa.neovim.common.getClient
@@ -11,6 +10,7 @@ import com.ugarosa.neovim.common.getKeymapSettings
 import com.ugarosa.neovim.config.idea.KeyMappingAction
 import com.ugarosa.neovim.keymap.dispatcher.NeovimEventDispatcher
 import com.ugarosa.neovim.keymap.notation.NeovimKeyNotation
+import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.mode.getMode
 import com.ugarosa.neovim.rpc.function.input
 import kotlinx.coroutines.CoroutineScope
@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicReference
 class NeovimKeyRouterImpl(
     private val scope: CoroutineScope,
 ) : NeovimKeyRouter, Disposable {
-    private val logger = thisLogger()
+    private val logger = myLogger()
 
     private val eventDispatcher = NeovimEventDispatcher(this)
     private val client = getClient()

@@ -2,7 +2,6 @@ package com.ugarosa.neovim.document
 
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.command.WriteCommandAction
-import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.fileEditor.FileDocumentManager
@@ -11,6 +10,7 @@ import com.ugarosa.neovim.common.GroupIdGenerator
 import com.ugarosa.neovim.common.ListenerGuard
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.domain.NeovimPosition
+import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.mode.getMode
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.event.BufLinesEvent
@@ -35,7 +35,7 @@ class NeovimDocumentHandler private constructor(
     private val editor: Editor,
     private val bufferId: BufferId,
 ) {
-    private val logger = thisLogger()
+    private val logger = myLogger()
     private val client = getClient()
     private val documentListenerGuard =
         ListenerGuard(

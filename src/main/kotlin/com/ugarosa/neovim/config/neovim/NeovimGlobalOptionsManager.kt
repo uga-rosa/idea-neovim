@@ -1,10 +1,10 @@
 package com.ugarosa.neovim.config.neovim
 
-import com.intellij.openapi.diagnostic.thisLogger
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.config.neovim.option.Scrolloff
 import com.ugarosa.neovim.config.neovim.option.Selection
 import com.ugarosa.neovim.config.neovim.option.Sidescrolloff
+import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.rpc.event.hookGlobalOptionSetEvent
 import com.ugarosa.neovim.rpc.function.getGlobalOptions
 import kotlinx.coroutines.sync.Mutex
@@ -23,7 +23,7 @@ private data class MutableNeovimGlobalOptions(
 ) : NeovimGlobalOptions
 
 class NeovimGlobalOptionsManager() {
-    private val logger = thisLogger()
+    private val logger = myLogger()
     private val client = getClient()
     private val mutex = Mutex()
     private val options = MutableNeovimGlobalOptions()
