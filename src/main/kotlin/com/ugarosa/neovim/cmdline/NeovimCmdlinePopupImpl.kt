@@ -12,6 +12,7 @@ import com.ugarosa.neovim.common.focusEditor
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.mode.getMode
+import com.ugarosa.neovim.rpc.client.NeovimRpcClient
 import com.ugarosa.neovim.rpc.event.redraw.CmdlineEvent
 import com.ugarosa.neovim.rpc.function.input
 import kotlinx.coroutines.CoroutineScope
@@ -26,6 +27,7 @@ class NeovimCmdlinePopupImpl(
     private val scope: CoroutineScope,
 ) : NeovimCmdlinePopup {
     private val logger = myLogger()
+    private val client = getClient()
 
     private var popup: JBPopup? = null
     private val pane = CmdlinePane()
@@ -79,7 +81,7 @@ class NeovimCmdlinePopupImpl(
                 .setMinSize(size)
                 .createPopup()
                 .apply {
-                    addListener(PopupCloseListener(scope))
+                    addListener(PopupCloseListener(scope, client))
                 }
 
         popup?.show(RelativePoint(editor.component, loc))
@@ -87,11 +89,12 @@ class NeovimCmdlinePopupImpl(
 
     private class PopupCloseListener(
         private val scope: CoroutineScope,
+        private val client: NeovimRpcClient,
     ) : JBPopupListener {
         override fun onClosed(event: LightweightWindowEvent) {
             scope.launch {
                 if (getMode().isCommand()) {
-                    input(getClient(), "<Esc>")
+                    input(client, "<Esc>")
                 }
             }
         }
