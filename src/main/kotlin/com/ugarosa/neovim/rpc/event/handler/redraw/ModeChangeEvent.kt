@@ -8,7 +8,7 @@ fun maybeModeChangeEvent(redraw: RedrawEvent): NeovimMode? {
         return null
     }
 
-    val list = redraw.param.asArray().list
-    val mode = list[0].asStr().str.let { NeovimMode.fromModeChangeEvent(it) }
+    val list = redraw.param.asArray()
+    val mode = list[0].asString().let { NeovimMode.fromModeChangeEvent(it) }
     return mode
 }

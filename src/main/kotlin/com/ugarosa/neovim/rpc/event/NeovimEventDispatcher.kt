@@ -2,7 +2,7 @@ package com.ugarosa.neovim.rpc.event
 
 import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.rpc.connection.NeovimConnectionManager
-import com.ugarosa.neovim.rpc.type.NeovimObject
+import com.ugarosa.neovim.rpc.transport.NeovimObject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach

@@ -6,7 +6,7 @@ import com.ugarosa.neovim.common.focusProject
 import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.event.handler.redraw.maybeCmdlineEvent
 import com.ugarosa.neovim.rpc.event.handler.redraw.maybeModeChangeEvent
-import com.ugarosa.neovim.rpc.type.NeovimObject
+import com.ugarosa.neovim.rpc.transport.NeovimObject
 import com.ugarosa.neovim.session.NeovimSessionManager
 import com.ugarosa.neovim.statusline.StatusLineManager
 
@@ -18,8 +18,8 @@ data class RedrawEvent(
 fun onRedrawEvent(client: NeovimClient) {
     client.register("redraw") { params ->
         params.forEach {
-            val elem = it.asArray().list
-            val redraw = RedrawEvent(elem[0].asStr().str, elem[1])
+            val elem = it.asArray()
+            val redraw = RedrawEvent(elem[0].asString(), elem[1])
 
             maybeCmdlineEvent(redraw)?.let { event ->
                 service<NeovimCmdlineManager>().handleEvent(event)

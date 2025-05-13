@@ -14,7 +14,7 @@ import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.client.api.localHooks
 import com.ugarosa.neovim.rpc.event.handler.BufLinesEvent
 import com.ugarosa.neovim.rpc.event.handler.CursorMoveEvent
-import com.ugarosa.neovim.rpc.type.NeovimObject
+import com.ugarosa.neovim.rpc.type.BufferId
 import com.ugarosa.neovim.rpc.type.NeovimRegion
 import com.ugarosa.neovim.session.cursor.NeovimCursorHandler
 import com.ugarosa.neovim.session.document.NeovimDocumentHandler
@@ -46,7 +46,7 @@ class NeovimEditorSession private constructor(
             scope: CoroutineScope,
             editor: Editor,
             disposable: Disposable,
-            bufferId: NeovimObject.BufferId,
+            bufferId: BufferId,
         ): NeovimEditorSession {
             val documentHandler = NeovimDocumentHandler.create(scope, editor, bufferId)
             val cursorHandler = NeovimCursorHandler.create(scope, editor, disposable, bufferId)

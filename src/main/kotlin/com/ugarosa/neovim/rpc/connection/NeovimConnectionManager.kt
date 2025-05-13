@@ -1,8 +1,8 @@
 package com.ugarosa.neovim.rpc.connection
 
+import com.ugarosa.neovim.rpc.transport.NeovimObject
 import com.ugarosa.neovim.rpc.transport.NeovimTransport
 import com.ugarosa.neovim.rpc.transport.RpcMessage
-import com.ugarosa.neovim.rpc.type.NeovimObject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope

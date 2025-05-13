@@ -5,7 +5,7 @@ import com.ugarosa.neovim.config.NeovimOption
 import com.ugarosa.neovim.config.neovim.option.Filetype
 import com.ugarosa.neovim.config.neovim.option.getOrElse
 import com.ugarosa.neovim.logger.myLogger
-import com.ugarosa.neovim.rpc.type.NeovimObject
+import com.ugarosa.neovim.rpc.type.BufferId
 import kotlinx.coroutines.CompletableDeferred
 import java.util.concurrent.ConcurrentHashMap
 
@@ -16,15 +16,15 @@ class NeovimOptionManager {
     private val globalOptionsManager = NeovimGlobalOptionsManager()
     private val globalInit = CompletableDeferred<Unit>()
 
-    private val localOptionsManagers = ConcurrentHashMap<NeovimObject.BufferId, NeovimLocalOptionsManager>()
-    private val localInits = ConcurrentHashMap<NeovimObject.BufferId, CompletableDeferred<Unit>>()
+    private val localOptionsManagers = ConcurrentHashMap<BufferId, NeovimLocalOptionsManager>()
+    private val localInits = ConcurrentHashMap<BufferId, CompletableDeferred<Unit>>()
 
     suspend fun initializeGlobal() {
         globalOptionsManager.initialize()
         globalInit.complete(Unit)
     }
 
-    suspend fun initializeLocal(bufferId: NeovimObject.BufferId) {
+    suspend fun initializeLocal(bufferId: BufferId) {
         val initDeferred = CompletableDeferred<Unit>()
         localInits[bufferId] = initDeferred
         val localOptionsManager = NeovimLocalOptionsManager().apply { initialize(bufferId) }
@@ -37,7 +37,7 @@ class NeovimOptionManager {
         return globalOptionsManager.get()
     }
 
-    suspend fun getLocal(bufferId: NeovimObject.BufferId): NeovimOption {
+    suspend fun getLocal(bufferId: BufferId): NeovimOption {
         globalInit.await()
         localInits[bufferId]?.await()
             ?: throw IllegalStateException("Buffer $bufferId is not initialized")
@@ -63,7 +63,7 @@ class NeovimOptionManager {
     }
 
     suspend fun putLocal(
-        bufferId: NeovimObject.BufferId,
+        bufferId: BufferId,
         key: String,
         value: Any,
     ) {

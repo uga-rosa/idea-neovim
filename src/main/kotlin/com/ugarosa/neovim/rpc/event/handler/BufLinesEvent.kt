@@ -2,11 +2,11 @@ package com.ugarosa.neovim.rpc.event.handler
 
 import com.intellij.openapi.components.service
 import com.ugarosa.neovim.rpc.client.NeovimClient
-import com.ugarosa.neovim.rpc.type.NeovimObject
+import com.ugarosa.neovim.rpc.type.BufferId
 import com.ugarosa.neovim.session.NeovimSessionManager
 
 data class BufLinesEvent(
-    val bufferId: NeovimObject.BufferId,
+    val bufferId: BufferId,
     val changedTick: Long,
     val firstLine: Int,
     val lastLine: Int,
@@ -16,10 +16,10 @@ data class BufLinesEvent(
 fun onBufLinesEvent(client: NeovimClient) {
     client.register("nvim_buf_lines_event") { params ->
         val bufferId = params[0].asBufferId()
-        val changedTick = params[1].asInt64().long
-        val firstLine = params[2].asInt64().long.toInt()
-        val lastLine = params[3].asInt64().long.toInt()
-        val replacementLines = params[4].asArray().list.map { it.asStr().str }
+        val changedTick = params[1].asLong()
+        val firstLine = params[2].asInt()
+        val lastLine = params[3].asInt()
+        val replacementLines = params[4].asArray().map { it.asString() }
         val event = BufLinesEvent(bufferId, changedTick, firstLine, lastLine, replacementLines)
 
         val session = service<NeovimSessionManager>().getSession(bufferId)

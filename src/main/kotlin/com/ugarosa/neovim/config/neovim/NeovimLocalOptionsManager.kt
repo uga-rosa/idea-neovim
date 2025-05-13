@@ -7,7 +7,7 @@ import com.ugarosa.neovim.config.neovim.option.Sidescrolloff
 import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.client.api.getLocalOption
-import com.ugarosa.neovim.rpc.type.NeovimObject
+import com.ugarosa.neovim.rpc.type.BufferId
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -35,7 +35,7 @@ class NeovimLocalOptionsManager() {
             "sidescrolloff" to { raw -> options.sidescrolloff = Sidescrolloff.fromRaw(raw) },
         )
 
-    suspend fun initialize(bufferId: NeovimObject.BufferId) {
+    suspend fun initialize(bufferId: BufferId) {
         logger.trace("Initializing local options for buffer: $bufferId")
         val localOptions = client.getLocalOption(bufferId)
         putAll(localOptions)

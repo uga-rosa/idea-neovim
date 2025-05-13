@@ -1,7 +1,9 @@
 package com.ugarosa.neovim.rpc.transport
 
 import com.ugarosa.neovim.rpc.process.NeovimProcessManager
-import com.ugarosa.neovim.rpc.type.NeovimObject
+import com.ugarosa.neovim.rpc.type.BufferId
+import com.ugarosa.neovim.rpc.type.TabpageId
+import com.ugarosa.neovim.rpc.type.WindowId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.msgpack.core.MessagePack
@@ -98,9 +100,9 @@ class NeovimTransport(
 
             null -> packer.packNil()
 
-            is NeovimObject.BufferId -> packer.packLong(param.long)
-            is NeovimObject.WindowId -> packer.packLong(param.long)
-            is NeovimObject.TabpageId -> packer.packLong(param.long)
+            is BufferId -> packer.packLong(param.id)
+            is WindowId -> packer.packLong(param.id)
+            is TabpageId -> packer.packLong(param.id)
 
             else -> error("Unsupported param type: ${param::class}")
         }

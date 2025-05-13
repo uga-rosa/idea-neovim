@@ -1,7 +1,5 @@
 package com.ugarosa.neovim.rpc.transport
 
-import com.ugarosa.neovim.rpc.type.NeovimObject
-
 sealed interface RpcMessage {
     data class Response(
         val id: Int,

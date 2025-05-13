@@ -21,7 +21,7 @@ import com.ugarosa.neovim.rpc.client.api.modifiable
 import com.ugarosa.neovim.rpc.client.api.noModifiable
 import com.ugarosa.neovim.rpc.client.api.setFiletype
 import com.ugarosa.neovim.rpc.event.handler.BufLinesEvent
-import com.ugarosa.neovim.rpc.type.NeovimObject
+import com.ugarosa.neovim.rpc.type.BufferId
 import com.ugarosa.neovim.rpc.type.NeovimPosition
 import com.ugarosa.neovim.undo.NeovimUndoManager
 import kotlinx.coroutines.CoroutineScope
@@ -31,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap
 class NeovimDocumentHandler private constructor(
     private val scope: CoroutineScope,
     private val editor: Editor,
-    private val bufferId: NeovimObject.BufferId,
+    private val bufferId: BufferId,
 ) {
     private val logger = myLogger()
     private val client = service<NeovimClient>()
@@ -48,7 +48,7 @@ class NeovimDocumentHandler private constructor(
         suspend fun create(
             scope: CoroutineScope,
             editor: Editor,
-            bufferId: NeovimObject.BufferId,
+            bufferId: BufferId,
         ): NeovimDocumentHandler {
             val handler = NeovimDocumentHandler(scope, editor, bufferId)
             handler.initializeBuffer()

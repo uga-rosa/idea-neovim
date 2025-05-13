@@ -6,7 +6,7 @@ import com.ugarosa.neovim.rpc.client.NeovimClient
 
 fun onModeChangeEventCustom(client: NeovimClient) {
     client.register("nvim_mode_change_event") { params ->
-        val mode = NeovimMode.fromMode(params[0].asStr().str)
+        val mode = NeovimMode.fromMode(params[0].asString())
         getAndSetMode(mode)
     }
 }

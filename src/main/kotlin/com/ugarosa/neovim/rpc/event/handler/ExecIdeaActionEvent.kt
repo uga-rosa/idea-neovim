@@ -8,7 +8,7 @@ import com.ugarosa.neovim.session.NeovimSessionManager
 fun onExecIdeaActionEvent(client: NeovimClient) {
     client.register("nvim_exec_idea_action_event") { params ->
         val bufferId = params[0].asBufferId()
-        val actionId = params[1].asStr().str
+        val actionId = params[1].asString()
 
         val editor = service<NeovimSessionManager>().getEditor(bufferId)
         val actionManager = service<NeovimActionManager>()

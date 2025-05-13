@@ -1,20 +1,20 @@
 package com.ugarosa.neovim.rpc.client.api
 
 import com.ugarosa.neovim.rpc.client.NeovimClient
-import com.ugarosa.neovim.rpc.type.NeovimObject
+import com.ugarosa.neovim.rpc.type.BufferId
 import com.ugarosa.neovim.rpc.type.NeovimPosition
 
-suspend fun NeovimClient.createBuffer(): NeovimObject.BufferId {
+suspend fun NeovimClient.createBuffer(): BufferId {
     val result = connectionManager.request("nvim_create_buf", listOf(true, false))
     return result.asBufferId()
 }
 
-suspend fun NeovimClient.activateBuffer(bufferId: NeovimObject.BufferId) {
+suspend fun NeovimClient.activateBuffer(bufferId: BufferId) {
     execLuaNotify("buffer", "activate", listOf(bufferId))
 }
 
 suspend fun NeovimClient.bufferSetLines(
-    bufferId: NeovimObject.BufferId,
+    bufferId: BufferId,
     start: Int,
     end: Int,
     lines: List<String>,
@@ -26,7 +26,7 @@ suspend fun NeovimClient.bufferSetLines(
 }
 
 suspend fun NeovimClient.bufferSetText(
-    bufferId: NeovimObject.BufferId,
+    bufferId: BufferId,
     start: NeovimPosition,
     end: NeovimPosition,
     replacement: List<String>,
@@ -44,6 +44,6 @@ suspend fun NeovimClient.bufferSetText(
     )
 }
 
-suspend fun NeovimClient.bufferAttach(bufferId: NeovimObject.BufferId) {
+suspend fun NeovimClient.bufferAttach(bufferId: BufferId) {
     connectionManager.notify("nvim_buf_attach", listOf(bufferId, false, mapOf<String, Any>()))
 }

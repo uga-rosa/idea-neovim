@@ -7,8 +7,8 @@ import com.ugarosa.neovim.rpc.client.NeovimClient
 fun onOptionSetEvent(client: NeovimClient) {
     client.register("nvim_option_set_event") { params ->
         val bufferId = params[0].asBufferId()
-        val scope = params[1].asStr().str
-        val name = params[2].asStr().str
+        val scope = params[1].asString()
+        val name = params[2].asString()
         val value = params[3].asAny()
 
         val optionManager = service<NeovimOptionManager>()

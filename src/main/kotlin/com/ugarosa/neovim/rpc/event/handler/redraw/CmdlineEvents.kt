@@ -1,7 +1,7 @@
 package com.ugarosa.neovim.rpc.event.handler.redraw
 
 import com.ugarosa.neovim.rpc.event.handler.RedrawEvent
-import com.ugarosa.neovim.rpc.type.NeovimObject
+import com.ugarosa.neovim.rpc.transport.NeovimObject
 
 /**
  * Cmdline Events							   *ui-cmdline*
@@ -120,65 +120,65 @@ sealed interface CmdlineEvent {
 }
 
 private fun NeovimObject.asShowContent(): CmdlineEvent.ShowChunk {
-    val content = asArray().list
+    val content = asArray()
     return CmdlineEvent.ShowChunk(
         HighlightAttributes.Companion.fromMap(content[0].asStringMap()),
-        content[1].asStr().str,
+        content[1].asString(),
     )
 }
 
 fun maybeCmdlineEvent(redraw: RedrawEvent): CmdlineEvent? {
     return when (redraw.name) {
         "cmdline_show" -> {
-            val list = redraw.param.asArray().list
-            val content = list[0].asArray().list.map { it.asShowContent() }
+            val list = redraw.param.asArray()
+            val content = list[0].asArray().map { it.asShowContent() }
             CmdlineEvent.Show(
                 content,
-                list[1].asInt64().long.toInt(),
-                list[2].asStr().str,
-                list[3].asStr().str,
-                list[4].asInt64().long.toInt(),
-                list[5].asInt64().long.toInt(),
+                list[1].asInt(),
+                list[2].asString(),
+                list[3].asString(),
+                list[4].asInt(),
+                list[5].asInt(),
             )
         }
 
         "cmdline_pos" -> {
-            val list = redraw.param.asArray().list
+            val list = redraw.param.asArray()
             CmdlineEvent.Pos(
-                list[0].asInt64().long.toInt(),
-                list[1].asInt64().long.toInt(),
+                list[0].asInt(),
+                list[1].asInt(),
             )
         }
 
         "cmdline_special_char" -> {
-            val list = redraw.param.asArray().list
+            val list = redraw.param.asArray()
             CmdlineEvent.SpecialChar(
-                list[0].asStr().str,
-                list[1].asBool().bool,
-                list[2].asInt64().long.toInt(),
+                list[0].asString(),
+                list[1].asBool(),
+                list[2].asInt(),
             )
         }
 
         "cmdline_hide" -> {
-            val list = redraw.param.asArray().list
+            val list = redraw.param.asArray()
             CmdlineEvent.Hide(
-                list[0].asInt64().long.toInt(),
-                list[1].asBool().bool,
+                list[0].asInt(),
+                list[1].asBool(),
             )
         }
 
         "cmdline_block_show" -> {
-            val list = redraw.param.asArray().list
+            val list = redraw.param.asArray()
             val lines =
-                list[0].asArray().list.map { line ->
-                    line.asArray().list.map { it.asShowContent() }
+                list[0].asArray().map { line ->
+                    line.asArray().map { it.asShowContent() }
                 }
             CmdlineEvent.BlockShow(lines)
         }
 
         "cmdline_block_append" -> {
-            val list = redraw.param.asArray().list
-            val line = list[0].asArray().list.map { it.asShowContent() }
+            val list = redraw.param.asArray()
+            val line = list[0].asArray().map { it.asShowContent() }
             CmdlineEvent.BlockAppend(line)
         }
 

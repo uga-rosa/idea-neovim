@@ -19,7 +19,7 @@ import com.ugarosa.neovim.mode.getMode
 import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.client.api.setCursor
 import com.ugarosa.neovim.rpc.event.handler.CursorMoveEvent
-import com.ugarosa.neovim.rpc.type.NeovimObject
+import com.ugarosa.neovim.rpc.type.BufferId
 import com.ugarosa.neovim.rpc.type.NeovimPosition
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -29,7 +29,7 @@ class NeovimCursorHandler private constructor(
     scope: CoroutineScope,
     private val editor: Editor,
     private val disposable: Disposable,
-    private val bufferId: NeovimObject.BufferId,
+    private val bufferId: BufferId,
     private val charWidth: Int,
 ) {
     private val logger = myLogger()
@@ -47,7 +47,7 @@ class NeovimCursorHandler private constructor(
             scope: CoroutineScope,
             editor: Editor,
             disposable: Disposable,
-            bufferId: NeovimObject.BufferId,
+            bufferId: BufferId,
         ): NeovimCursorHandler {
             val charWidth =
                 withContext(Dispatchers.EDT) {

@@ -1,6 +1,5 @@
 package com.ugarosa.neovim.rpc.transport
 
-import com.ugarosa.neovim.rpc.type.NeovimObject
 import org.msgpack.core.MessagePack
 import org.msgpack.value.Value
 
@@ -22,9 +21,9 @@ fun Value.asNeovimObject(): NeovimObject =
         isExtensionValue -> {
             val ext = asExtensionValue()
             when (ext.type) {
-                EXT_BUFFER -> NeovimObject.BufferId(ext.data.toLong())
-                EXT_WINDOW -> NeovimObject.WindowId(ext.data.toLong())
-                EXT_TABPAGE -> NeovimObject.TabpageId(ext.data.toLong())
+                EXT_BUFFER -> NeovimObject.Buffer(ext.data.toLong())
+                EXT_WINDOW -> NeovimObject.Window(ext.data.toLong())
+                EXT_TABPAGE -> NeovimObject.Tabpage(ext.data.toLong())
                 else -> error("Unknown EXT type ${ext.type}")
             }
         }
