@@ -2,6 +2,7 @@ package com.ugarosa.neovim.cmdline
 
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.Service
+import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.ui.popup.JBPopup
 import com.intellij.openapi.ui.popup.JBPopupFactory
@@ -23,16 +24,16 @@ import java.awt.Dimension
 import java.awt.Point
 
 @Service(Service.Level.APP)
-class NeovimCmdlinePopupImpl(
+class NeovimCmdlineManager(
     private val scope: CoroutineScope,
-) : NeovimCmdlinePopup {
+) {
     private val logger = myLogger()
-    private val client = getClient()
+    private val client = service<NeovimRpcClient>()
 
     private var popup: JBPopup? = null
     private val pane = CmdlinePane()
 
-    override suspend fun handleEvent(event: CmdlineEvent) {
+    suspend fun handleEvent(event: CmdlineEvent) {
         val editor =
             focusEditor() ?: run {
                 logger.warn("No focused editor found, cannot handle CmdlineEvent: $event")
@@ -68,6 +69,13 @@ class NeovimCmdlinePopupImpl(
             }
         }
     }
+
+    suspend fun destroy() =
+        withContext(Dispatchers.EDT) {
+            pane.reset()
+            popup?.cancel()
+            popup = null
+        }
 
     private fun showPopup(editor: Editor) {
         val (loc, size) = centerLocationAndSize(editor)
@@ -115,11 +123,4 @@ class NeovimCmdlinePopupImpl(
         val y = (component.height - height) / 2
         return Point(x, y) to Dimension(width, height)
     }
-
-    override suspend fun destroy() =
-        withContext(Dispatchers.EDT) {
-            pane.reset()
-            popup?.cancel()
-            popup = null
-        }
 }

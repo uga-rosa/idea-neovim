@@ -2,10 +2,10 @@ package com.ugarosa.neovim.startup
 
 import com.intellij.ide.AppLifecycleListener
 import com.intellij.openapi.components.service
+import com.ugarosa.neovim.cmdline.NeovimCmdlineManager
 import com.ugarosa.neovim.common.focusProject
 import com.ugarosa.neovim.common.getActionManager
 import com.ugarosa.neovim.common.getClient
-import com.ugarosa.neovim.common.getCmdlinePopup
 import com.ugarosa.neovim.common.getKeyRouter
 import com.ugarosa.neovim.common.getOptionManager
 import com.ugarosa.neovim.common.getSessionManager
@@ -30,7 +30,7 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
     private val logger = myLogger()
     private val client = getClient()
     private val optionManager = getOptionManager()
-    private val cmdlinePopup = getCmdlinePopup()
+    private val cmdlineManager = service<NeovimCmdlineManager>()
     private val sessionManager = getSessionManager()
     private val actionManager = getActionManager()
     private val keyRouter = getKeyRouter()
@@ -79,6 +79,7 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
 
         client.registerPushHandler { push ->
             maybeRedrawEvent(push)?.forEach { redraw ->
+                logger.trace("Received redraw event: $redraw")
                 maybeModeChangeEvent(redraw)?.let { event ->
                     val session = sessionManager.getSession()
                     session?.handleModeChangeEvent(event)
@@ -88,11 +89,11 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
 
                     // Close cmdline popup if needed
                     if (!event.mode.isCommand()) {
-                        cmdlinePopup.destroy()
+                        cmdlineManager.destroy()
                     }
                 }
                 maybeCmdlineEvent(redraw)?.let { event ->
-                    cmdlinePopup.handleEvent(event)
+                    cmdlineManager.handleEvent(event)
                 }
             }
         }
