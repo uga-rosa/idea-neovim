@@ -1,4 +1,4 @@
-package com.ugarosa.neovim.cursor
+package com.ugarosa.neovim.session.cursor
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.EDT

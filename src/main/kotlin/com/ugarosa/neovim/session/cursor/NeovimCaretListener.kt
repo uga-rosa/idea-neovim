@@ -1,4 +1,4 @@
-package com.ugarosa.neovim.cursor
+package com.ugarosa.neovim.session.cursor
 
 import com.intellij.openapi.editor.event.CaretEvent
 import com.intellij.openapi.editor.event.CaretListener

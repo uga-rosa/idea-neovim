@@ -1,4 +1,4 @@
-package com.ugarosa.neovim.selection
+package com.ugarosa.neovim.session.selection
 
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.editor.Editor

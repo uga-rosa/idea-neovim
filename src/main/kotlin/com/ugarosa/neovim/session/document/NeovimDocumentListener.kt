@@ -1,4 +1,4 @@
-package com.ugarosa.neovim.document
+package com.ugarosa.neovim.session.document
 
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener

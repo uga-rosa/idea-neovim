@@ -6,8 +6,6 @@ import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.ugarosa.neovim.common.getOptionManager
-import com.ugarosa.neovim.cursor.NeovimCursorHandler
-import com.ugarosa.neovim.document.NeovimDocumentHandler
 import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.mode.getAndSetMode
 import com.ugarosa.neovim.mode.getMode
@@ -16,7 +14,9 @@ import com.ugarosa.neovim.rpc.event.BufLinesEvent
 import com.ugarosa.neovim.rpc.event.CursorMoveEvent
 import com.ugarosa.neovim.rpc.event.VisualSelectionEvent
 import com.ugarosa.neovim.rpc.event.redraw.ModeChangeEvent
-import com.ugarosa.neovim.selection.NeovimSelectionHandler
+import com.ugarosa.neovim.session.cursor.NeovimCursorHandler
+import com.ugarosa.neovim.session.document.NeovimDocumentHandler
+import com.ugarosa.neovim.session.selection.NeovimSelectionHandler
 import com.ugarosa.neovim.undo.NeovimUndoManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
