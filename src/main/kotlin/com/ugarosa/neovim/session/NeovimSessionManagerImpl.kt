@@ -37,8 +37,8 @@ class NeovimSessionManagerImpl : NeovimSessionManager {
     }
 
     override suspend fun getSession(bufferId: BufferId): NeovimEditorSession {
-        val bufferId = bufferIdToEditor[bufferId] ?: error("BufferId not found: $bufferId")
-        return getSession(bufferId)
+        val editor = bufferIdToEditor[bufferId] ?: error("BufferId not found: $bufferId")
+        return getSession(editor)
     }
 
     override suspend fun getEditor(bufferId: BufferId): Editor {
