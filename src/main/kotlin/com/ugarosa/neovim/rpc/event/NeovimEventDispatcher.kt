@@ -34,7 +34,7 @@ class NeovimEventDispatcher(
             .launchIn(scope)
     }
 
-    fun on(
+    fun register(
         method: String,
         handler: PushHandler,
     ) {
@@ -42,7 +42,7 @@ class NeovimEventDispatcher(
             .add(handler)
     }
 
-    fun off(
+    fun unregister(
         method: String,
         handler: PushHandler,
     ) {

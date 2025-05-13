@@ -1,12 +1,12 @@
-package com.ugarosa.neovim.rpc.client.event
+package com.ugarosa.neovim.rpc.event.handler
 
 import com.intellij.openapi.components.service
 import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.type.NeovimRegion
 import com.ugarosa.neovim.session.NeovimSessionManager
 
-fun NeovimClient.onVisualSelectionEvent() {
-    onEvent("nvim_visual_selection_event") { params ->
+fun onVisualSelectionEvent(client: NeovimClient) {
+    client.register("nvim_visual_selection_event") { params ->
         val bufferId = params[0].asBufferId()
         val regions =
             params[1].asArray().list.map {

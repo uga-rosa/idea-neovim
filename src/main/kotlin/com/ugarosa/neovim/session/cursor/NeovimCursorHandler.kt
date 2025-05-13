@@ -18,7 +18,7 @@ import com.ugarosa.neovim.mode.NeovimMode
 import com.ugarosa.neovim.mode.getMode
 import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.client.api.setCursor
-import com.ugarosa.neovim.rpc.client.event.CursorMoveEvent
+import com.ugarosa.neovim.rpc.event.handler.CursorMoveEvent
 import com.ugarosa.neovim.rpc.type.NeovimObject
 import com.ugarosa.neovim.rpc.type.NeovimPosition
 import kotlinx.coroutines.CoroutineScope

@@ -8,13 +8,13 @@ import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.client.api.globalHooks
 import com.ugarosa.neovim.rpc.client.api.uiAttach
-import com.ugarosa.neovim.rpc.client.event.onBufLinesEvent
-import com.ugarosa.neovim.rpc.client.event.onCursorMoveEvent
-import com.ugarosa.neovim.rpc.client.event.onExecIdeaActionEvent
-import com.ugarosa.neovim.rpc.client.event.onModeChangeEventCustom
-import com.ugarosa.neovim.rpc.client.event.onOptionSetEvent
-import com.ugarosa.neovim.rpc.client.event.onRedrawEvent
-import com.ugarosa.neovim.rpc.client.event.onVisualSelectionEvent
+import com.ugarosa.neovim.rpc.event.handler.onBufLinesEvent
+import com.ugarosa.neovim.rpc.event.handler.onCursorMoveEvent
+import com.ugarosa.neovim.rpc.event.handler.onExecIdeaActionEvent
+import com.ugarosa.neovim.rpc.event.handler.onModeChangeEventCustom
+import com.ugarosa.neovim.rpc.event.handler.onOptionSetEvent
+import com.ugarosa.neovim.rpc.event.handler.onRedrawEvent
+import com.ugarosa.neovim.rpc.event.handler.onVisualSelectionEvent
 import kotlinx.coroutines.launch
 
 class NeovimAppLifecycleListener : AppLifecycleListener {
@@ -31,14 +31,14 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
 
     private fun registerPushHandlers() {
         // Handle Neovim Native events
-        client.onRedrawEvent()
-        client.onBufLinesEvent()
+        onRedrawEvent(client)
+        onBufLinesEvent(client)
         // Handle Custom events
-        client.onCursorMoveEvent()
-        client.onModeChangeEventCustom()
-        client.onVisualSelectionEvent()
-        client.onOptionSetEvent()
-        client.onExecIdeaActionEvent()
+        onCursorMoveEvent(client)
+        onModeChangeEventCustom(client)
+        onVisualSelectionEvent(client)
+        onOptionSetEvent(client)
+        onExecIdeaActionEvent(client)
     }
 
     private fun initialize() {

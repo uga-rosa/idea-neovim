@@ -20,7 +20,7 @@ import com.ugarosa.neovim.rpc.client.api.input
 import com.ugarosa.neovim.rpc.client.api.modifiable
 import com.ugarosa.neovim.rpc.client.api.noModifiable
 import com.ugarosa.neovim.rpc.client.api.setFiletype
-import com.ugarosa.neovim.rpc.client.event.BufLinesEvent
+import com.ugarosa.neovim.rpc.event.handler.BufLinesEvent
 import com.ugarosa.neovim.rpc.type.NeovimObject
 import com.ugarosa.neovim.rpc.type.NeovimPosition
 import com.ugarosa.neovim.undo.NeovimUndoManager

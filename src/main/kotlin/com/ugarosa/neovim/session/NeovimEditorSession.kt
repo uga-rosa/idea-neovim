@@ -12,8 +12,8 @@ import com.ugarosa.neovim.mode.getAndSetMode
 import com.ugarosa.neovim.mode.getMode
 import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.client.api.localHooks
-import com.ugarosa.neovim.rpc.client.event.BufLinesEvent
-import com.ugarosa.neovim.rpc.client.event.CursorMoveEvent
+import com.ugarosa.neovim.rpc.event.handler.BufLinesEvent
+import com.ugarosa.neovim.rpc.event.handler.CursorMoveEvent
 import com.ugarosa.neovim.rpc.type.NeovimObject
 import com.ugarosa.neovim.rpc.type.NeovimRegion
 import com.ugarosa.neovim.session.cursor.NeovimCursorHandler

@@ -1,4 +1,4 @@
-package com.ugarosa.neovim.rpc.client.event.redraw
+package com.ugarosa.neovim.rpc.event.handler.redraw
 
 import java.awt.Color
 import javax.swing.text.AttributeSet

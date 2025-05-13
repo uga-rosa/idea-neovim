@@ -1,11 +1,11 @@
-package com.ugarosa.neovim.rpc.client.event
+package com.ugarosa.neovim.rpc.event.handler
 
 import com.intellij.openapi.components.service
 import com.ugarosa.neovim.cmdline.NeovimCmdlineManager
 import com.ugarosa.neovim.common.focusProject
 import com.ugarosa.neovim.rpc.client.NeovimClient
-import com.ugarosa.neovim.rpc.client.event.redraw.maybeCmdlineEvent
-import com.ugarosa.neovim.rpc.client.event.redraw.maybeModeChangeEvent
+import com.ugarosa.neovim.rpc.event.handler.redraw.maybeCmdlineEvent
+import com.ugarosa.neovim.rpc.event.handler.redraw.maybeModeChangeEvent
 import com.ugarosa.neovim.rpc.type.NeovimObject
 import com.ugarosa.neovim.session.NeovimSessionManager
 import com.ugarosa.neovim.statusline.StatusLineManager
@@ -15,8 +15,8 @@ data class RedrawEvent(
     val param: NeovimObject,
 )
 
-fun NeovimClient.onRedrawEvent() {
-    onEvent("redraw") { params ->
+fun onRedrawEvent(client: NeovimClient) {
+    client.register("redraw") { params ->
         params.forEach {
             val elem = it.asArray().list
             val redraw = RedrawEvent(elem[0].asStr().str, elem[1])

@@ -1,6 +1,6 @@
-package com.ugarosa.neovim.rpc.client.event.redraw
+package com.ugarosa.neovim.rpc.event.handler.redraw
 
-import com.ugarosa.neovim.rpc.client.event.RedrawEvent
+import com.ugarosa.neovim.rpc.event.handler.RedrawEvent
 import com.ugarosa.neovim.rpc.type.NeovimObject
 
 /**

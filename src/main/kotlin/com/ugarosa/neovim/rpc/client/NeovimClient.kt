@@ -30,18 +30,18 @@ class NeovimClient(
         }
     }
 
-    fun onEvent(
+    fun register(
         method: String,
         handler: PushHandler,
     ) {
-        dispatcher.on(method, handler)
+        dispatcher.register(method, handler)
     }
 
-    fun offEvent(
+    fun unregister(
         method: String,
         handler: PushHandler,
     ) {
-        dispatcher.off(method, handler)
+        dispatcher.unregister(method, handler)
     }
 
     internal suspend fun chanId(): Long = deferredChanId.await()

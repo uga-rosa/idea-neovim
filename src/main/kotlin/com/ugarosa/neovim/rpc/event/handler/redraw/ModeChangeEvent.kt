@@ -1,7 +1,7 @@
-package com.ugarosa.neovim.rpc.client.event.redraw
+package com.ugarosa.neovim.rpc.event.handler.redraw
 
 import com.ugarosa.neovim.mode.NeovimMode
-import com.ugarosa.neovim.rpc.client.event.RedrawEvent
+import com.ugarosa.neovim.rpc.event.handler.RedrawEvent
 
 fun maybeModeChangeEvent(redraw: RedrawEvent): NeovimMode? {
     if (redraw.name != "mode_change") {
