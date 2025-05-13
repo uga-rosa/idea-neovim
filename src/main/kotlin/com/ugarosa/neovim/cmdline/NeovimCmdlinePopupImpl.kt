@@ -38,7 +38,7 @@ class NeovimCmdlinePopupImpl(
                 return
             }
 
-        logger.debug("Handling CmdlineEvent: $event")
+        logger.trace("Handling CmdlineEvent: $event")
         withContext(Dispatchers.EDT) {
             when (event) {
                 is CmdlineEvent.Show -> pane.updateModel(show = event)
@@ -50,15 +50,15 @@ class NeovimCmdlinePopupImpl(
                 is CmdlineEvent.BlockHide -> pane.clearBlock()
                 is CmdlineEvent.Flush -> {
                     if (pane.isHidden()) {
-                        logger.debug("Cmdline is hidden, not showing popup: $event")
+                        logger.trace("Cmdline is hidden, not showing popup: $event")
                         destroy()
                     } else {
                         pane.flush()
                         if (popup == null || popup!!.isDisposed) {
-                            logger.debug("Cmdline is shown, creating popup: $event")
+                            logger.trace("Cmdline is shown, creating popup: $event")
                             showPopup(editor)
                         } else {
-                            logger.debug("Cmdline is shown, updating popup: $event")
+                            logger.trace("Cmdline is shown, updating popup: $event")
                             resize(editor)
                         }
                     }

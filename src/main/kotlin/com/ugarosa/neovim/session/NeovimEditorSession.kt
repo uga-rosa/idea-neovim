@@ -3,6 +3,7 @@ package com.ugarosa.neovim.session
 import com.intellij.codeInsight.lookup.LookupManager
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.EDT
+import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.ugarosa.neovim.common.getOptionManager
 import com.ugarosa.neovim.cursor.NeovimCursorHandler
@@ -16,6 +17,7 @@ import com.ugarosa.neovim.rpc.event.CursorMoveEvent
 import com.ugarosa.neovim.rpc.event.VisualSelectionEvent
 import com.ugarosa.neovim.rpc.event.redraw.ModeChangeEvent
 import com.ugarosa.neovim.selection.NeovimSelectionHandler
+import com.ugarosa.neovim.undo.NeovimUndoManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -33,6 +35,7 @@ class NeovimEditorSession private constructor(
     private val selectionHandler: NeovimSelectionHandler,
 ) {
     private val logger = myLogger()
+    private val undoManager = editor.project?.service<NeovimUndoManager>()
 
     companion object {
         suspend fun create(
@@ -59,7 +62,7 @@ class NeovimEditorSession private constructor(
         }
     }
 
-    suspend fun handleBufferLinesEvent(event: BufLinesEvent) {
+    fun handleBufferLinesEvent(event: BufLinesEvent) {
         require(event.bufferId == bufferId) { "Buffer ID mismatch" }
         documentHandler.applyBufferLinesEvent(event)
     }
@@ -76,6 +79,10 @@ class NeovimEditorSession private constructor(
         val oldMode = getAndSetMode(event.mode)
 
         cursorHandler.changeCursorShape(oldMode, newMode)
+
+        if (oldMode.isInsert() && !newMode.isInsert()) {
+            undoManager?.setCheckpoint()
+        }
 
         if (newMode.isInsert()) {
             cursorHandler.disableCursorListener()

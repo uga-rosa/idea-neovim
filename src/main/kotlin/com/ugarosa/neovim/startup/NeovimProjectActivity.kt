@@ -17,6 +17,7 @@ import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import com.intellij.openapi.vfs.newvfs.events.VFilePropertyChangeEvent
 import com.ugarosa.neovim.common.focusEditor
 import com.ugarosa.neovim.common.getSessionManager
+import com.ugarosa.neovim.undo.NeovimUndoManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -27,11 +28,13 @@ class NeovimProjectActivity(
 
     override suspend fun execute(project: Project) {
         val disposable = project.service<ProjectDisposable>()
+        val undoManager = project.service<NeovimUndoManager>()
 
         setupEditorFactoryListener(project, disposable)
         initializeExistingEditors(project, disposable)
         setupBufferActivationOnEditorSwitch(project, disposable)
         setupWritablePropertyChangeListener(project, disposable)
+        undoManager.setCheckpoint()
     }
 
     private fun setupEditorFactoryListener(

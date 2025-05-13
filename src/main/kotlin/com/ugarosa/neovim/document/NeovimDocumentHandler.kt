@@ -1,12 +1,12 @@
 package com.ugarosa.neovim.document
 
-import com.intellij.openapi.application.EDT
+import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.util.TextRange
-import com.ugarosa.neovim.common.GroupIdGenerator
 import com.ugarosa.neovim.common.ListenerGuard
 import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.domain.NeovimPosition
@@ -24,10 +24,9 @@ import com.ugarosa.neovim.rpc.function.input
 import com.ugarosa.neovim.rpc.function.modifiable
 import com.ugarosa.neovim.rpc.function.noModifiable
 import com.ugarosa.neovim.rpc.function.setFiletype
+import com.ugarosa.neovim.undo.NeovimUndoManager
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentHashMap
 
 class NeovimDocumentHandler private constructor(
@@ -44,6 +43,7 @@ class NeovimDocumentHandler private constructor(
             { editor.document.removeDocumentListener(it) },
         )
     private val ignoreChangedTicks = ConcurrentHashMap.newKeySet<Int>()
+    private val undoManager = editor.project?.service<NeovimUndoManager>()
 
     companion object {
         suspend fun create(
@@ -91,19 +91,25 @@ class NeovimDocumentHandler private constructor(
         activateBuffer(client, bufferId)
     }
 
-    suspend fun applyBufferLinesEvent(e: BufLinesEvent) {
+    fun applyBufferLinesEvent(e: BufLinesEvent) {
+        if (getMode().isInsert()) {
+            logger.trace("Ignore event in insert mode: $e")
+            return
+        }
         if (ignoreChangedTicks.remove(e.changedTick)) {
             logger.trace("Ignore event by changed tick: $e")
             return
         }
 
         val document = editor.document
-        val startOffset = document.getLineStartOffset(e.firstLine)
+        val startOffset = runReadAction { document.getLineStartOffset(e.firstLine) }
         val endOffset =
-            if (e.lastLine == -1) {
-                document.textLength
-            } else {
-                document.getLineStartOffset(e.lastLine)
+            runReadAction {
+                if (e.lastLine == -1) {
+                    document.textLength
+                } else {
+                    document.getLineStartOffset(e.lastLine)
+                }
             }
         val replacementText =
             if (e.replacementLines.isEmpty()) {
@@ -111,19 +117,14 @@ class NeovimDocumentHandler private constructor(
             } else {
                 e.replacementLines.joinToString("\n", postfix = "\n")
             }
-        withContext(Dispatchers.EDT) {
-            WriteCommandAction.runWriteCommandAction(
-                editor.project,
-                "ApplyBufLinesEvent",
-                GroupIdGenerator.generate(),
-                {
-                    documentListenerGuard.runWithoutListener {
-                        document.replaceString(startOffset, endOffset, replacementText)
-                        logger.trace("Applied buffer lines event: $e")
-                    }
-                },
-            )
+        documentListenerGuard.runWithoutListener {
+            WriteCommandAction.writeCommandAction(editor.project)
+                .run<Exception> {
+                    document.replaceString(startOffset, endOffset, replacementText)
+                }
+            logger.trace("Applied buffer lines event: $e")
         }
+        undoManager?.setCheckpoint()
     }
 
     // Must be called before the document is changed

@@ -8,6 +8,8 @@ import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.util.xmlb.annotations.XCollection
 import com.ugarosa.neovim.keymap.notation.NeovimKeyNotation
+import com.ugarosa.neovim.undo.NeovimRedoAction
+import com.ugarosa.neovim.undo.NeovimUndoAction
 
 @Service(Service.Level.APP)
 @State(
@@ -56,8 +58,8 @@ class NeovimKeymapSettingsImpl : NeovimKeymapSettings,
                 // Insert mode Esc
                 mapNvim("i", "<Esc>", "<Esc>")
                 // Undo/Redo
-                mapIdea("n", "u", IdeActions.ACTION_UNDO)
-                mapIdea("n", "<C-r>", IdeActions.ACTION_REDO)
+                mapIdea("n", "u", NeovimUndoAction.ACTION_ID)
+                mapIdea("n", "<C-r>", NeovimRedoAction.ACTION_ID)
                 // Folding
                 mapIdea("n", "zo", IdeActions.ACTION_EXPAND_REGION)
                 mapIdea("n", "zO", IdeActions.ACTION_EXPAND_REGION_RECURSIVELY)

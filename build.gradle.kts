@@ -59,7 +59,7 @@ tasks {
 }
 
 tasks.named<RunIdeTask>("runIde") {
-    systemProperties["idea.log.debug.categories"] = "#com.ugarosa.neovim"
+    systemProperties["idea.log.trace.categories"] = "#com.ugarosa.neovim"
     systemProperties["intellij.platform.log.sync"] = true
     jvmArgs =
         listOf(
