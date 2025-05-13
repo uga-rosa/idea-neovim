@@ -59,7 +59,7 @@ local function visual_selection(chan_id)
 		group = vim.api.nvim_create_augroup("IdeaNeovim:VisualSelection", { clear = true }),
 		callback = function()
 			local mode = vim.api.nvim_get_mode().mode:sub(1, 1)
-			if mode:find("[vV\22sS\19]") == nil then
+			if mode:find("[vV\22]") == nil then
 				return
 			end
 
@@ -83,7 +83,6 @@ end
 local function mode_change(chan_id)
 	vim.api.nvim_create_autocmd("ModeChanged", {
 		group = vim.api.nvim_create_augroup("IdeaNeovim:ModeChanged", { clear = true }),
-		pattern = "*",
 		callback = function()
 			local mode = vim.api.nvim_get_mode().mode:sub(1, 1)
 			if mode:find("[sS\19]") == nil then
