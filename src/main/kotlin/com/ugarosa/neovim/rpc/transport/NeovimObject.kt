@@ -11,24 +11,60 @@ import com.ugarosa.neovim.rpc.type.WindowId
 sealed class NeovimObject() {
     object Nil : NeovimObject()
 
-    data class Bool(val bool: Boolean) : NeovimObject()
+    data class Bool(val bool: Boolean) : NeovimObject() {
+        override fun toString(): String {
+            return "Bool($bool)"
+        }
+    }
 
-    data class Int64(val long: Long) : NeovimObject()
+    data class Int64(val long: Long) : NeovimObject() {
+        override fun toString(): String {
+            return "Int64($long)"
+        }
+    }
 
-    data class Float64(val double: Double) : NeovimObject()
+    data class Float64(val double: Double) : NeovimObject() {
+        override fun toString(): String {
+            return "Float64($double)"
+        }
+    }
 
-    data class Str(val str: String) : NeovimObject()
+    data class Str(val str: String) : NeovimObject() {
+        override fun toString(): String {
+            return "Str($str)"
+        }
+    }
 
-    data class Array(val list: List<NeovimObject>) : NeovimObject()
+    data class Array(val list: List<NeovimObject>) : NeovimObject() {
+        override fun toString(): String {
+            return "Array($list)"
+        }
+    }
 
-    data class Dict(val map: Map<String, NeovimObject>) : NeovimObject()
+    data class Dict(val map: Map<String, NeovimObject>) : NeovimObject() {
+        override fun toString(): String {
+            return "Dict($map)"
+        }
+    }
 
     // EXT type
-    data class Buffer(val long: Long) : NeovimObject()
+    data class Buffer(val long: Long) : NeovimObject() {
+        override fun toString(): String {
+            return "Buffer($long)"
+        }
+    }
 
-    data class Window(val long: Long) : NeovimObject()
+    data class Window(val long: Long) : NeovimObject() {
+        override fun toString(): String {
+            return "Window($long)"
+        }
+    }
 
-    data class Tabpage(val long: Long) : NeovimObject()
+    data class Tabpage(val long: Long) : NeovimObject() {
+        override fun toString(): String {
+            return "Tabpage($long)"
+        }
+    }
 
     // Utility methods
     fun asNull(): Nothing? = (this as Nil).let { null }

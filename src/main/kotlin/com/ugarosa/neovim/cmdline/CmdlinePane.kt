@@ -1,8 +1,10 @@
 package com.ugarosa.neovim.cmdline
 
 import com.intellij.openapi.application.runReadAction
+import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.ui.JBColor
+import com.ugarosa.neovim.highlight.NeovimHighlightManager
 import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.rpc.event.handler.redraw.CmdlineEvent
 import java.awt.Font
@@ -13,6 +15,9 @@ import javax.swing.text.StyledDocument
 import javax.swing.text.StyledEditorKit
 
 class CmdlinePane : JTextPane() {
+    private val logger = myLogger()
+    private val highlightManager = service<NeovimHighlightManager>()
+
     init {
         font =
             runReadAction {
@@ -24,7 +29,7 @@ class CmdlinePane : JTextPane() {
         isFocusable = false
         editorKit = StyledEditorKit()
         isOpaque = true
-        background = JBColor.PanelBackground
+        background = JBColor.background()
 
         // Show caret
         (caret as? DefaultCaret)?.apply {
@@ -33,8 +38,6 @@ class CmdlinePane : JTextPane() {
             updatePolicy = DefaultCaret.ALWAYS_UPDATE
         }
     }
-
-    private val logger = myLogger()
 
     private val emptyShow = CmdlineEvent.Show(emptyList(), 0, "", "", 0, 0)
     private var show: CmdlineEvent.Show = emptyShow
@@ -127,7 +130,7 @@ class CmdlinePane : JTextPane() {
         }
 
         for (chunk in line) {
-            val style = chunk.highlightAttributes.toAttributeSet()
+            val style = highlightManager.get(chunk.hlId).toAttributeSet()
             insertString(offset, chunk.text, style)
             offset += chunk.text.length
         }

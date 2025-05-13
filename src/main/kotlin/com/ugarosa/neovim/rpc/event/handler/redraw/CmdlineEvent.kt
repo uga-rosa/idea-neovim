@@ -46,7 +46,7 @@ sealed interface CmdlineEvent {
     ) : CmdlineEvent
 
     data class ShowChunk(
-        val highlightAttributes: HighlightAttributes,
+        val hlId: Int,
         val text: String,
     )
 
@@ -122,7 +122,7 @@ sealed interface CmdlineEvent {
 private fun NeovimObject.asShowContent(): CmdlineEvent.ShowChunk {
     val content = asArray()
     return CmdlineEvent.ShowChunk(
-        HighlightAttributes.Companion.fromMap(content[0].asStringMap()),
+        content[0].asInt(),
         content[1].asString(),
     )
 }

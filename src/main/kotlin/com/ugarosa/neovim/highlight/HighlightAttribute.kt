@@ -1,13 +1,14 @@
-package com.ugarosa.neovim.rpc.event.handler.redraw
+package com.ugarosa.neovim.highlight
 
+import com.intellij.ui.JBColor
 import java.awt.Color
 import javax.swing.text.AttributeSet
 import javax.swing.text.SimpleAttributeSet
 import javax.swing.text.StyleConstants
 
-data class HighlightAttributes(
-    val foreground: String? = null,
-    val background: String? = null,
+data class HighlightAttribute(
+    val foreground: Color? = null,
+    val background: Color? = null,
     val special: String? = null,
     val reverse: Boolean = false,
     val italic: Boolean = false,
@@ -20,10 +21,10 @@ data class HighlightAttributes(
     val underdashed: Boolean = false,
 ) {
     companion object {
-        fun fromMap(map: Map<String, Any?>): HighlightAttributes {
-            return HighlightAttributes(
-                foreground = map["foreground"] as? String,
-                background = map["background"] as? String,
+        fun fromMap(map: Map<String, Any?>): HighlightAttribute {
+            return HighlightAttribute(
+                foreground = (map["foreground"] as? Int)?.let { newColor(it) },
+                background = (map["background"] as? Int)?.let { newColor(it) },
                 special = map["special"] as? String,
                 reverse = map["reverse"] as? Boolean ?: false,
                 italic = map["italic"] as? Boolean ?: false,
@@ -36,12 +37,16 @@ data class HighlightAttributes(
                 underdashed = map["underdashed"] as? Boolean ?: false,
             )
         }
+
+        private fun newColor(value: Int): JBColor {
+            return JBColor(Color(value), Color(value))
+        }
     }
 
     fun toAttributeSet(): AttributeSet =
         SimpleAttributeSet().apply {
-            foreground?.let { StyleConstants.setForeground(this, Color.decode(it)) }
-            background?.let { StyleConstants.setBackground(this, Color.decode(it)) }
+            foreground?.let { StyleConstants.setForeground(this, it) }
+            background?.let { StyleConstants.setBackground(this, it) }
             // Don't support special (color to use for various underlines, when present).
             if (reverse) {
                 val fg = StyleConstants.getForeground(this)

@@ -9,8 +9,8 @@ suspend fun NeovimClient.uiAttach() {
             80,
             40,
             mapOf(
-                "rgb" to true,
                 "ext_cmdline" to true,
+                "ext_messages" to true,
             ),
         ),
     )
