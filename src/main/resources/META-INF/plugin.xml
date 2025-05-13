@@ -23,9 +23,4 @@
         <listener class="com.ugarosa.neovim.startup.NeovimAppLifecycleListener"
                   topic="com.intellij.ide.AppLifecycleListener"/>
     </applicationListeners>
-
-    <actions>
-        <action id="Neovim:UndoAction" class="com.ugarosa.neovim.undo.NeovimUndoAction"/>
-        <action id="Neovim:RedoAction" class="com.ugarosa.neovim.undo.NeovimRedoAction"/>
-    </actions>
 </idea-plugin>

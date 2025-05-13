@@ -23,7 +23,6 @@ import com.ugarosa.neovim.rpc.client.api.setFiletype
 import com.ugarosa.neovim.rpc.event.handler.BufLinesEvent
 import com.ugarosa.neovim.rpc.type.BufferId
 import com.ugarosa.neovim.rpc.type.NeovimPosition
-import com.ugarosa.neovim.undo.NeovimUndoManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
@@ -42,7 +41,6 @@ class NeovimDocumentHandler private constructor(
             { editor.document.removeDocumentListener(it) },
         )
     private val ignoreChangedTicks = ConcurrentHashMap.newKeySet<Long>()
-    private val undoManager = editor.project?.service<NeovimUndoManager>()
 
     companion object {
         suspend fun create(
@@ -123,7 +121,6 @@ class NeovimDocumentHandler private constructor(
                 }
             logger.trace("Applied buffer lines event: $e")
         }
-        undoManager?.setCheckpoint()
     }
 
     // Must be called before the document is changed

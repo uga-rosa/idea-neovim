@@ -19,7 +19,6 @@ import com.ugarosa.neovim.rpc.type.NeovimRegion
 import com.ugarosa.neovim.session.cursor.NeovimCursorHandler
 import com.ugarosa.neovim.session.document.NeovimDocumentHandler
 import com.ugarosa.neovim.session.selection.NeovimSelectionHandler
-import com.ugarosa.neovim.undo.NeovimUndoManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -36,7 +35,6 @@ class NeovimEditorSession private constructor(
     private val selectionHandler: NeovimSelectionHandler,
 ) {
     private val logger = myLogger()
-    private val undoManager = editor.project?.service<NeovimUndoManager>()
 
     companion object {
         private val client = service<NeovimClient>()
@@ -82,10 +80,6 @@ class NeovimEditorSession private constructor(
         val oldMode = getAndSetMode(newMode)
 
         cursorHandler.changeCursorShape(oldMode, newMode)
-
-        if (oldMode.isInsert() && !newMode.isInsert()) {
-            undoManager?.setCheckpoint()
-        }
 
         if (newMode.isInsert()) {
             cursorHandler.disableCursorListener()
