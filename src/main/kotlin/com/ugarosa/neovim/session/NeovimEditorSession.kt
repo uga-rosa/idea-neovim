@@ -5,6 +5,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
+import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.common.getOptionManager
 import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.mode.getAndSetMode
@@ -13,6 +14,7 @@ import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.event.BufLinesEvent
 import com.ugarosa.neovim.rpc.event.CursorMoveEvent
 import com.ugarosa.neovim.rpc.event.VisualSelectionEvent
+import com.ugarosa.neovim.rpc.event.localHooks
 import com.ugarosa.neovim.rpc.event.redraw.ModeChangeEvent
 import com.ugarosa.neovim.session.cursor.NeovimCursorHandler
 import com.ugarosa.neovim.session.document.NeovimDocumentHandler
@@ -38,6 +40,8 @@ class NeovimEditorSession private constructor(
     private val undoManager = editor.project?.service<NeovimUndoManager>()
 
     companion object {
+        private val client = getClient()
+
         suspend fun create(
             scope: CoroutineScope,
             editor: Editor,
@@ -57,6 +61,8 @@ class NeovimEditorSession private constructor(
                 )
 
             getOptionManager().initializeLocal(bufferId)
+
+            localHooks(client, bufferId)
 
             return session
         }
@@ -95,7 +101,7 @@ class NeovimEditorSession private constructor(
             cursorHandler.enableCursorListener()
         }
 
-        if (!newMode.isVisual()) {
+        if (!newMode.isVisualOrSelect()) {
             selectionHandler.resetSelection()
         }
     }

@@ -4,19 +4,12 @@ import com.ugarosa.neovim.common.decode
 import com.ugarosa.neovim.domain.NeovimPosition
 import com.ugarosa.neovim.rpc.BufferId
 import com.ugarosa.neovim.rpc.client.NeovimRpcClient
-import com.ugarosa.neovim.rpc.function.ChanIdManager
-import com.ugarosa.neovim.rpc.function.execLuaNotify
 
 // Neovim cursor position is (1,0) byte-indexed
 data class CursorMoveEvent(
     val bufferId: BufferId,
     val position: NeovimPosition,
 )
-
-suspend fun hookCursorMovedEvent(client: NeovimRpcClient) {
-    val chanId = ChanIdManager.get()
-    execLuaNotify(client, "hook", "cursor_moved", listOf(chanId))
-}
 
 fun maybeCursorMoveEvent(push: NeovimRpcClient.PushNotification): CursorMoveEvent? {
     if (push.method != "nvim_cursor_move_event") {

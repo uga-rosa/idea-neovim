@@ -1,6 +1,6 @@
 local M = {}
 
-function M.cursor_moved(chan_id)
+local function cursor_moved(chan_id)
 	local group = vim.api.nvim_create_augroup("IdeaNeovim:CursorMoved", { clear = true })
 
 	local on_cursor_moved = vim.schedule_wrap(function()
@@ -22,7 +22,7 @@ function M.cursor_moved(chan_id)
 	})
 end
 
-function M.global_option_set(chan_id)
+local function global_option_set(chan_id)
 	local group = vim.api.nvim_create_augroup("IdeaNeovim:OptionSet:Global", { clear = true })
 	vim.api.nvim_create_autocmd("OptionSet", {
 		group = group,
@@ -38,7 +38,7 @@ function M.global_option_set(chan_id)
 end
 
 local local_group = vim.api.nvim_create_augroup("IdeaNeovim:OptionSet:Local", { clear = true })
-function M.local_option_set(chan_id, buffer_id)
+local function local_option_set(chan_id, buffer_id)
 	vim.api.nvim_create_autocmd("OptionSet", {
 		group = local_group,
 		buffer = buffer_id,
@@ -55,12 +55,12 @@ function M.local_option_set(chan_id, buffer_id)
 	})
 end
 
-function M.visual_selection(chan_id)
+local function visual_selection(chan_id)
 	vim.api.nvim_create_autocmd({ "CursorMoved", "ModeChanged" }, {
 		group = vim.api.nvim_create_augroup("IdeaNeovim:VisualSelection", { clear = true }),
 		callback = function()
 			local mode = vim.api.nvim_get_mode().mode:sub(1, 1)
-			if mode ~= "v" and mode ~= "V" and mode ~= "\22" then
+			if mode:match("[vV\22sS\19]") == nil then
 				return
 			end
 
@@ -79,6 +79,27 @@ function M.visual_selection(chan_id)
 			vim.rpcnotify(chan_id, "nvim_visual_selection_event", buffer_id, regions)
 		end,
 	})
+end
+
+local function create_exec_action(chan_id)
+	vim.api.nvim_create_user_command("ExecIdeaAction", function(opt)
+		local buffer_id = vim.api.nvim_get_current_buf()
+		local action_id = opt.args
+		vim.rpcnotify(chan_id, "nvim_exec_idea_action_event", buffer_id, action_id)
+	end, {
+		nargs = 1,
+	})
+end
+
+function M.global_hooks(chan_id)
+	cursor_moved(chan_id)
+	global_option_set(chan_id)
+	visual_selection(chan_id)
+	create_exec_action(chan_id)
+end
+
+function M.local_hooks(chan_id, buffer_id)
+	local_option_set(chan_id, buffer_id)
 end
 
 return M

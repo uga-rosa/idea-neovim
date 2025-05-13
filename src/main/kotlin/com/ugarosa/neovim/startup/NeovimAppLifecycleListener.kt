@@ -10,9 +10,7 @@ import com.ugarosa.neovim.common.getKeyRouter
 import com.ugarosa.neovim.common.getOptionManager
 import com.ugarosa.neovim.common.getSessionManager
 import com.ugarosa.neovim.logger.myLogger
-import com.ugarosa.neovim.rpc.event.createExecIdeaActionCommand
-import com.ugarosa.neovim.rpc.event.hookCursorMovedEvent
-import com.ugarosa.neovim.rpc.event.hookVisualSelectionEvent
+import com.ugarosa.neovim.rpc.event.globalHooks
 import com.ugarosa.neovim.rpc.event.maybeBufLinesEvent
 import com.ugarosa.neovim.rpc.event.maybeCursorMoveEvent
 import com.ugarosa.neovim.rpc.event.maybeExecIdeaActionEvent
@@ -93,14 +91,8 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
             uiAttach(client)
             logger.debug("Attached UI")
 
-            hookCursorMovedEvent(client)
-            logger.debug("Hooked cursor move")
-
-            hookVisualSelectionEvent(client)
-            logger.debug("Hooked visual selection event")
-
-            createExecIdeaActionCommand(client)
-            logger.debug("Created command")
+            globalHooks(client)
+            logger.debug("Registered global hooks")
 
             val optionManager = getOptionManager()
             optionManager.initializeGlobal()
