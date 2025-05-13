@@ -11,9 +11,9 @@ fun maybeModeChangeEvent(event: RedrawEvent): ModeChangeEvent? {
     if (event.name != "mode_change") {
         return null
     }
-    return event.param.decode {
-        val params = it.asArrayValue().list()
-        val mode = params[0].asStringValue().asString().let { NeovimMode.fromRaw(it) }
+    return event.param.decode { value ->
+        val params = value.asArrayValue().list()
+        val mode = params[0].asStringValue().asString().let { NeovimMode.fromModeChangeEvent(it) }
         ModeChangeEvent(mode)
     }
 }

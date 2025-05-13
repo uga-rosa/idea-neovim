@@ -23,9 +23,8 @@ local function cursor_moved(chan_id)
 end
 
 local function global_option_set(chan_id)
-	local group = vim.api.nvim_create_augroup("IdeaNeovim:OptionSet:Global", { clear = true })
 	vim.api.nvim_create_autocmd("OptionSet", {
-		group = group,
+		group = vim.api.nvim_create_augroup("IdeaNeovim:OptionSet:Global", { clear = true }),
 		pattern = { "filetype", "selection", "scrolloff", "sidescrolloff" },
 		callback = function(event)
 			if vim.v.option_type ~= "global" then
@@ -60,7 +59,7 @@ local function visual_selection(chan_id)
 		group = vim.api.nvim_create_augroup("IdeaNeovim:VisualSelection", { clear = true }),
 		callback = function()
 			local mode = vim.api.nvim_get_mode().mode:sub(1, 1)
-			if mode:match("[vV\22sS\19]") == nil then
+			if mode:find("[vV\22sS\19]") == nil then
 				return
 			end
 
@@ -81,6 +80,21 @@ local function visual_selection(chan_id)
 	})
 end
 
+local function mode_change(chan_id)
+	vim.api.nvim_create_autocmd("ModeChanged", {
+		group = vim.api.nvim_create_augroup("IdeaNeovim:ModeChanged", { clear = true }),
+		pattern = "*",
+		callback = function()
+			local mode = vim.api.nvim_get_mode().mode:sub(1, 1)
+			if mode:find("[sS\19]") == nil then
+				return
+			end
+
+			vim.rpcnotify(chan_id, "nvim_mode_change_event", mode)
+		end
+	})
+end
+
 local function create_exec_action(chan_id)
 	vim.api.nvim_create_user_command("ExecIdeaAction", function(opt)
 		local buffer_id = vim.api.nvim_get_current_buf()
@@ -95,6 +109,7 @@ function M.global_hooks(chan_id)
 	cursor_moved(chan_id)
 	global_option_set(chan_id)
 	visual_selection(chan_id)
+	mode_change(chan_id)
 	create_exec_action(chan_id)
 end
 

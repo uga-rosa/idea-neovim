@@ -4,40 +4,51 @@ import com.ugarosa.neovim.config.neovim.option.Selection
 
 data class NeovimMode(
     val kind: NeovimModeKind,
-    val raw: String,
 ) {
     companion object {
-        fun fromRaw(raw: String): NeovimMode {
+        // The ui `mode_change` event sends the mode string, but it's not same as the return value of mode().
+        // For example, this could be "operator", "visual", "replace" or "cmdline_normal".
+        fun fromModeChangeEvent(raw: String): NeovimMode {
             val kind =
                 when (raw[0]) {
-                    'n' -> NeovimModeKind.NORMAL
-                    'v', 'V', '\u0016' -> NeovimModeKind.VISUAL // Ctrl-V
-                    's', 'S', '\u0013' -> NeovimModeKind.SELECT // Ctrl-S
+                    'n', 'o' -> NeovimModeKind.NORMAL
+                    'v' -> NeovimModeKind.VISUAL
                     'i' -> NeovimModeKind.INSERT
-                    'R' -> NeovimModeKind.REPLACE
+                    'r' -> NeovimModeKind.REPLACE
                     'c' -> NeovimModeKind.COMMAND
                     else -> NeovimModeKind.OTHER
                 }
-            return NeovimMode(kind, raw)
+            return NeovimMode(kind)
         }
 
-        val default = NeovimMode(NeovimModeKind.NORMAL, "n")
+        // The ui `mode_change` event does not send selection mode.
+        // So I set autocmd for changing select mode.
+        fun fromMode(raw: String): NeovimMode {
+            val kind =
+                when (raw[0]) {
+                    's', 'S', '\u0013' -> NeovimModeKind.SELECT
+                    else -> NeovimModeKind.OTHER
+                }
+            return NeovimMode(kind)
+        }
+
+        val default = NeovimMode(NeovimModeKind.NORMAL)
     }
 
     fun isBlock(selection: Selection): Boolean =
         when (kind) {
-            NeovimModeKind.NORMAL,
-            NeovimModeKind.SELECT,
-            -> true
+            NeovimModeKind.NORMAL -> true
 
-            NeovimModeKind.VISUAL -> selection == Selection.INCLUSIVE
+            NeovimModeKind.SELECT,
+            NeovimModeKind.VISUAL,
+            -> selection == Selection.INCLUSIVE
 
             else -> false
         }
 
     fun isInsert(): Boolean = kind == NeovimModeKind.INSERT
 
-    fun isVisual(): Boolean = kind == NeovimModeKind.VISUAL
+    fun isVisualOrSelect(): Boolean = kind == NeovimModeKind.VISUAL || kind == NeovimModeKind.SELECT
 
     fun isCommand(): Boolean = kind == NeovimModeKind.COMMAND
 }

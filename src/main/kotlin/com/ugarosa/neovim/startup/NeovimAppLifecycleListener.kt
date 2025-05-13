@@ -10,10 +10,14 @@ import com.ugarosa.neovim.common.getKeyRouter
 import com.ugarosa.neovim.common.getOptionManager
 import com.ugarosa.neovim.common.getSessionManager
 import com.ugarosa.neovim.logger.myLogger
+import com.ugarosa.neovim.mode.getAndSetMode
+import com.ugarosa.neovim.rpc.event.OptionScope
 import com.ugarosa.neovim.rpc.event.globalHooks
 import com.ugarosa.neovim.rpc.event.maybeBufLinesEvent
 import com.ugarosa.neovim.rpc.event.maybeCursorMoveEvent
 import com.ugarosa.neovim.rpc.event.maybeExecIdeaActionEvent
+import com.ugarosa.neovim.rpc.event.maybeModeChangeEventCustom
+import com.ugarosa.neovim.rpc.event.maybeOptionSetEvent
 import com.ugarosa.neovim.rpc.event.maybeVisualSelectionEvent
 import com.ugarosa.neovim.rpc.event.redraw.maybeCmdlineEvent
 import com.ugarosa.neovim.rpc.event.redraw.maybeModeChangeEvent
@@ -25,9 +29,11 @@ import kotlinx.coroutines.launch
 class NeovimAppLifecycleListener : AppLifecycleListener {
     private val logger = myLogger()
     private val client = getClient()
+    private val optionManager = getOptionManager()
     private val cmdlinePopup = getCmdlinePopup()
     private val sessionManager = getSessionManager()
-    private val actionHandler = getActionManager()
+    private val actionManager = getActionManager()
+    private val keyRouter = getKeyRouter()
 
     // Hooks that should be called only once at application startup.
     override fun appFrameCreated(commandLineArgs: List<String>) {
@@ -61,7 +67,13 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
         client.registerPushHandler { push ->
             maybeExecIdeaActionEvent(push)?.let { event ->
                 val editor = sessionManager.getEditor(event.bufferId)
-                actionHandler.executeAction(event.actionId, editor)
+                actionManager.executeAction(event.actionId, editor)
+            }
+        }
+
+        client.registerPushHandler { push ->
+            maybeModeChangeEventCustom(push)?.let { mode ->
+                getAndSetMode(mode)
             }
         }
 
@@ -84,6 +96,16 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
                 }
             }
         }
+
+        client.registerPushHandler { push ->
+            maybeOptionSetEvent(push)?.let { event ->
+                logger.trace("Received an option set event: $event")
+                when (event.scope) {
+                    OptionScope.LOCAL -> optionManager.putLocal(event.bufferId, event.name, event.value)
+                    OptionScope.GLOBAL -> optionManager.putGlobal(event.name, event.value)
+                }
+            }
+        }
     }
 
     private fun initialize() {
@@ -94,11 +116,9 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
             globalHooks(client)
             logger.debug("Registered global hooks")
 
-            val optionManager = getOptionManager()
             optionManager.initializeGlobal()
             logger.debug("Initialized global options")
 
-            val keyRouter = getKeyRouter()
             keyRouter.start()
             logger.debug("Start Neovim key router")
         }
