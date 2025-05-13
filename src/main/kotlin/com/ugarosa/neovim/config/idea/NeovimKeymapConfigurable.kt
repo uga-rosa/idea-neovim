@@ -1,11 +1,11 @@
 package com.ugarosa.neovim.config.idea
 
+import com.intellij.openapi.components.service
 import com.intellij.openapi.options.Configurable
 import com.intellij.ui.ToolbarDecorator
 import com.intellij.ui.table.TableView
 import com.intellij.util.ui.ColumnInfo
 import com.intellij.util.ui.ListTableModel
-import com.ugarosa.neovim.common.getKeymapSettings
 import com.ugarosa.neovim.keymap.notation.NeovimKeyNotation
 import java.awt.BorderLayout
 import javax.swing.JComponent
@@ -15,7 +15,7 @@ class NeovimKeymapConfigurable : Configurable {
     private val panel = JPanel(BorderLayout())
     private val tableModel: ListTableModel<Row>
     private val table: TableView<Row>
-    private val settings = getKeymapSettings()
+    private val settings = service<NeovimKeymapSettings>()
 
     init {
         // Define columns: Mode, LHS, RHS

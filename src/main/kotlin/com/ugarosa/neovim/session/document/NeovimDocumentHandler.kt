@@ -8,22 +8,21 @@ import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.util.TextRange
 import com.ugarosa.neovim.common.ListenerGuard
-import com.ugarosa.neovim.common.getClient
-import com.ugarosa.neovim.domain.NeovimPosition
 import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.mode.getMode
-import com.ugarosa.neovim.rpc.BufferId
-import com.ugarosa.neovim.rpc.event.BufLinesEvent
-import com.ugarosa.neovim.rpc.function.BufferSetTextParams
-import com.ugarosa.neovim.rpc.function.activateBuffer
-import com.ugarosa.neovim.rpc.function.bufferAttach
-import com.ugarosa.neovim.rpc.function.bufferSetLines
-import com.ugarosa.neovim.rpc.function.bufferSetText
-import com.ugarosa.neovim.rpc.function.getChangedTick
-import com.ugarosa.neovim.rpc.function.input
-import com.ugarosa.neovim.rpc.function.modifiable
-import com.ugarosa.neovim.rpc.function.noModifiable
-import com.ugarosa.neovim.rpc.function.setFiletype
+import com.ugarosa.neovim.rpc.client.NeovimClient
+import com.ugarosa.neovim.rpc.client.api.activateBuffer
+import com.ugarosa.neovim.rpc.client.api.bufferAttach
+import com.ugarosa.neovim.rpc.client.api.bufferSetLines
+import com.ugarosa.neovim.rpc.client.api.bufferSetText
+import com.ugarosa.neovim.rpc.client.api.changedTick
+import com.ugarosa.neovim.rpc.client.api.input
+import com.ugarosa.neovim.rpc.client.api.modifiable
+import com.ugarosa.neovim.rpc.client.api.noModifiable
+import com.ugarosa.neovim.rpc.client.api.setFiletype
+import com.ugarosa.neovim.rpc.client.event.BufLinesEvent
+import com.ugarosa.neovim.rpc.type.NeovimObject
+import com.ugarosa.neovim.rpc.type.NeovimPosition
 import com.ugarosa.neovim.undo.NeovimUndoManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -32,24 +31,24 @@ import java.util.concurrent.ConcurrentHashMap
 class NeovimDocumentHandler private constructor(
     private val scope: CoroutineScope,
     private val editor: Editor,
-    private val bufferId: BufferId,
+    private val bufferId: NeovimObject.BufferId,
 ) {
     private val logger = myLogger()
-    private val client = getClient()
+    private val client = service<NeovimClient>()
     private val documentListenerGuard =
         ListenerGuard(
             NeovimDocumentListener(this),
             { editor.document.addDocumentListener(it) },
             { editor.document.removeDocumentListener(it) },
         )
-    private val ignoreChangedTicks = ConcurrentHashMap.newKeySet<Int>()
+    private val ignoreChangedTicks = ConcurrentHashMap.newKeySet<Long>()
     private val undoManager = editor.project?.service<NeovimUndoManager>()
 
     companion object {
         suspend fun create(
             scope: CoroutineScope,
             editor: Editor,
-            bufferId: BufferId,
+            bufferId: NeovimObject.BufferId,
         ): NeovimDocumentHandler {
             val handler = NeovimDocumentHandler(scope, editor, bufferId)
             handler.initializeBuffer()
@@ -60,23 +59,23 @@ class NeovimDocumentHandler private constructor(
 
     private suspend fun initializeBuffer() {
         val liens = editor.document.text.split("\n")
-        bufferSetLines(client, bufferId, 0, -1, liens)
+        client.bufferSetLines(bufferId, 0, -1, liens)
 
         val virtualFile = FileDocumentManager.getInstance().getFile(editor.document)
         if (virtualFile != null && virtualFile.isInLocalFileSystem) {
-            setFiletype(client, bufferId, virtualFile.path)
+            client.setFiletype(bufferId, virtualFile.path)
         }
 
         changeModifiable()
 
-        bufferAttach(client, bufferId)
+        client.bufferAttach(bufferId)
     }
 
     suspend fun changeModifiable() {
         if (isWritable()) {
-            modifiable(client, bufferId)
+            client.modifiable(bufferId)
         } else {
-            noModifiable(client, bufferId)
+            client.noModifiable(bufferId)
         }
     }
 
@@ -88,7 +87,7 @@ class NeovimDocumentHandler private constructor(
     }
 
     suspend fun activateBuffer() {
-        activateBuffer(client, bufferId)
+        client.activateBuffer(bufferId)
     }
 
     fun applyBufferLinesEvent(e: BufLinesEvent) {
@@ -195,9 +194,9 @@ class NeovimDocumentHandler private constructor(
         val insertStr = event.newFragment.toString()
 
         scope.launch {
-            getChangedTick(client, bufferId)
-                ?.let { ignoreChangedTicks.add(it + 1) }
-            input(client, deleteStr + insertStr)
+            client.changedTick(bufferId)
+                .also { ignoreChangedTicks.add(it + 1) }
+            client.input(deleteStr + insertStr)
         }
     }
 
@@ -211,11 +210,10 @@ class NeovimDocumentHandler private constructor(
                 .replace("\r\n", "\n")
                 .split("\n")
 
-        val params = BufferSetTextParams(bufferId, start.lnum, start.col, end.lnum, end.col, replacement)
         scope.launch {
-            getChangedTick(client, bufferId)
-                ?.let { ignoreChangedTicks.add(it + 1) }
-            bufferSetText(client, params)
+            client.changedTick(bufferId)
+                .also { ignoreChangedTicks.add(it + 1) }
+            client.bufferSetText(bufferId, start, end, replacement)
         }
     }
 }

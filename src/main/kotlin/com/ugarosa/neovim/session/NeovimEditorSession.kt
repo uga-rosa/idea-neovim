@@ -5,17 +5,17 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
-import com.ugarosa.neovim.common.getClient
-import com.ugarosa.neovim.common.getOptionManager
+import com.ugarosa.neovim.config.neovim.NeovimOptionManager
 import com.ugarosa.neovim.logger.myLogger
+import com.ugarosa.neovim.mode.NeovimMode
 import com.ugarosa.neovim.mode.getAndSetMode
 import com.ugarosa.neovim.mode.getMode
-import com.ugarosa.neovim.rpc.BufferId
-import com.ugarosa.neovim.rpc.event.BufLinesEvent
-import com.ugarosa.neovim.rpc.event.CursorMoveEvent
-import com.ugarosa.neovim.rpc.event.VisualSelectionEvent
-import com.ugarosa.neovim.rpc.event.localHooks
-import com.ugarosa.neovim.rpc.event.redraw.ModeChangeEvent
+import com.ugarosa.neovim.rpc.client.NeovimClient
+import com.ugarosa.neovim.rpc.client.api.localHooks
+import com.ugarosa.neovim.rpc.client.event.BufLinesEvent
+import com.ugarosa.neovim.rpc.client.event.CursorMoveEvent
+import com.ugarosa.neovim.rpc.type.NeovimObject
+import com.ugarosa.neovim.rpc.type.NeovimRegion
 import com.ugarosa.neovim.session.cursor.NeovimCursorHandler
 import com.ugarosa.neovim.session.document.NeovimDocumentHandler
 import com.ugarosa.neovim.session.selection.NeovimSelectionHandler
@@ -31,7 +31,6 @@ import kotlinx.coroutines.withContext
  */
 class NeovimEditorSession private constructor(
     private val editor: Editor,
-    private val bufferId: BufferId,
     private val documentHandler: NeovimDocumentHandler,
     private val cursorHandler: NeovimCursorHandler,
     private val selectionHandler: NeovimSelectionHandler,
@@ -40,13 +39,14 @@ class NeovimEditorSession private constructor(
     private val undoManager = editor.project?.service<NeovimUndoManager>()
 
     companion object {
-        private val client = getClient()
+        private val client = service<NeovimClient>()
+        private val optionManager = service<NeovimOptionManager>()
 
         suspend fun create(
             scope: CoroutineScope,
             editor: Editor,
             disposable: Disposable,
-            bufferId: BufferId,
+            bufferId: NeovimObject.BufferId,
         ): NeovimEditorSession {
             val documentHandler = NeovimDocumentHandler.create(scope, editor, bufferId)
             val cursorHandler = NeovimCursorHandler.create(scope, editor, disposable, bufferId)
@@ -54,35 +54,32 @@ class NeovimEditorSession private constructor(
             val session =
                 NeovimEditorSession(
                     editor,
-                    bufferId,
                     documentHandler,
                     cursorHandler,
                     selectionHandler,
                 )
 
-            getOptionManager().initializeLocal(bufferId)
+            optionManager.initializeLocal(bufferId)
 
-            localHooks(client, bufferId)
+            client.localHooks(bufferId)
 
             return session
         }
     }
 
     fun handleBufferLinesEvent(event: BufLinesEvent) {
-        require(event.bufferId == bufferId) { "Buffer ID mismatch" }
         documentHandler.applyBufferLinesEvent(event)
     }
 
     suspend fun handleCursorMoveEvent(event: CursorMoveEvent) {
-        require(event.bufferId == bufferId) { "Buffer ID mismatch" }
         cursorHandler.syncNeovimToIdea(event)
     }
 
-    suspend fun handleModeChangeEvent(event: ModeChangeEvent) {
-        logger.trace("Change mode to ${event.mode}")
+    suspend fun handleModeChangeEvent(mode: NeovimMode) {
+        logger.trace("Change mode to $mode")
 
-        val newMode = event.mode
-        val oldMode = getAndSetMode(event.mode)
+        val newMode = mode
+        val oldMode = getAndSetMode(newMode)
 
         cursorHandler.changeCursorShape(oldMode, newMode)
 
@@ -106,9 +103,8 @@ class NeovimEditorSession private constructor(
         }
     }
 
-    suspend fun handleVisualSelectionEvent(event: VisualSelectionEvent) {
-        require(event.bufferId == bufferId) { "Buffer ID mismatch" }
-        selectionHandler.applyVisualSelectionEvent(event)
+    suspend fun handleVisualSelectionEvent(regions: List<NeovimRegion>) {
+        selectionHandler.applyVisualSelectionEvent(regions)
     }
 
     suspend fun activateBuffer() {

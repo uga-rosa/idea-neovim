@@ -4,7 +4,7 @@ import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.ui.JBColor
 import com.ugarosa.neovim.logger.myLogger
-import com.ugarosa.neovim.rpc.event.redraw.CmdlineEvent
+import com.ugarosa.neovim.rpc.client.event.redraw.CmdlineEvent
 import java.awt.Font
 import javax.swing.JTextPane
 import javax.swing.text.DefaultCaret

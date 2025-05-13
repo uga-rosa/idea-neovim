@@ -3,23 +3,24 @@ package com.ugarosa.neovim.session.cursor
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.application.runReadAction
+import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.colors.EditorFontType
 import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.util.TextRange
 import com.ugarosa.neovim.common.ListenerGuard
-import com.ugarosa.neovim.common.getClient
-import com.ugarosa.neovim.common.getOptionManager
 import com.ugarosa.neovim.common.takeByte
+import com.ugarosa.neovim.config.neovim.NeovimOptionManager
 import com.ugarosa.neovim.config.neovim.option.Scrolloff
 import com.ugarosa.neovim.config.neovim.option.Sidescrolloff
-import com.ugarosa.neovim.domain.NeovimPosition
 import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.mode.NeovimMode
 import com.ugarosa.neovim.mode.getMode
-import com.ugarosa.neovim.rpc.BufferId
-import com.ugarosa.neovim.rpc.event.CursorMoveEvent
-import com.ugarosa.neovim.rpc.function.setCursor
+import com.ugarosa.neovim.rpc.client.NeovimClient
+import com.ugarosa.neovim.rpc.client.api.setCursor
+import com.ugarosa.neovim.rpc.client.event.CursorMoveEvent
+import com.ugarosa.neovim.rpc.type.NeovimObject
+import com.ugarosa.neovim.rpc.type.NeovimPosition
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -28,12 +29,12 @@ class NeovimCursorHandler private constructor(
     scope: CoroutineScope,
     private val editor: Editor,
     private val disposable: Disposable,
-    private val bufferId: BufferId,
+    private val bufferId: NeovimObject.BufferId,
     private val charWidth: Int,
 ) {
     private val logger = myLogger()
-    private val client = getClient()
-    private val optionManager = getOptionManager()
+    private val client = service<NeovimClient>()
+    private val optionManager = service<NeovimOptionManager>()
     private val caretListenerGuard =
         ListenerGuard(
             NeovimCaretListener(scope, this),
@@ -46,7 +47,7 @@ class NeovimCursorHandler private constructor(
             scope: CoroutineScope,
             editor: Editor,
             disposable: Disposable,
-            bufferId: BufferId,
+            bufferId: NeovimObject.BufferId,
         ): NeovimCursorHandler {
             val charWidth =
                 withContext(Dispatchers.EDT) {
@@ -267,7 +268,7 @@ class NeovimCursorHandler private constructor(
                 val offset = editor.caretModel.offset
                 NeovimPosition.fromOffset(offset, editor.document)
             }
-        setCursor(client, bufferId, pos)
+        client.setCursor(bufferId, pos)
     }
 
     suspend fun changeCursorShape(

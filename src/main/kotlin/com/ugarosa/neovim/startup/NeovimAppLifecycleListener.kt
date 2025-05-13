@@ -2,119 +2,51 @@ package com.ugarosa.neovim.startup
 
 import com.intellij.ide.AppLifecycleListener
 import com.intellij.openapi.components.service
-import com.ugarosa.neovim.cmdline.NeovimCmdlineManager
-import com.ugarosa.neovim.common.focusProject
-import com.ugarosa.neovim.common.getActionManager
-import com.ugarosa.neovim.common.getClient
-import com.ugarosa.neovim.common.getKeyRouter
-import com.ugarosa.neovim.common.getOptionManager
-import com.ugarosa.neovim.common.getSessionManager
+import com.ugarosa.neovim.config.neovim.NeovimOptionManager
+import com.ugarosa.neovim.keymap.router.NeovimKeyRouter
 import com.ugarosa.neovim.logger.myLogger
-import com.ugarosa.neovim.mode.getAndSetMode
-import com.ugarosa.neovim.rpc.event.OptionScope
-import com.ugarosa.neovim.rpc.event.globalHooks
-import com.ugarosa.neovim.rpc.event.maybeBufLinesEvent
-import com.ugarosa.neovim.rpc.event.maybeCursorMoveEvent
-import com.ugarosa.neovim.rpc.event.maybeExecIdeaActionEvent
-import com.ugarosa.neovim.rpc.event.maybeModeChangeEventCustom
-import com.ugarosa.neovim.rpc.event.maybeOptionSetEvent
-import com.ugarosa.neovim.rpc.event.maybeVisualSelectionEvent
-import com.ugarosa.neovim.rpc.event.redraw.maybeCmdlineEvent
-import com.ugarosa.neovim.rpc.event.redraw.maybeModeChangeEvent
-import com.ugarosa.neovim.rpc.event.redraw.maybeRedrawEvent
-import com.ugarosa.neovim.rpc.function.uiAttach
-import com.ugarosa.neovim.statusline.StatusLineManager
+import com.ugarosa.neovim.rpc.client.NeovimClient
+import com.ugarosa.neovim.rpc.client.api.globalHooks
+import com.ugarosa.neovim.rpc.client.api.uiAttach
+import com.ugarosa.neovim.rpc.client.event.onBufLinesEvent
+import com.ugarosa.neovim.rpc.client.event.onCursorMoveEvent
+import com.ugarosa.neovim.rpc.client.event.onExecIdeaActionEvent
+import com.ugarosa.neovim.rpc.client.event.onModeChangeEventCustom
+import com.ugarosa.neovim.rpc.client.event.onOptionSetEvent
+import com.ugarosa.neovim.rpc.client.event.onRedrawEvent
+import com.ugarosa.neovim.rpc.client.event.onVisualSelectionEvent
 import kotlinx.coroutines.launch
 
 class NeovimAppLifecycleListener : AppLifecycleListener {
     private val logger = myLogger()
-    private val client = getClient()
-    private val optionManager = getOptionManager()
-    private val cmdlineManager = service<NeovimCmdlineManager>()
-    private val sessionManager = getSessionManager()
-    private val actionManager = getActionManager()
-    private val keyRouter = getKeyRouter()
+    private val client = service<NeovimClient>()
+    private val optionManager = service<NeovimOptionManager>()
+    private val keyRouter = service<NeovimKeyRouter>()
 
     // Hooks that should be called only once at application startup.
     override fun appFrameCreated(commandLineArgs: List<String>) {
-        // You must register the push handlers before calling any other functions
         registerPushHandlers()
         initialize()
     }
 
     private fun registerPushHandlers() {
-        client.registerPushHandler { push ->
-            maybeBufLinesEvent(push)?.let { event ->
-                val session = sessionManager.getSession(event.bufferId)
-                session.handleBufferLinesEvent(event)
-            }
-        }
-
-        client.registerPushHandler { push ->
-            maybeCursorMoveEvent(push)?.let { event ->
-                val session = sessionManager.getSession(event.bufferId)
-                session.handleCursorMoveEvent(event)
-            }
-        }
-
-        client.registerPushHandler { push ->
-            maybeVisualSelectionEvent(push)?.let { event ->
-                val session = sessionManager.getSession(event.bufferId)
-                session.handleVisualSelectionEvent(event)
-            }
-        }
-
-        client.registerPushHandler { push ->
-            maybeExecIdeaActionEvent(push)?.let { event ->
-                val editor = sessionManager.getEditor(event.bufferId)
-                actionManager.executeAction(event.actionId, editor)
-            }
-        }
-
-        client.registerPushHandler { push ->
-            maybeModeChangeEventCustom(push)?.let { mode ->
-                getAndSetMode(mode)
-            }
-        }
-
-        client.registerPushHandler { push ->
-            maybeRedrawEvent(push)?.forEach { redraw ->
-                logger.trace("Received redraw event: $redraw")
-                maybeModeChangeEvent(redraw)?.let { event ->
-                    val session = sessionManager.getSession()
-                    session?.handleModeChangeEvent(event)
-
-                    // Update status line
-                    focusProject()?.service<StatusLineManager>()?.updateStatusLine()
-
-                    // Close cmdline popup if needed
-                    if (!event.mode.isCommand()) {
-                        cmdlineManager.destroy()
-                    }
-                }
-                maybeCmdlineEvent(redraw)?.let { event ->
-                    cmdlineManager.handleEvent(event)
-                }
-            }
-        }
-
-        client.registerPushHandler { push ->
-            maybeOptionSetEvent(push)?.let { event ->
-                logger.trace("Received an option set event: $event")
-                when (event.scope) {
-                    OptionScope.LOCAL -> optionManager.putLocal(event.bufferId, event.name, event.value)
-                    OptionScope.GLOBAL -> optionManager.putGlobal(event.name, event.value)
-                }
-            }
-        }
+        // Handle Neovim Native events
+        client.onRedrawEvent()
+        client.onBufLinesEvent()
+        // Handle Custom events
+        client.onCursorMoveEvent()
+        client.onModeChangeEventCustom()
+        client.onVisualSelectionEvent()
+        client.onOptionSetEvent()
+        client.onExecIdeaActionEvent()
     }
 
     private fun initialize() {
         client.scope.launch {
-            uiAttach(client)
+            client.uiAttach()
             logger.debug("Attached UI")
 
-            globalHooks(client)
+            client.globalHooks()
             logger.debug("Registered global hooks")
 
             optionManager.initializeGlobal()

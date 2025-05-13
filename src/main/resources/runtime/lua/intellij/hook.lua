@@ -70,7 +70,7 @@ local function visual_selection(chan_id)
 			local regions = vim.iter(region_pos)
 				:map(function(arg)
 					local startPos, endPos = unpack(arg)
-					return { startPos[2], startPos[3] - 1, endPos[3] - 1 }
+					return { startPos[2], startPos[3] - 1, endPos[3] }
 				end)
 				:totable()
 			-- [bufferId, regions]

@@ -9,7 +9,7 @@ import com.intellij.openapi.editor.markup.HighlighterTargetArea
 import com.intellij.openapi.editor.markup.RangeHighlighter
 import com.intellij.openapi.editor.markup.TextAttributes
 import com.ugarosa.neovim.logger.myLogger
-import com.ugarosa.neovim.rpc.event.VisualSelectionEvent
+import com.ugarosa.neovim.rpc.type.NeovimRegion
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -25,11 +25,11 @@ class NeovimSelectionHandler(
         }
     private val highlighters = mutableListOf<RangeHighlighter>()
 
-    suspend fun applyVisualSelectionEvent(event: VisualSelectionEvent) {
-        logger.trace("applyVisualSelectionEvent: $event")
+    suspend fun applyVisualSelectionEvent(regions: List<NeovimRegion>) {
+        logger.trace("applyVisualSelectionEvent: $regions")
 
         val offsets =
-            event.regions.map { region ->
+            regions.map { region ->
                 val startOffset = region.startOffset(editor.document)
                 val endOffset = region.endOffset(editor.document)
                 startOffset to endOffset

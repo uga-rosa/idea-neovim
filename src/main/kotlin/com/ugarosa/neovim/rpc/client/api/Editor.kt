@@ -1,0 +1,16 @@
+package com.ugarosa.neovim.rpc.client.api
+
+import com.ugarosa.neovim.rpc.client.NeovimClient
+import com.ugarosa.neovim.rpc.type.NeovimObject
+import com.ugarosa.neovim.rpc.type.NeovimPosition
+
+suspend fun NeovimClient.input(key: String) {
+    connectionManager.notify("nvim_input", listOf(key))
+}
+
+suspend fun NeovimClient.setCursor(
+    bufferId: NeovimObject.BufferId,
+    pos: NeovimPosition,
+) {
+    execLuaNotify("buffer", "cursor", listOf(bufferId, pos.lnum, pos.col, pos.curswant))
+}

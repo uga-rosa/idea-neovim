@@ -1,11 +1,12 @@
 package com.ugarosa.neovim.config.neovim
 
-import com.ugarosa.neovim.common.getClient
+import com.intellij.openapi.components.service
 import com.ugarosa.neovim.config.neovim.option.Scrolloff
 import com.ugarosa.neovim.config.neovim.option.Selection
 import com.ugarosa.neovim.config.neovim.option.Sidescrolloff
 import com.ugarosa.neovim.logger.myLogger
-import com.ugarosa.neovim.rpc.function.getGlobalOptions
+import com.ugarosa.neovim.rpc.client.NeovimClient
+import com.ugarosa.neovim.rpc.client.api.getGlobalOption
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -23,7 +24,7 @@ private data class MutableNeovimGlobalOptions(
 
 class NeovimGlobalOptionsManager() {
     private val logger = myLogger()
-    private val client = getClient()
+    private val client = service<NeovimClient>()
     private val mutex = Mutex()
     private val options = MutableNeovimGlobalOptions()
     private val setters: Map<String, (Any) -> Unit> =
@@ -35,7 +36,7 @@ class NeovimGlobalOptionsManager() {
 
     suspend fun initialize() {
         logger.trace("Initializing global options")
-        val globalOptions = getGlobalOptions(client) ?: mapOf()
+        val globalOptions = client.getGlobalOption()
         putAll(globalOptions)
     }
 

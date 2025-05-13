@@ -16,7 +16,7 @@ import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import com.intellij.openapi.vfs.newvfs.events.VFilePropertyChangeEvent
 import com.ugarosa.neovim.common.focusEditor
-import com.ugarosa.neovim.common.getSessionManager
+import com.ugarosa.neovim.session.NeovimSessionManager
 import com.ugarosa.neovim.undo.NeovimUndoManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
 class NeovimProjectActivity(
     private val scope: CoroutineScope,
 ) : ProjectActivity {
-    private val sessionManager = getSessionManager()
+    private val sessionManager = service<NeovimSessionManager>()
 
     override suspend fun execute(project: Project) {
         val disposable = project.service<ProjectDisposable>()

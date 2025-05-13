@@ -10,12 +10,11 @@ import com.intellij.openapi.ui.popup.JBPopupListener
 import com.intellij.openapi.ui.popup.LightweightWindowEvent
 import com.intellij.ui.awt.RelativePoint
 import com.ugarosa.neovim.common.focusEditor
-import com.ugarosa.neovim.common.getClient
 import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.mode.getMode
-import com.ugarosa.neovim.rpc.client.NeovimRpcClient
-import com.ugarosa.neovim.rpc.event.redraw.CmdlineEvent
-import com.ugarosa.neovim.rpc.function.input
+import com.ugarosa.neovim.rpc.client.NeovimClient
+import com.ugarosa.neovim.rpc.client.api.input
+import com.ugarosa.neovim.rpc.client.event.redraw.CmdlineEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -28,7 +27,7 @@ class NeovimCmdlineManager(
     private val scope: CoroutineScope,
 ) {
     private val logger = myLogger()
-    private val client = service<NeovimRpcClient>()
+    private val client = service<NeovimClient>()
 
     private var popup: JBPopup? = null
     private val pane = CmdlinePane()
@@ -97,12 +96,12 @@ class NeovimCmdlineManager(
 
     private class PopupCloseListener(
         private val scope: CoroutineScope,
-        private val client: NeovimRpcClient,
+        private val client: NeovimClient,
     ) : JBPopupListener {
         override fun onClosed(event: LightweightWindowEvent) {
             scope.launch {
                 if (getMode().isCommand()) {
-                    input(client, "<Esc>")
+                    client.input("<Esc>")
                 }
             }
         }
