@@ -5,7 +5,7 @@ import com.ugarosa.neovim.rpc.type.BufferId
 import com.ugarosa.neovim.rpc.type.NeovimPosition
 
 suspend fun NeovimClient.input(key: String) {
-    connectionManager.notify("nvim_input", listOf(key))
+    notify("nvim_input", listOf(key))
 }
 
 suspend fun NeovimClient.setCursor(

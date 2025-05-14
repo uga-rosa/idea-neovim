@@ -5,7 +5,7 @@ import com.ugarosa.neovim.rpc.type.BufferId
 import com.ugarosa.neovim.rpc.type.NeovimPosition
 
 suspend fun NeovimClient.createBuffer(): BufferId {
-    val result = connectionManager.request("nvim_create_buf", listOf(true, false))
+    val result = request("nvim_create_buf", listOf(true, false))
     return result.asBufferId()
 }
 
@@ -19,7 +19,7 @@ suspend fun NeovimClient.bufferSetLines(
     end: Int,
     lines: List<String>,
 ) {
-    connectionManager.notify(
+    notify(
         "nvim_buf_set_lines",
         listOf(bufferId, start, end, false, lines),
     )
@@ -31,7 +31,7 @@ suspend fun NeovimClient.bufferSetText(
     end: NeovimPosition,
     replacement: List<String>,
 ) {
-    connectionManager.notify(
+    notify(
         "nvim_buf_set_text",
         listOf(
             bufferId,
@@ -45,5 +45,5 @@ suspend fun NeovimClient.bufferSetText(
 }
 
 suspend fun NeovimClient.bufferAttach(bufferId: BufferId) {
-    connectionManager.notify("nvim_buf_attach", listOf(bufferId, false, mapOf<String, Any>()))
+    notify("nvim_buf_attach", listOf(bufferId, false, mapOf<String, Any>()))
 }

@@ -3,7 +3,7 @@ package com.ugarosa.neovim.rpc.client.api
 import com.ugarosa.neovim.rpc.client.NeovimClient
 
 suspend fun NeovimClient.uiAttach() {
-    connectionManager.notify(
+    notify(
         "nvim_ui_attach",
         listOf(
             80,

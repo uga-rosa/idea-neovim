@@ -2,6 +2,7 @@ package com.ugarosa.neovim.rpc.client
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
+import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.rpc.connection.NeovimConnectionManager
 import com.ugarosa.neovim.rpc.event.NeovimEventDispatcher
 import com.ugarosa.neovim.rpc.event.PushHandler
@@ -16,12 +17,13 @@ import kotlinx.coroutines.launch
 class NeovimClient(
     val scope: CoroutineScope,
 ) : Disposable {
+    private val logger = myLogger()
     private val processManager = NeovimProcessManager()
     private val transport = NeovimTransport(processManager)
-    internal val connectionManager = NeovimConnectionManager(transport, scope)
+    private val connectionManager = NeovimConnectionManager(transport, scope)
     private val dispatcher = NeovimEventDispatcher(connectionManager, scope)
 
-    private val deferredChanId = CompletableDeferred<Long>()
+    internal val deferredChanId = CompletableDeferred<Long>()
 
     init {
         // health check
@@ -46,7 +48,23 @@ class NeovimClient(
         dispatcher.unregister(method, handler)
     }
 
-    internal suspend fun chanId(): Long = deferredChanId.await()
+    internal suspend fun request(
+        method: String,
+        args: List<Any> = emptyList(),
+    ): NeovimObject {
+        deferredChanId.await()
+        logger.trace("Sending request: $method, args: $args")
+        return connectionManager.request(method, args)
+    }
+
+    internal suspend fun notify(
+        method: String,
+        args: List<Any> = emptyList(),
+    ) {
+        deferredChanId.await()
+        logger.trace("Sending notification: $method, args: $args")
+        connectionManager.notify(method, args)
+    }
 
     internal suspend fun execLua(
         packageName: String,
@@ -54,7 +72,7 @@ class NeovimClient(
         args: List<Any> = emptyList(),
     ): NeovimObject {
         val code = "return require('intellij.$packageName').$method(...)"
-        return connectionManager.request("nvim_exec_lua", listOf(code, args))
+        return request("nvim_exec_lua", listOf(code, args))
     }
 
     internal suspend fun execLuaNotify(
@@ -63,7 +81,7 @@ class NeovimClient(
         args: List<Any> = emptyList(),
     ) {
         val code = "require('intellij.$packageName').$method(...)"
-        connectionManager.notify("nvim_exec_lua", listOf(code, args))
+        notify("nvim_exec_lua", listOf(code, args))
     }
 
     override fun dispose() {
