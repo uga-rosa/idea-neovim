@@ -6,8 +6,6 @@ import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.ui.JBColor
 import com.ugarosa.neovim.highlight.NeovimHighlightManager
 import com.ugarosa.neovim.logger.myLogger
-import com.ugarosa.neovim.rpc.event.handler.redraw.CmdChunk
-import com.ugarosa.neovim.rpc.event.handler.redraw.CmdlineEvent
 import java.awt.Font
 import javax.swing.JTextPane
 import javax.swing.text.DefaultCaret

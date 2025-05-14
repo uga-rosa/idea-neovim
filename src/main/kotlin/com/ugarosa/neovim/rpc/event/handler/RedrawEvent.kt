@@ -3,8 +3,8 @@ package com.ugarosa.neovim.rpc.event.handler
 import com.ugarosa.neovim.logger.MyLogger
 import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.event.handler.redraw.onCmdlineEvent
+import com.ugarosa.neovim.rpc.event.handler.redraw.onHighlightEvent
 import com.ugarosa.neovim.rpc.event.handler.redraw.onModeChangeEvent
-import com.ugarosa.neovim.rpc.event.handler.redraw.onSetHighlight
 import com.ugarosa.neovim.rpc.transport.NeovimObject
 
 data class RedrawEvent(
@@ -22,7 +22,7 @@ fun onRedrawEvent(client: NeovimClient) {
             val elem = it.asArray()
             val redraw = RedrawEvent(elem[0].asString(), elem[1])
 
-            onSetHighlight(redraw)
+            onHighlightEvent(redraw)
             onCmdlineEvent(redraw)
             onModeChangeEvent(redraw)
         }

@@ -4,7 +4,7 @@ import com.intellij.openapi.components.service
 import com.ugarosa.neovim.highlight.NeovimHighlightManager
 import com.ugarosa.neovim.rpc.event.handler.RedrawEvent
 
-fun onSetHighlight(redraw: RedrawEvent) {
+fun onHighlightEvent(redraw: RedrawEvent) {
     val highlightManager = service<NeovimHighlightManager>()
     when (redraw.name) {
         "default_colors_set" -> {

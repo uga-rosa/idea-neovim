@@ -14,7 +14,6 @@ import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.mode.getMode
 import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.client.api.input
-import com.ugarosa.neovim.rpc.event.handler.redraw.CmdlineEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
