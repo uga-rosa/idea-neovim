@@ -4,6 +4,7 @@ import com.ugarosa.neovim.logger.MyLogger
 import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.event.handler.redraw.onCmdlineEvent
 import com.ugarosa.neovim.rpc.event.handler.redraw.onHighlightEvent
+import com.ugarosa.neovim.rpc.event.handler.redraw.onMessageEvent
 import com.ugarosa.neovim.rpc.event.handler.redraw.onModeChangeEvent
 import com.ugarosa.neovim.rpc.transport.NeovimObject
 
@@ -25,6 +26,7 @@ fun onRedrawEvent(client: NeovimClient) {
             onHighlightEvent(redraw)
             onCmdlineEvent(redraw)
             onModeChangeEvent(redraw)
+            onMessageEvent(redraw)
         }
     }
 }

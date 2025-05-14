@@ -26,7 +26,7 @@ class NeovimEventDispatcher(
                         try {
                             handler(notification.params)
                         } catch (e: Exception) {
-                            logger.warn("Error in handler for ${notification.method}: $e")
+                            logger.warn("Error in handler for ${notification.method}", e)
                         }
                     }
                 }

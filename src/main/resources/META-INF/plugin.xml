@@ -17,6 +17,8 @@
         <applicationConfigurable key="configurable.display.name.neovim"
                                  bundle="messages.NeovimBundle"
                                  instance="com.ugarosa.neovim.config.idea.NeovimKeymapConfigurable"/>
+        <toolWindow id="Neovim Messages" factoryClass="com.ugarosa.neovim.message.NeovimMessageToolWindowFactory"
+                    anchor="bottom" canCloseContents="false" secondary="true"/>
     </extensions>
 
     <applicationListeners>
