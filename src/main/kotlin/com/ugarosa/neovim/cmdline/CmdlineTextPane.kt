@@ -1,35 +1,13 @@
 package com.ugarosa.neovim.cmdline
 
-import com.intellij.openapi.application.runReadAction
-import com.intellij.openapi.components.service
-import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.ui.JBColor
-import com.ugarosa.neovim.highlight.NeovimHighlightManager
-import com.ugarosa.neovim.logger.myLogger
-import java.awt.Font
-import javax.swing.JTextPane
+import com.ugarosa.neovim.common.BaseTextPane
 import javax.swing.text.DefaultCaret
 import javax.swing.text.StyleConstants
 import javax.swing.text.StyledDocument
-import javax.swing.text.StyledEditorKit
 
-class CmdlinePane : JTextPane() {
-    private val logger = myLogger()
-    private val highlightManager = service<NeovimHighlightManager>()
-
+class CmdlineTextPane : BaseTextPane() {
     init {
-        font =
-            runReadAction {
-                val scheme = EditorColorsManager.getInstance().globalScheme
-                Font(scheme.editorFontName, Font.PLAIN, scheme.editorFontSize)
-            }
-
-        isEditable = false
-        isFocusable = false
-        editorKit = StyledEditorKit()
-        isOpaque = true
-        background = JBColor.background()
-
         // Show caret
         (caret as? DefaultCaret)?.apply {
             blinkRate = 0

@@ -29,7 +29,7 @@ class NeovimCmdlineManager(
     private val client = service<NeovimClient>()
 
     private var popup: JBPopup? = null
-    private val pane = CmdlinePane()
+    private val pane = CmdlineTextPane()
 
     suspend fun handleEvent(event: CmdlineEvent) {
         val editor =
