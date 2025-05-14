@@ -16,16 +16,16 @@ class NeovimHighlightManager {
     }
 
     fun defineAttr(
-        id: Int,
+        attrId: Int,
         map: Map<String, Any>,
     ) {
         val attr = HighlightAttribute.fromMap(map)
-        define[id] = attr
+        define[attrId] = attr
     }
 
-    fun get(id: Int): HighlightAttribute {
+    fun get(attrId: Int): HighlightAttribute {
         val default = define[0] ?: error("Default highlight not set")
-        val highlight = define[id] ?: error("Highlight $id not defined")
+        val highlight = define[attrId] ?: error("Highlight $attrId not defined")
         return highlight.copy(
             foreground = highlight.foreground ?: default.foreground,
             background = highlight.background ?: default.background,
