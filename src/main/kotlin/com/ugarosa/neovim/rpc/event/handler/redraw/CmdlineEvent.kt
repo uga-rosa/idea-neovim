@@ -1,5 +1,7 @@
 package com.ugarosa.neovim.rpc.event.handler.redraw
 
+import com.intellij.openapi.components.service
+import com.ugarosa.neovim.cmdline.NeovimCmdlineManager
 import com.ugarosa.neovim.rpc.event.handler.RedrawEvent
 import com.ugarosa.neovim.rpc.transport.NeovimObject
 
@@ -119,12 +121,10 @@ sealed interface CmdlineEvent {
     data object Flush : CmdlineEvent
 }
 
-private fun NeovimObject.asShowContent(): CmdlineEvent.ShowChunk {
-    val content = asArray()
-    return CmdlineEvent.ShowChunk(
-        content[0].asInt(),
-        content[1].asString(),
-    )
+suspend fun onCmdlineEvent(redraw: RedrawEvent) {
+    maybeCmdlineEvent(redraw)?.let { event ->
+        service<NeovimCmdlineManager>().handleEvent(event)
+    }
 }
 
 fun maybeCmdlineEvent(redraw: RedrawEvent): CmdlineEvent? {
@@ -192,4 +192,12 @@ fun maybeCmdlineEvent(redraw: RedrawEvent): CmdlineEvent? {
 
         else -> null
     }
+}
+
+private fun NeovimObject.asShowContent(): CmdlineEvent.ShowChunk {
+    val content = asArray()
+    return CmdlineEvent.ShowChunk(
+        content[0].asInt(),
+        content[1].asString(),
+    )
 }
