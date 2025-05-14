@@ -9,41 +9,41 @@ import com.ugarosa.neovim.rpc.type.WindowId
  */
 @Suppress("unused")
 sealed class NeovimObject() {
-    object Nil : NeovimObject()
+    data object Nil : NeovimObject()
 
     data class Bool(val bool: Boolean) : NeovimObject() {
         override fun toString(): String {
-            return "Bool($bool)"
+            return "$bool"
         }
     }
 
     data class Int64(val long: Long) : NeovimObject() {
         override fun toString(): String {
-            return "Int64($long)"
+            return "$long"
         }
     }
 
     data class Float64(val double: Double) : NeovimObject() {
         override fun toString(): String {
-            return "Float64($double)"
+            return "$double"
         }
     }
 
     data class Str(val str: String) : NeovimObject() {
         override fun toString(): String {
-            return "Str($str)"
+            return "s($str)"
         }
     }
 
     data class Array(val list: List<NeovimObject>) : NeovimObject() {
         override fun toString(): String {
-            return "Array($list)"
+            return "$list"
         }
     }
 
     data class Dict(val map: Map<String, NeovimObject>) : NeovimObject() {
         override fun toString(): String {
-            return "Dict($map)"
+            return "$map"
         }
     }
 
