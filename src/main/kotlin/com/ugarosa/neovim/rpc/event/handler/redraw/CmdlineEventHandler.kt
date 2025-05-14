@@ -16,55 +16,49 @@ suspend fun onCmdlineEvent(redraw: RedrawEvent) {
 fun maybeCmdlineEvent(redraw: RedrawEvent): CmdlineEvent? {
     return when (redraw.name) {
         "cmdline_show" -> {
-            val list = redraw.param.asArray()
-            val content = list[0].asArray().map { it.asShowContent() }
+            val content = redraw.param[0].asArray().map { it.asShowContent() }
             CmdlineEvent.Show(
                 content,
-                list[1].asInt(),
-                list[2].asString(),
-                list[3].asString(),
-                list[4].asInt(),
-                list[5].asInt(),
+                redraw.param[1].asInt(),
+                redraw.param[2].asString(),
+                redraw.param[3].asString(),
+                redraw.param[4].asInt(),
+                redraw.param[5].asInt(),
             )
         }
 
         "cmdline_pos" -> {
-            val list = redraw.param.asArray()
             CmdlineEvent.Pos(
-                list[0].asInt(),
-                list[1].asInt(),
+                redraw.param[0].asInt(),
+                redraw.param[1].asInt(),
             )
         }
 
         "cmdline_special_char" -> {
-            val list = redraw.param.asArray()
             CmdlineEvent.SpecialChar(
-                list[0].asString(),
-                list[1].asBool(),
-                list[2].asInt(),
+                redraw.param[0].asString(),
+                redraw.param[1].asBool(),
+                redraw.param[2].asInt(),
             )
         }
 
         "cmdline_hide" -> {
-            val list = redraw.param.asArray()
             CmdlineEvent.Hide(
-                list[0].asInt(),
-                list[1].asBool(),
+                redraw.param[0].asInt(),
+                redraw.param[1].asBool(),
             )
         }
 
         "cmdline_block_show" -> {
-            val list = redraw.param.asArray()
             val lines =
-                list[0].asArray().map { line ->
+                redraw.param[0].asArray().map { line ->
                     line.asArray().map { it.asShowContent() }
                 }
             CmdlineEvent.BlockShow(lines)
         }
 
         "cmdline_block_append" -> {
-            val list = redraw.param.asArray()
-            val line = list[0].asArray().map { it.asShowContent() }
+            val line = redraw.param[0].asArray().map { it.asShowContent() }
             CmdlineEvent.BlockAppend(line)
         }
 

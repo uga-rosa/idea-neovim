@@ -12,10 +12,8 @@ fun onHighlightEvent(redraw: RedrawEvent) {
         }
 
         "hl_attr_define" -> {
-            val list = redraw.param.asArray()
-            val id = list[0].asInt()
-            val attr = list[1].asStringMap()
-            println("hl_attr_define: $id, $attr")
+            val id = redraw.param[0].asInt()
+            val attr = redraw.param[1].asStringMap()
             highlightManager.defineAttr(id, attr)
         }
     }

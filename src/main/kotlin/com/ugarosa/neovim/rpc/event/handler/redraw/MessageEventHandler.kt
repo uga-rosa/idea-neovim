@@ -17,15 +17,14 @@ suspend fun onMessageEvent(redraw: RedrawEvent) {
 fun maybeMessageEvent(redraw: RedrawEvent): MessageEvent? {
     return when (redraw.name) {
         "msg_show" -> {
-            val list = redraw.param.asArray()
-            val kind = MessageKind.fromValue(list[0].asString())
+            val kind = MessageKind.fromValue(redraw.param[0].asString())
             val content =
-                list[1].asArray().map {
+                redraw.param[1].asArray().map {
                     val chunk = it.asArray()
                     MsgChunk(chunk[0].asInt(), chunk[1].asString())
                 }
-            val replaceLast = list[2].asBool()
-            val history = list[3].asBool()
+            val replaceLast = redraw.param[2].asBool()
+            val history = redraw.param[3].asBool()
             MessageEvent.Show(kind, content, replaceLast, history)
         }
 
@@ -33,7 +32,7 @@ fun maybeMessageEvent(redraw: RedrawEvent): MessageEvent? {
 
         "msg_history_show" -> {
             val entries =
-                redraw.param.asArray().map { entry ->
+                redraw.param.map { entry ->
                     val list = entry.asArray()
                     val kind = MessageKind.fromValue(list[0].asString())
                     val content =
