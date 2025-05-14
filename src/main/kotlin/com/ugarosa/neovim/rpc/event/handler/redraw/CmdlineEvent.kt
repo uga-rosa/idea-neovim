@@ -8,7 +8,7 @@ import com.ugarosa.neovim.rpc.transport.NeovimObject
 // :h ui-cmdline
 sealed interface CmdlineEvent {
     data class Show(
-        val content: List<ShowChunk>,
+        val content: List<CmdChunk>,
         val pos: Int,
         val firstChar: String,
         val prompt: String,
@@ -26,11 +26,11 @@ sealed interface CmdlineEvent {
     ) : CmdlineEvent
 
     data class BlockShow(
-        val lines: List<List<ShowChunk>>,
+        val lines: List<List<CmdChunk>>,
     ) : CmdlineEvent
 
     data class BlockAppend(
-        val line: List<ShowChunk>,
+        val line: List<CmdChunk>,
     ) : CmdlineEvent
 
     data object BlockHide : CmdlineEvent
@@ -38,7 +38,7 @@ sealed interface CmdlineEvent {
     data object Flush : CmdlineEvent
 }
 
-data class ShowChunk(
+data class CmdChunk(
     val attrId: Int,
     val text: String,
 )
@@ -116,9 +116,9 @@ fun maybeCmdlineEvent(redraw: RedrawEvent): CmdlineEvent? {
     }
 }
 
-private fun NeovimObject.asShowContent(): ShowChunk {
+private fun NeovimObject.asShowContent(): CmdChunk {
     val content = asArray()
-    return ShowChunk(
+    return CmdChunk(
         content[0].asInt(),
         content[1].asString(),
     )

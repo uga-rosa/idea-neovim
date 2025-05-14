@@ -6,8 +6,8 @@ import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.ui.JBColor
 import com.ugarosa.neovim.highlight.NeovimHighlightManager
 import com.ugarosa.neovim.logger.myLogger
+import com.ugarosa.neovim.rpc.event.handler.redraw.CmdChunk
 import com.ugarosa.neovim.rpc.event.handler.redraw.CmdlineEvent
-import com.ugarosa.neovim.rpc.event.handler.redraw.ShowChunk
 import java.awt.Font
 import javax.swing.JTextPane
 import javax.swing.text.DefaultCaret
@@ -43,14 +43,14 @@ class CmdlinePane : JTextPane() {
     private val emptyShow = CmdlineEvent.Show(emptyList(), 0, "", "", 0, 0)
     private var show: CmdlineEvent.Show = emptyShow
     private var specialChar: String = ""
-    private var blockLines: MutableList<List<ShowChunk>> = mutableListOf()
+    private var blockLines: MutableList<List<CmdChunk>> = mutableListOf()
 
     fun updateModel(
         show: CmdlineEvent.Show? = null,
         pos: Int? = null,
         specialChar: String? = null,
-        blockShow: List<List<ShowChunk>>? = null,
-        blockAppend: List<ShowChunk>? = null,
+        blockShow: List<List<CmdChunk>>? = null,
+        blockAppend: List<CmdChunk>? = null,
     ) {
         show?.let {
             this.show = it
@@ -113,7 +113,7 @@ class CmdlinePane : JTextPane() {
 
     private fun StyledDocument.insertLine(
         startOffset: Int,
-        line: List<ShowChunk>,
+        line: List<CmdChunk>,
         indent: Int,
         specialChar: String,
         newLine: Boolean,
