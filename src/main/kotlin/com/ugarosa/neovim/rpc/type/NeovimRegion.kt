@@ -2,12 +2,10 @@ package com.ugarosa.neovim.rpc.type
 
 import com.intellij.openapi.editor.Document
 
+// (0, 0) index, column is byte offset, end-exclusive
 data class NeovimRegion(
-    // 1-based
     val row: Int,
-    // 0-based, byte offset
     val startColumn: Int,
-    // 0-based, byte offset, exclusive
     val endColumn: Int,
 ) {
     fun startOffset(document: Document): Int {

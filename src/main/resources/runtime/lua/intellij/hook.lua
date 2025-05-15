@@ -8,7 +8,7 @@ local function cursor_moved(chan_id)
 		local pos = vim.fn.getcurpos()
 		local _, lnum, col, _, curswant = unpack(pos)
 		-- [bufferId, line, column]
-		vim.rpcnotify(chan_id, "nvim_cursor_move_event", bufferId, lnum, col - 1, curswant)
+		vim.rpcnotify(chan_id, "nvim_cursor_move_event", bufferId, lnum - 1, col - 1, curswant - 1)
 	end)
 
 	vim.api.nvim_create_autocmd("CursorMoved", {
@@ -70,7 +70,8 @@ local function visual_selection(chan_id)
 			local regions = vim.iter(region_pos)
 				:map(function(arg)
 					local startPos, endPos = unpack(arg)
-					return { startPos[2], startPos[3] - 1, endPos[3] }
+					-- (0, 0) index, end-exclusive
+					return { startPos[2] - 1, startPos[3] - 1, endPos[3] }
 				end)
 				:totable()
 			-- [bufferId, regions]

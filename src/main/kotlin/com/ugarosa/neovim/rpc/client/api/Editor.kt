@@ -12,5 +12,5 @@ suspend fun NeovimClient.setCursor(
     bufferId: BufferId,
     pos: NeovimPosition,
 ) {
-    execLuaNotify("buffer", "cursor", listOf(bufferId, pos.lnum, pos.col, pos.curswant))
+    execLuaNotify("buffer", "cursor", listOf(bufferId, pos.line, pos.col, pos.curswant))
 }

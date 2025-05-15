@@ -19,6 +19,8 @@ suspend fun NeovimClient.bufferSetLines(
     end: Int,
     lines: List<String>,
 ) {
+    // Indexing is zero-based, end-exclusive. Negative indices are interpreted as length+1+index: -1 refers to the index
+    // past the end. So to change or delete the last line use start=-2 and end=-1.
     notify(
         "nvim_buf_set_lines",
         listOf(bufferId, start, end, false, lines),
@@ -31,15 +33,14 @@ suspend fun NeovimClient.bufferSetText(
     end: NeovimPosition,
     replacement: List<String>,
 ) {
-    // nvim_buf_set_text():
-    //     Indexing is zero-based. Row indices are end-inclusive, and column indices are end-exclusive.
+    // Indexing is zero-based. Row indices are end-inclusive, and column indices are end-exclusive.
     notify(
         "nvim_buf_set_text",
         listOf(
             bufferId,
-            start.lnum - 1,
+            start.line,
             start.col,
-            end.lnum - 1,
+            end.line,
             end.col,
             replacement,
         ),

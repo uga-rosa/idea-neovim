@@ -190,7 +190,7 @@ class NeovimCursorHandler private constructor(
         val lineEndOffset = editor.document.getLineEndOffset(adjustedLine)
         val lineText = editor.document.getText(TextRange(lineStartOffset, lineEndOffset))
         val maxCol = (lineText.length - 1).coerceAtLeast(0)
-        val curswantOffset = lineText.takeByte(curswant - 1).length.coerceAtMost(maxCol)
+        val curswantOffset = lineText.takeByte(curswant).length.coerceAtMost(maxCol)
         return lineStartOffset + curswantOffset
     }
 

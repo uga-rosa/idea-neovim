@@ -14,10 +14,10 @@ data class CursorMoveEvent(
 fun onCursorMoveEvent(client: NeovimClient) {
     client.register("nvim_cursor_move_event") { params ->
         val bufferId = params[0].asBufferId()
-        val lnum = params[1].asInt()
+        val line = params[1].asInt()
         val col = params[2].asInt()
         val curswant = params[3].asInt()
-        val event = CursorMoveEvent(bufferId, NeovimPosition(lnum, col, curswant))
+        val event = CursorMoveEvent(bufferId, NeovimPosition(line, col, curswant))
 
         val session = service<NeovimSessionManager>().getSession(bufferId)
         session.handleCursorMoveEvent(event)
