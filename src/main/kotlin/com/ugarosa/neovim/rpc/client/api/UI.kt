@@ -9,6 +9,7 @@ suspend fun NeovimClient.uiAttach() {
             80,
             40,
             mapOf(
+                "ext_multigrid" to true,
                 "ext_cmdline" to true,
                 "ext_messages" to true,
             ),

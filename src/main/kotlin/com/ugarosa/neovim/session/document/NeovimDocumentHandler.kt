@@ -7,6 +7,7 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.util.TextRange
+import com.ugarosa.neovim.buffer.BufferId
 import com.ugarosa.neovim.common.ListenerGuard
 import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.mode.getMode
@@ -21,7 +22,6 @@ import com.ugarosa.neovim.rpc.client.api.modifiable
 import com.ugarosa.neovim.rpc.client.api.noModifiable
 import com.ugarosa.neovim.rpc.client.api.setFiletype
 import com.ugarosa.neovim.rpc.event.handler.BufLinesEvent
-import com.ugarosa.neovim.rpc.type.BufferId
 import com.ugarosa.neovim.rpc.type.NeovimPosition
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch

@@ -1,8 +1,8 @@
 package com.ugarosa.neovim.rpc.transport
 
-import com.ugarosa.neovim.rpc.type.BufferId
+import com.ugarosa.neovim.buffer.BufferId
 import com.ugarosa.neovim.rpc.type.TabpageId
-import com.ugarosa.neovim.rpc.type.WindowId
+import com.ugarosa.neovim.window.WindowId
 
 /**
  * Response object from Neovim. :h api-types

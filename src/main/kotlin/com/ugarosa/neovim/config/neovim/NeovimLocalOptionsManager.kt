@@ -1,13 +1,13 @@
 package com.ugarosa.neovim.config.neovim
 
 import com.intellij.openapi.components.service
+import com.ugarosa.neovim.buffer.BufferId
 import com.ugarosa.neovim.config.neovim.option.Filetype
 import com.ugarosa.neovim.config.neovim.option.Scrolloff
 import com.ugarosa.neovim.config.neovim.option.Sidescrolloff
 import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.client.api.getLocalOption
-import com.ugarosa.neovim.rpc.type.BufferId
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 

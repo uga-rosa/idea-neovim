@@ -4,11 +4,10 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
-import com.intellij.openapi.project.Project
+import com.ugarosa.neovim.buffer.BufferId
 import com.ugarosa.neovim.common.focusEditor
 import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.client.api.createBuffer
-import com.ugarosa.neovim.rpc.type.BufferId
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch

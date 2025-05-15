@@ -8,6 +8,7 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.colors.EditorFontType
 import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.util.TextRange
+import com.ugarosa.neovim.buffer.BufferId
 import com.ugarosa.neovim.common.ListenerGuard
 import com.ugarosa.neovim.common.takeByte
 import com.ugarosa.neovim.config.neovim.NeovimOptionManager
@@ -19,7 +20,6 @@ import com.ugarosa.neovim.mode.getMode
 import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.client.api.setCursor
 import com.ugarosa.neovim.rpc.event.handler.CursorMoveEvent
-import com.ugarosa.neovim.rpc.type.BufferId
 import com.ugarosa.neovim.rpc.type.NeovimPosition
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

@@ -5,6 +5,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
+import com.ugarosa.neovim.buffer.BufferId
 import com.ugarosa.neovim.config.neovim.NeovimOptionManager
 import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.mode.NeovimMode
@@ -14,7 +15,6 @@ import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.client.api.localHooks
 import com.ugarosa.neovim.rpc.event.handler.BufLinesEvent
 import com.ugarosa.neovim.rpc.event.handler.CursorMoveEvent
-import com.ugarosa.neovim.rpc.type.BufferId
 import com.ugarosa.neovim.rpc.type.NeovimRegion
 import com.ugarosa.neovim.session.cursor.NeovimCursorHandler
 import com.ugarosa.neovim.session.document.NeovimDocumentHandler

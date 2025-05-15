@@ -1,8 +1,8 @@
 package com.ugarosa.neovim.rpc.event.handler
 
 import com.intellij.openapi.components.service
+import com.ugarosa.neovim.buffer.BufferId
 import com.ugarosa.neovim.rpc.client.NeovimClient
-import com.ugarosa.neovim.rpc.type.BufferId
 import com.ugarosa.neovim.rpc.type.NeovimPosition
 import com.ugarosa.neovim.session.NeovimSessionManager
 

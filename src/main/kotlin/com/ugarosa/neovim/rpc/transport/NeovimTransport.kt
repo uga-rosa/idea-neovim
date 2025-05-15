@@ -1,9 +1,9 @@
 package com.ugarosa.neovim.rpc.transport
 
+import com.ugarosa.neovim.buffer.BufferId
 import com.ugarosa.neovim.rpc.process.NeovimProcessManager
-import com.ugarosa.neovim.rpc.type.BufferId
 import com.ugarosa.neovim.rpc.type.TabpageId
-import com.ugarosa.neovim.rpc.type.WindowId
+import com.ugarosa.neovim.window.WindowId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.msgpack.core.MessagePack

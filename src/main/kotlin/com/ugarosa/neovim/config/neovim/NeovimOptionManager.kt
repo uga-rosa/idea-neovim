@@ -1,11 +1,11 @@
 package com.ugarosa.neovim.config.neovim
 
 import com.intellij.openapi.components.Service
+import com.ugarosa.neovim.buffer.BufferId
 import com.ugarosa.neovim.config.NeovimOption
 import com.ugarosa.neovim.config.neovim.option.Filetype
 import com.ugarosa.neovim.config.neovim.option.getOrElse
 import com.ugarosa.neovim.logger.myLogger
-import com.ugarosa.neovim.rpc.type.BufferId
 import kotlinx.coroutines.CompletableDeferred
 import java.util.concurrent.ConcurrentHashMap
 

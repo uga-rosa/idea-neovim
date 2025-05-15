@@ -1,4 +1,4 @@
-package com.ugarosa.neovim.rpc.type
+package com.ugarosa.neovim.buffer
 
 @JvmInline
 value class BufferId(val id: Long)
