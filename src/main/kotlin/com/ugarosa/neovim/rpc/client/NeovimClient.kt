@@ -17,7 +17,6 @@ import kotlinx.coroutines.launch
 class NeovimClient(
     val scope: CoroutineScope,
 ) : Disposable {
-    private val logger = myLogger()
     private val processManager = NeovimProcessManager()
     private val transport = NeovimTransport(processManager)
     private val connectionManager = NeovimConnectionManager(transport, scope)
@@ -53,7 +52,6 @@ class NeovimClient(
         args: List<Any> = emptyList(),
     ): NeovimObject {
         deferredChanId.await()
-        logger.trace("Sending request: $method, args: $args")
         return connectionManager.request(method, args)
     }
 
@@ -62,7 +60,6 @@ class NeovimClient(
         args: List<Any> = emptyList(),
     ) {
         deferredChanId.await()
-        logger.trace("Sending notification: $method, args: $args")
         connectionManager.notify(method, args)
     }
 

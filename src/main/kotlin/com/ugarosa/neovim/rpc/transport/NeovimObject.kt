@@ -31,7 +31,7 @@ sealed class NeovimObject() {
 
     data class Str(val str: String) : NeovimObject() {
         override fun toString(): String {
-            return "s($str)"
+            return "\"$str\""
         }
     }
 

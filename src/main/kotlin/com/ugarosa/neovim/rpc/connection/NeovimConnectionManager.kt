@@ -1,5 +1,6 @@
 package com.ugarosa.neovim.rpc.connection
 
+import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.rpc.transport.NeovimObject
 import com.ugarosa.neovim.rpc.transport.NeovimTransport
 import com.ugarosa.neovim.rpc.transport.RpcMessage
@@ -25,6 +26,7 @@ class NeovimConnectionManager(
     scope: CoroutineScope,
     private val timeout: Duration = 3.seconds,
 ) {
+    private val logger = myLogger()
     private val msgIdGen = AtomicInteger(1)
     private val pending = ConcurrentHashMap<Int, CompletableDeferred<RpcMessage.Response>>()
     private val sendMutex = Mutex()
@@ -38,10 +40,12 @@ class NeovimConnectionManager(
                 while (isActive) {
                     when (val msg = transport.receive()) {
                         is RpcMessage.Response -> {
+                            logger.trace("Received response: $msg")
                             pending.remove(msg.id)?.complete(msg)
                         }
 
                         is RpcMessage.Notification -> {
+                            logger.trace("Received notification: $msg")
                             _notificationFlow.emit(msg)
                         }
                     }
@@ -62,6 +66,7 @@ class NeovimConnectionManager(
         method: String,
         params: List<Any?>,
     ): NeovimObject {
+        logger.trace("Request: $method, params: $params")
         val id = msgIdGen.getAndIncrement()
         val deferred = CompletableDeferred<RpcMessage.Response>()
         pending[id] = deferred
@@ -82,6 +87,7 @@ class NeovimConnectionManager(
         method: String,
         params: List<Any?>,
     ) {
+        logger.trace("Notify: $method, params: $params")
         sendMutex.withLock {
             transport.sendNotification(method, params)
         }
