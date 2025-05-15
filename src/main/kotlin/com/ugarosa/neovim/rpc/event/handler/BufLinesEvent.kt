@@ -8,7 +8,9 @@ import com.ugarosa.neovim.session.NeovimSessionManager
 data class BufLinesEvent(
     val bufferId: BufferId,
     val changedTick: Long,
+    // 0-indexed
     val firstLine: Int,
+    // 0-indexed, exclusive
     val lastLine: Int,
     val replacementLines: List<String>,
 )

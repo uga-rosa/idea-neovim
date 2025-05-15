@@ -99,13 +99,17 @@ class NeovimDocumentHandler private constructor(
         }
 
         val document = editor.document
-        val startOffset = runReadAction { document.getLineStartOffset(e.firstLine) }
-        val endOffset =
+        val (startOffset, endOffset) =
             runReadAction {
-                if (e.lastLine == -1) {
-                    document.textLength
+                val start = document.getLineStartOffset(e.firstLine)
+                if (e.lastLine == -1 || e.lastLine >= document.lineCount) {
+                    // To successfully delete the line when the last line does not have a trailing newline character,
+                    // you need to remove the newline of the previous line.
+                    val end = document.textLength
+                    start - 1 to end
                 } else {
-                    document.getLineStartOffset(e.lastLine)
+                    val end = document.getLineStartOffset(e.lastLine)
+                    start to end
                 }
             }
         val replacementText =

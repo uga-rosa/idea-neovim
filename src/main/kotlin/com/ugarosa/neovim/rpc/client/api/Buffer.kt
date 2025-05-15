@@ -31,13 +31,15 @@ suspend fun NeovimClient.bufferSetText(
     end: NeovimPosition,
     replacement: List<String>,
 ) {
+    // nvim_buf_set_text():
+    //     Indexing is zero-based. Row indices are end-inclusive, and column indices are end-exclusive.
     notify(
         "nvim_buf_set_text",
         listOf(
             bufferId,
-            start.lnum,
+            start.lnum - 1,
             start.col,
-            end.lnum,
+            end.lnum - 1,
             end.col,
             replacement,
         ),
