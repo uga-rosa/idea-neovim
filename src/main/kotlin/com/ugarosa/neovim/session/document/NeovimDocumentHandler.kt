@@ -106,7 +106,7 @@ class NeovimDocumentHandler private constructor(
                     // To successfully delete the line when the last line does not have a trailing newline character,
                     // you need to remove the newline of the previous line.
                     val end = document.textLength
-                    start - 1 to end
+                    (start - 1).coerceAtLeast(0) to end
                 } else {
                     val end = document.getLineStartOffset(e.lastLine)
                     start to end
