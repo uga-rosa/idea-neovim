@@ -8,7 +8,7 @@ import com.intellij.openapi.editor.Editor
 import com.ugarosa.neovim.action.NeovimActionManager
 import com.ugarosa.neovim.config.idea.KeyMappingAction
 import com.ugarosa.neovim.config.idea.NeovimKeymapSettings
-import com.ugarosa.neovim.keymap.dispatcher.NeovimEventDispatcher
+import com.ugarosa.neovim.keymap.dispatcher.NeovimKeyEventDispatcher
 import com.ugarosa.neovim.keymap.notation.NeovimKeyNotation
 import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.mode.getMode
@@ -25,7 +25,7 @@ class NeovimKeyRouter(
 ) : Disposable {
     private val logger = myLogger()
 
-    private val eventDispatcher = NeovimEventDispatcher(this)
+    private val dispatcher = NeovimKeyEventDispatcher(this)
     private val client = service<NeovimClient>()
     private val settings = service<NeovimKeymapSettings>()
     private val actionHandler = service<NeovimActionManager>()
@@ -34,11 +34,11 @@ class NeovimKeyRouter(
     private val currentEditor = AtomicReference<Editor?>()
 
     fun start() {
-        IdeEventQueue.getInstance().addDispatcher(eventDispatcher, this)
+        IdeEventQueue.getInstance().addDispatcher(dispatcher, this)
     }
 
     private fun stop() {
-        IdeEventQueue.getInstance().removeDispatcher(eventDispatcher)
+        IdeEventQueue.getInstance().removeDispatcher(dispatcher)
         buffer.clear()
     }
 
