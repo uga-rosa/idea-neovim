@@ -84,13 +84,12 @@ end
 local function mode_change(chan_id)
 	vim.api.nvim_create_autocmd("ModeChanged", {
 		group = vim.api.nvim_create_augroup("IdeaNeovim:ModeChanged", { clear = true }),
-		callback = function()
-			local mode = vim.api.nvim_get_mode().mode:sub(1, 1)
-			if mode:find("[sS\19]") == nil then
+		callback = function(opt)
+			if opt.match:find("[sS\19]") == nil then
 				return
 			end
 
-			vim.rpcnotify(chan_id, "nvim_mode_change_event", mode)
+			vim.rpcnotify(chan_id, "nvim_mode_change_event", vim.v.event.new_mode)
 		end
 	})
 end

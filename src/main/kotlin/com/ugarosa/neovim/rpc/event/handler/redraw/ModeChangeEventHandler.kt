@@ -1,11 +1,9 @@
 package com.ugarosa.neovim.rpc.event.handler.redraw
 
 import com.intellij.openapi.components.service
-import com.ugarosa.neovim.common.focusProject
 import com.ugarosa.neovim.mode.NeovimMode
 import com.ugarosa.neovim.rpc.event.handler.RedrawEvent
 import com.ugarosa.neovim.session.NeovimSessionManager
-import com.ugarosa.neovim.statusline.StatusLineManager
 
 suspend fun onModeChangeEvent(redraw: RedrawEvent) {
     when (redraw.name) {
@@ -14,13 +12,6 @@ suspend fun onModeChangeEvent(redraw: RedrawEvent) {
 
             val session = service<NeovimSessionManager>().getSession()
             session?.handleModeChangeEvent(mode)
-
-            val statusLineManager = focusProject()?.service<StatusLineManager>()
-            statusLineManager?.updateStatusLine(mode)
-
-//            if (!mode.isCommand()) {
-//                service<NeovimCmdlineManager>().destroy()
-//            }
         }
     }
 }

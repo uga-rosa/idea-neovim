@@ -26,7 +26,12 @@ data class NeovimMode(
         fun fromMode(raw: String): NeovimMode {
             val kind =
                 when (raw[0]) {
+                    'n' -> NeovimModeKind.NORMAL
+                    'v', 'V', '\u0016' -> NeovimModeKind.VISUAL
                     's', 'S', '\u0013' -> NeovimModeKind.SELECT
+                    'i' -> NeovimModeKind.INSERT
+                    'R' -> NeovimModeKind.REPLACE
+                    'c' -> NeovimModeKind.COMMAND
                     else -> NeovimModeKind.OTHER
                 }
             return NeovimMode(kind)
