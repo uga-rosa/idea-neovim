@@ -37,9 +37,6 @@ class NeovimEditorSession private constructor(
     private val logger = myLogger()
 
     companion object {
-        private val client = service<NeovimClient>()
-        private val optionManager = service<NeovimOptionManager>()
-
         suspend fun create(
             scope: CoroutineScope,
             editor: Editor,
@@ -57,8 +54,10 @@ class NeovimEditorSession private constructor(
                     selectionHandler,
                 )
 
+            val optionManager = service<NeovimOptionManager>()
             optionManager.initializeLocal(bufferId)
 
+            val client = service<NeovimClient>()
             client.localHooks(bufferId)
 
             return session
@@ -76,12 +75,11 @@ class NeovimEditorSession private constructor(
     suspend fun handleModeChangeEvent(mode: NeovimMode) {
         logger.trace("Change mode to $mode")
 
-        val newMode = mode
-        val oldMode = getAndSetMode(newMode)
+        val oldMode = getAndSetMode(mode)
 
-        cursorHandler.changeCursorShape(oldMode, newMode)
+        cursorHandler.changeCursorShape(oldMode, mode)
 
-        if (newMode.isInsert()) {
+        if (mode.isInsert()) {
             cursorHandler.disableCursorListener()
         } else {
             // Close completion popup
@@ -92,7 +90,7 @@ class NeovimEditorSession private constructor(
             cursorHandler.enableCursorListener()
         }
 
-        if (!newMode.isVisualOrSelect()) {
+        if (!mode.isVisualOrSelect()) {
             selectionHandler.resetSelection()
         }
     }

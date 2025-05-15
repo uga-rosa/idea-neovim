@@ -28,32 +28,26 @@ class NeovimProjectActivity(
     override suspend fun execute(project: Project) {
         val disposable = project.service<ProjectDisposable>()
 
-        setupEditorFactoryListener(project, disposable)
-        initializeExistingEditors(project, disposable)
+        setupEditorFactoryListener(disposable)
+        initializeExistingEditors(disposable)
         setupBufferActivationOnEditorSwitch(project, disposable)
         setupWritablePropertyChangeListener(project, disposable)
     }
 
-    private fun setupEditorFactoryListener(
-        project: Project,
-        disposable: Disposable,
-    ) {
+    private fun setupEditorFactoryListener(disposable: Disposable) {
         EditorFactory.getInstance().addEditorFactoryListener(
             object : EditorFactoryListener {
                 override fun editorCreated(event: EditorFactoryEvent) {
-                    sessionManager.register(scope, event.editor, project, disposable)
+                    sessionManager.register(scope, event.editor, disposable)
                 }
             },
             disposable,
         )
     }
 
-    private fun initializeExistingEditors(
-        project: Project,
-        disposable: Disposable,
-    ) {
+    private fun initializeExistingEditors(disposable: Disposable) {
         EditorFactory.getInstance().allEditors.forEach { editor ->
-            sessionManager.register(scope, editor, project, disposable)
+            sessionManager.register(scope, editor, disposable)
         }
     }
 

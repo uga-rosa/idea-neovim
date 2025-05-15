@@ -50,7 +50,6 @@ class NeovimSessionManager {
     fun register(
         scope: CoroutineScope,
         editor: Editor,
-        project: Project,
         disposable: Disposable,
     ) {
         val deferred = CompletableDeferred<NeovimEditorSession>()
