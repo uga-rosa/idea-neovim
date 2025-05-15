@@ -2,7 +2,6 @@ package com.ugarosa.neovim.rpc.client
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
-import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.rpc.connection.NeovimConnectionManager
 import com.ugarosa.neovim.rpc.event.NeovimEventDispatcher
 import com.ugarosa.neovim.rpc.event.NotificationHandler

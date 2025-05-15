@@ -110,38 +110,43 @@ class NeovimDocumentHandler private constructor(
         }
     }
 
-    private fun applyLinesToDocument(doc: Document, e: BufLinesEvent) {
+    private fun applyLinesToDocument(
+        doc: Document,
+        e: BufLinesEvent,
+    ) {
         val totalLines = doc.lineCount
 
         // Compute start/end offsets and flag for trailing newline
-        val (startOffset, endOffset, addTrailingNewline) = when {
-            // 1) Append at end of document
-            e.firstLine >= totalLines ->
-                Triple(doc.textLength, doc.textLength, false)
+        val (startOffset, endOffset, addTrailingNewline) =
+            when {
+                // 1) Append at end of document
+                e.firstLine >= totalLines ->
+                    Triple(doc.textLength, doc.textLength, false)
 
-            // 2) Replacement range includes end of document
-            e.lastLine == -1 || e.lastLine >= totalLines -> {
-                val start = (doc.getLineStartOffset(e.firstLine) - 1).coerceAtLeast(0)
-                Triple(start, doc.textLength, false)
+                // 2) Replacement range includes end of document
+                e.lastLine == -1 || e.lastLine >= totalLines -> {
+                    val start = (doc.getLineStartOffset(e.firstLine) - 1).coerceAtLeast(0)
+                    Triple(start, doc.textLength, false)
+                }
+
+                // 3) Range within document
+                else -> {
+                    val start = doc.getLineStartOffset(e.firstLine)
+                    val end = doc.getLineStartOffset(e.lastLine)
+                    Triple(start, end, true)
+                }
             }
 
-            // 3) Range within document
-            else -> {
-                val start = doc.getLineStartOffset(e.firstLine)
-                val end = doc.getLineStartOffset(e.lastLine)
-                Triple(start, end, true)
+        val replacementText =
+            if (e.replacementLines.isEmpty()) {
+                ""
+            } else {
+                buildString {
+                    if (!addTrailingNewline) append("\n")
+                    append(e.replacementLines.joinToString("\n"))
+                    if (addTrailingNewline) append("\n")
+                }
             }
-        }
-
-        val replacementText = if (e.replacementLines.isEmpty()) {
-            ""
-        } else {
-            buildString {
-                if (!addTrailingNewline) append("\n")
-                append(e.replacementLines.joinToString("\n"))
-                if (addTrailingNewline) append("\n")
-            }
-        }
 
         documentListenerGuard.runWithoutListener {
             doc.replaceString(startOffset, endOffset, replacementText)
