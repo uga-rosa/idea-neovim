@@ -28,9 +28,9 @@ class NeovimConnectionManager(
     private val msgIdGen = AtomicInteger(1)
     private val pending = ConcurrentHashMap<Int, CompletableDeferred<RpcMessage.Response>>()
     private val sendMutex = Mutex()
-    private val _pushFlow = MutableSharedFlow<RpcMessage.Notification>(extraBufferCapacity = Int.MAX_VALUE)
+    private val _notificationFlow = MutableSharedFlow<RpcMessage.Notification>(extraBufferCapacity = Int.MAX_VALUE)
 
-    val pushFlow: SharedFlow<RpcMessage.Notification> = _pushFlow
+    val notificationFlow: SharedFlow<RpcMessage.Notification> = _notificationFlow
 
     init {
         scope.launch(Dispatchers.IO + SupervisorJob()) {
@@ -42,7 +42,7 @@ class NeovimConnectionManager(
                         }
 
                         is RpcMessage.Notification -> {
-                            _pushFlow.emit(msg)
+                            _notificationFlow.emit(msg)
                         }
                     }
                 }

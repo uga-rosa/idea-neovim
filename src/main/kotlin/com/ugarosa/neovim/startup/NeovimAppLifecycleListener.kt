@@ -25,11 +25,11 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
 
     // Hooks that should be called only once at application startup.
     override fun appFrameCreated(commandLineArgs: List<String>) {
-        registerPushHandlers()
+        registerNotificationHandlers()
         initialize()
     }
 
-    private fun registerPushHandlers() {
+    private fun registerNotificationHandlers() {
         // Handle Neovim Native events
         onRedrawEvent(client)
         onBufLinesEvent(client)

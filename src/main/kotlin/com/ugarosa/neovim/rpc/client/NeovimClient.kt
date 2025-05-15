@@ -5,7 +5,7 @@ import com.intellij.openapi.components.Service
 import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.rpc.connection.NeovimConnectionManager
 import com.ugarosa.neovim.rpc.event.NeovimEventDispatcher
-import com.ugarosa.neovim.rpc.event.PushHandler
+import com.ugarosa.neovim.rpc.event.NotificationHandler
 import com.ugarosa.neovim.rpc.process.NeovimProcessManager
 import com.ugarosa.neovim.rpc.transport.NeovimObject
 import com.ugarosa.neovim.rpc.transport.NeovimTransport
@@ -35,7 +35,7 @@ class NeovimClient(
 
     fun register(
         method: String,
-        handler: PushHandler,
+        handler: NotificationHandler,
     ) {
         dispatcher.register(method, handler)
     }
@@ -43,7 +43,7 @@ class NeovimClient(
     @Suppress("unused")
     fun unregister(
         method: String,
-        handler: PushHandler,
+        handler: NotificationHandler,
     ) {
         dispatcher.unregister(method, handler)
     }

@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
-typealias PushHandler = suspend (List<NeovimObject>) -> Unit
+typealias NotificationHandler = suspend (List<NeovimObject>) -> Unit
 
 class NeovimEventDispatcher(
     connectionManager: NeovimConnectionManager,
@@ -16,10 +16,10 @@ class NeovimEventDispatcher(
 ) {
     private val logger = myLogger()
 
-    private val handlers = mutableMapOf<String, MutableList<PushHandler>>()
+    private val handlers = mutableMapOf<String, MutableList<NotificationHandler>>()
 
     init {
-        connectionManager.pushFlow
+        connectionManager.notificationFlow
             .onEach { notification ->
                 handlers[notification.method]?.forEach { handler ->
                     scope.launch {
@@ -36,7 +36,7 @@ class NeovimEventDispatcher(
 
     fun register(
         method: String,
-        handler: PushHandler,
+        handler: NotificationHandler,
     ) {
         handlers.getOrPut(method) { mutableListOf() }
             .add(handler)
@@ -44,7 +44,7 @@ class NeovimEventDispatcher(
 
     fun unregister(
         method: String,
-        handler: PushHandler,
+        handler: NotificationHandler,
     ) {
         handlers[method]?.remove(handler)
     }
