@@ -64,7 +64,7 @@ class NeovimEditorSession private constructor(
         }
     }
 
-    fun handleBufferLinesEvent(event: BufLinesEvent) {
+    suspend fun handleBufferLinesEvent(event: BufLinesEvent) {
         documentHandler.applyBufferLinesEvent(event)
     }
 

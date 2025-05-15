@@ -1,6 +1,6 @@
 package com.ugarosa.neovim.session.document
 
-import com.intellij.openapi.application.runReadAction
+import com.intellij.openapi.application.EDT
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
@@ -24,7 +24,9 @@ import com.ugarosa.neovim.rpc.client.api.setFiletype
 import com.ugarosa.neovim.rpc.event.handler.BufLinesEvent
 import com.ugarosa.neovim.rpc.type.NeovimPosition
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentHashMap
 
 class NeovimDocumentHandler private constructor(
@@ -88,7 +90,7 @@ class NeovimDocumentHandler private constructor(
         client.activateBuffer(bufferId)
     }
 
-    fun applyBufferLinesEvent(e: BufLinesEvent) {
+    suspend fun applyBufferLinesEvent(e: BufLinesEvent) {
         if (getMode().isInsert()) {
             logger.trace("Ignore event in insert mode: $e")
             return
@@ -98,32 +100,34 @@ class NeovimDocumentHandler private constructor(
             return
         }
 
-        val document = editor.document
-        val (startOffset, endOffset) =
-            runReadAction {
-                val start = document.getLineStartOffset(e.firstLine)
-                if (e.lastLine == -1 || e.lastLine >= document.lineCount) {
-                    // To successfully delete the line when the last line does not have a trailing newline character,
-                    // you need to remove the newline of the previous line.
-                    val end = document.textLength
-                    (start - 1).coerceAtLeast(0) to end
-                } else {
-                    val end = document.getLineStartOffset(e.lastLine)
-                    start to end
-                }
-            }
-        val replacementText =
-            if (e.replacementLines.isEmpty()) {
-                ""
-            } else {
-                e.replacementLines.joinToString("\n", postfix = "\n")
-            }
-        documentListenerGuard.runWithoutListener {
+        withContext(Dispatchers.EDT) {
             WriteCommandAction.writeCommandAction(editor.project)
                 .run<Exception> {
-                    document.replaceString(startOffset, endOffset, replacementText)
+                    val document = editor.document
+                    val (startOffset, endOffset) =
+                        run {
+                            val start = document.getLineStartOffset(e.firstLine)
+                            if (e.lastLine == -1 || e.lastLine >= document.lineCount) {
+                                // To successfully delete the line when the last line does not have a trailing newline character,
+                                // you need to remove the newline of the previous line.
+                                val end = document.textLength
+                                (start - 1).coerceAtLeast(0) to end
+                            } else {
+                                val end = document.getLineStartOffset(e.lastLine)
+                                start to end
+                            }
+                        }
+                    val replacementText =
+                        if (e.replacementLines.isEmpty()) {
+                            ""
+                        } else {
+                            e.replacementLines.joinToString("\n", postfix = "\n")
+                        }
+                    documentListenerGuard.runWithoutListener {
+                        document.replaceString(startOffset, endOffset, replacementText)
+                    }
+                    logger.trace("Applied buffer lines event: $e")
                 }
-            logger.trace("Applied buffer lines event: $e")
         }
     }
 

@@ -6,13 +6,12 @@ import com.ugarosa.neovim.rpc.transport.NeovimObject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 
 typealias NotificationHandler = suspend (List<NeovimObject>) -> Unit
 
 class NeovimEventDispatcher(
     connectionManager: NeovimConnectionManager,
-    private val scope: CoroutineScope,
+    scope: CoroutineScope,
 ) {
     private val logger = myLogger()
 
@@ -22,12 +21,10 @@ class NeovimEventDispatcher(
         connectionManager.notificationFlow
             .onEach { notification ->
                 handlers[notification.method]?.forEach { handler ->
-                    scope.launch {
-                        try {
-                            handler(notification.params)
-                        } catch (e: Exception) {
-                            logger.warn("Error in handler for ${notification.method}", e)
-                        }
+                    try {
+                        handler(notification.params)
+                    } catch (e: Exception) {
+                        logger.warn("Error in handler for ${notification.method}", e)
                     }
                 }
             }

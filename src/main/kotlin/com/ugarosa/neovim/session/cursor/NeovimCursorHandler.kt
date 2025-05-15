@@ -2,7 +2,6 @@ package com.ugarosa.neovim.session.cursor
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.EDT
-import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.colors.EditorFontType
@@ -73,23 +72,23 @@ class NeovimCursorHandler private constructor(
         caretListenerGuard.unregister()
     }
 
-    suspend fun syncNeovimToIdea(event: CursorMoveEvent) {
-        val originalOffset = runReadAction { editor.caretModel.offset }
-        val rawOffset = runReadAction { event.position.toOffset(editor.document) }
+    suspend fun syncNeovimToIdea(event: CursorMoveEvent) =
+        withContext(Dispatchers.EDT) {
+            val originalOffset = editor.caretModel.offset
+            val rawOffset = event.position.toOffset(editor.document)
 
-        if (originalOffset == rawOffset) {
-            logger.trace("No cursor move detected")
-            return
-        }
+            if (originalOffset == rawOffset) {
+                logger.trace("No cursor move detected")
+                return@withContext
+            }
 
-        val direction = runReadAction { determineDirection(originalOffset, rawOffset) }
+            val direction = determineDirection(originalOffset, rawOffset)
 
-        val curswant = event.position.curswant
-        val adjustedOffset = runReadAction { adjustOffsetForFoldedRegion(rawOffset, curswant, direction) }
-        val (scrolloff, sidescrolloff) = getScrollOptions()
+            val curswant = event.position.curswant
+            val adjustedOffset = adjustOffsetForFoldedRegion(rawOffset, curswant, direction)
+            val (scrolloff, sidescrolloff) = getScrollOptions()
 
-        caretListenerGuard.runWithoutListenerSuspend {
-            withContext(Dispatchers.EDT) {
+            caretListenerGuard.runWithoutListenerSuspend {
                 // LogicalPosition does not strictly match the number of characters, such as counting a hard tab as
                 // multiple characters. Since it is difficult to calculate the appropriate position considering this, a
                 // simpler and more accurate offset is used instead.
@@ -98,20 +97,17 @@ class NeovimCursorHandler private constructor(
                 scrollLineIntoView(pos.line, scrolloff)
                 scrollColumnIntoView(pos.column, sidescrolloff)
             }
-        }
 
-        if (adjustedOffset != rawOffset) {
-            // If the offset was adjusted, we need to update the cursor position in Neovim
-            // Restore the original curswant
-            val position =
-                runReadAction {
-                    val offset = editor.caretModel.offset
+            if (adjustedOffset != rawOffset) {
+                // If the offset was adjusted, we need to update the cursor position in Neovim
+                // Restore the original curswant
+                val offset = editor.caretModel.offset
+                val position =
                     NeovimPosition.fromOffset(offset, editor.document)
                         .copy(curswant = curswant)
-                }
-            syncIdeaToNeovim(position)
+                syncIdeaToNeovim(position)
+            }
         }
-    }
 
     enum class MoveDirection { UP, DOWN, LEFT, RIGHT }
 
@@ -264,7 +260,7 @@ class NeovimCursorHandler private constructor(
 
     suspend fun syncIdeaToNeovim(position: NeovimPosition? = null) {
         val pos =
-            position ?: runReadAction {
+            position ?: withContext(Dispatchers.EDT) {
                 val offset = editor.caretModel.offset
                 NeovimPosition.fromOffset(offset, editor.document)
             }
