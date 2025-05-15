@@ -3,6 +3,7 @@ package com.ugarosa.neovim.session.document
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.components.service
+import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.fileEditor.FileDocumentManager
@@ -58,8 +59,8 @@ class NeovimDocumentHandler private constructor(
     }
 
     private suspend fun initializeBuffer() {
-        val liens = editor.document.text.split("\n")
-        client.bufferSetLines(bufferId, 0, -1, liens)
+        val lines = editor.document.text.split("\n")
+        client.bufferSetLines(bufferId, 0, -1, lines)
 
         val virtualFile = FileDocumentManager.getInstance().getFile(editor.document)
         if (virtualFile != null && virtualFile.isInLocalFileSystem) {
@@ -99,35 +100,51 @@ class NeovimDocumentHandler private constructor(
             logger.trace("Ignore event by changed tick: $e")
             return
         }
+        logger.trace("Apply buffer lines event: $e")
 
         withContext(Dispatchers.EDT) {
             WriteCommandAction.writeCommandAction(editor.project)
                 .run<Exception> {
-                    val document = editor.document
-                    val (startOffset, endOffset) =
-                        run {
-                            val start = document.getLineStartOffset(e.firstLine)
-                            if (e.lastLine == -1 || e.lastLine >= document.lineCount) {
-                                // To successfully delete the line when the last line does not have a trailing newline character,
-                                // you need to remove the newline of the previous line.
-                                val end = document.textLength
-                                (start - 1).coerceAtLeast(0) to end
-                            } else {
-                                val end = document.getLineStartOffset(e.lastLine)
-                                start to end
-                            }
-                        }
-                    val replacementText =
-                        if (e.replacementLines.isEmpty()) {
-                            ""
-                        } else {
-                            e.replacementLines.joinToString("\n", postfix = "\n")
-                        }
-                    documentListenerGuard.runWithoutListener {
-                        document.replaceString(startOffset, endOffset, replacementText)
-                    }
-                    logger.trace("Applied buffer lines event: $e")
+                    applyLinesToDocument(editor.document, e)
                 }
+        }
+    }
+
+    private fun applyLinesToDocument(doc: Document, e: BufLinesEvent) {
+        val totalLines = doc.lineCount
+
+        // Compute start/end offsets and flag for trailing newline
+        val (startOffset, endOffset, addTrailingNewline) = when {
+            // 1) Append at end of document
+            e.firstLine >= totalLines ->
+                Triple(doc.textLength, doc.textLength, false)
+
+            // 2) Replacement range includes end of document
+            e.lastLine == -1 || e.lastLine >= totalLines -> {
+                val start = (doc.getLineStartOffset(e.firstLine) - 1).coerceAtLeast(0)
+                Triple(start, doc.textLength, false)
+            }
+
+            // 3) Range within document
+            else -> {
+                val start = doc.getLineStartOffset(e.firstLine)
+                val end = doc.getLineStartOffset(e.lastLine)
+                Triple(start, end, true)
+            }
+        }
+
+        val replacementText = if (e.replacementLines.isEmpty()) {
+            ""
+        } else {
+            buildString {
+                if (!addTrailingNewline) append("\n")
+                append(e.replacementLines.joinToString("\n"))
+                if (addTrailingNewline) append("\n")
+            }
+        }
+
+        documentListenerGuard.runWithoutListener {
+            doc.replaceString(startOffset, endOffset, replacementText)
         }
     }
 
