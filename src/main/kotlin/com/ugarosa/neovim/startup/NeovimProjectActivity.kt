@@ -17,6 +17,7 @@ import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import com.intellij.openapi.vfs.newvfs.events.VFilePropertyChangeEvent
 import com.ugarosa.neovim.common.focusEditor
 import com.ugarosa.neovim.session.NeovimSessionManager
+import com.ugarosa.neovim.window.NeovimWindowManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -68,6 +69,7 @@ class NeovimProjectActivity(
                     val editor = event.manager.selectedTextEditor ?: return
                     scope.launch {
                         sessionManager.getSession(editor).activateBuffer()
+                        editor.project?.service<NeovimWindowManager>()?.walkSplitLayout()
                     }
                 }
             },
