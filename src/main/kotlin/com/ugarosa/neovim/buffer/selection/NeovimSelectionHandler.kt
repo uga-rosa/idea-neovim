@@ -1,5 +1,6 @@
 package com.ugarosa.neovim.buffer.selection
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.colors.EditorColors
@@ -15,7 +16,7 @@ import kotlinx.coroutines.withContext
 
 class NeovimSelectionHandler(
     private val editor: Editor,
-) {
+) : Disposable {
     private val logger = myLogger()
     private val attributes =
         TextAttributes().apply {
@@ -62,4 +63,6 @@ class NeovimSelectionHandler(
             highlighters.clear()
         }
     }
+
+    override fun dispose() { }
 }

@@ -7,6 +7,7 @@ import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.event.EditorFactoryEvent
 import com.intellij.openapi.editor.event.EditorFactoryListener
 import com.intellij.openapi.editor.ex.EditorEx
+import com.intellij.openapi.util.Disposer
 import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.client.api.createBuffer
 import kotlinx.coroutines.CompletableDeferred
@@ -102,6 +103,7 @@ private class BufferHolder(
             deferredId.complete(bufferId)
             val buffer = NeovimBuffer.create(scope, bufferId, editor)
             deferredBuffer.complete(buffer)
+            Disposer.register(this@BufferHolder, buffer)
         }
 
     suspend fun awaitId(): BufferId = deferredId.await()

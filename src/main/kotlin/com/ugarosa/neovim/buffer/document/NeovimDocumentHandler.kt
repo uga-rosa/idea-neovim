@@ -1,5 +1,6 @@
 package com.ugarosa.neovim.buffer.document
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.components.service
@@ -33,7 +34,7 @@ class NeovimDocumentHandler private constructor(
     private val scope: CoroutineScope,
     private val bufferId: BufferId,
     private val editor: Editor,
-) {
+) : Disposable {
     private val logger = myLogger()
     private val client = service<NeovimClient>()
     private val documentListenerGuard =
@@ -237,5 +238,9 @@ class NeovimDocumentHandler private constructor(
                 .also { ignoreChangedTicks.add(it + 1) }
             client.bufferSetText(bufferId, start, end, replacement)
         }
+    }
+
+    override fun dispose() {
+        documentListenerGuard.unregister()
     }
 }

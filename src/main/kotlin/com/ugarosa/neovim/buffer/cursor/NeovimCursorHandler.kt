@@ -1,5 +1,6 @@
 package com.ugarosa.neovim.buffer.cursor
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.ex.EditorEx
@@ -28,7 +29,7 @@ class NeovimCursorHandler private constructor(
     private val bufferId: BufferId,
     private val editor: EditorEx,
     private val fontSize: FontSize,
-) {
+) : Disposable {
     private val logger = myLogger()
     private val client = service<NeovimClient>()
     private val optionManager = service<NeovimOptionManager>()
@@ -281,5 +282,9 @@ class NeovimCursorHandler private constructor(
         editor.setCaretVisible(isVisible)
         editor.setCaretEnabled(isVisible)
         editor.contentComponent.repaint()
+    }
+
+    override fun dispose() {
+        cursorListenerGuard.unregister()
     }
 }

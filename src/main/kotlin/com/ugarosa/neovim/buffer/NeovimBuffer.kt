@@ -1,9 +1,11 @@
 package com.ugarosa.neovim.buffer
 
 import com.intellij.codeInsight.lookup.LookupManager
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.ex.EditorEx
+import com.intellij.openapi.util.Disposer
 import com.ugarosa.neovim.buffer.cursor.NeovimCursorHandler
 import com.ugarosa.neovim.buffer.document.NeovimDocumentHandler
 import com.ugarosa.neovim.buffer.selection.NeovimSelectionHandler
@@ -26,8 +28,14 @@ class NeovimBuffer private constructor(
     private val documentHandler: NeovimDocumentHandler,
     private val cursorHandler: NeovimCursorHandler,
     private val selectionHandler: NeovimSelectionHandler,
-) {
+) : Disposable {
     private val logger = myLogger()
+
+    init {
+        Disposer.register(this, documentHandler)
+        Disposer.register(this, cursorHandler)
+        Disposer.register(this, selectionHandler)
+    }
 
     companion object {
         suspend fun create(
@@ -100,4 +108,6 @@ class NeovimBuffer private constructor(
     suspend fun changeModifiable() {
         documentHandler.changeModifiable()
     }
+
+    override fun dispose() { }
 }
