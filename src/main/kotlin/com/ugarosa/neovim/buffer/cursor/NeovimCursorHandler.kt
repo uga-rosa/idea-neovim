@@ -1,4 +1,4 @@
-package com.ugarosa.neovim.buffer.caret
+package com.ugarosa.neovim.buffer.cursor
 
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
@@ -32,7 +32,7 @@ class NeovimCursorHandler private constructor(
     private val logger = myLogger()
     private val client = service<NeovimClient>()
     private val optionManager = service<NeovimOptionManager>()
-    private val caretListenerGuard =
+    private val cursorListenerGuard =
         ListenerGuard(
             NeovimCursorListener(this),
             { editor.caretModel.addCaretListener(it) },
@@ -47,19 +47,19 @@ class NeovimCursorHandler private constructor(
         ): NeovimCursorHandler {
             val fontSize = FontSize.fromEditorEx(editor)
             val handler = NeovimCursorHandler(scope, bufferId, editor, fontSize)
-            handler.enableCaretListener()
+            handler.enableListener()
             return handler
         }
     }
 
-    fun enableCaretListener() {
+    fun enableListener() {
         logger.trace("Enabling cursor listener for buffer: $bufferId")
-        caretListenerGuard.register()
+        cursorListenerGuard.register()
     }
 
-    fun disableCaretListener() {
+    fun disableListener() {
         logger.trace("Disabling cursor listener for buffer: $bufferId")
-        caretListenerGuard.unregister()
+        cursorListenerGuard.unregister()
     }
 
     suspend fun syncNeovimToIdea(event: CursorMoveEvent) =
@@ -80,7 +80,7 @@ class NeovimCursorHandler private constructor(
             val adjustedOffset = adjustOffsetForFoldedRegion(rawOffset, curswant, direction)
             val (scrolloff, sidescrolloff) = getScrollOptions()
 
-            caretListenerGuard.runWithoutListenerSuspend {
+            cursorListenerGuard.runWithoutListenerSuspend {
                 // LogicalPosition does not strictly match the number of characters, such as counting a hard tab as
                 // multiple characters. Since it is difficult to calculate the appropriate position considering this, a
                 // simpler and more accurate offset is used instead.

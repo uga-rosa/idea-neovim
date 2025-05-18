@@ -6,10 +6,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 data class GridSize(
-    val outerWidth: Int,
-    val outerHeight: Int,
-    val innerWidth: Int,
-    val innerHeight: Int,
+    val width: Int,
+    val height: Int,
 ) {
     companion object {
         suspend fun fromEditorEx(editor: EditorEx): GridSize =
@@ -18,15 +16,11 @@ data class GridSize(
                 val charWidth = fontSize.width
                 val lineHeight = editor.lineHeight
 
-                val (outerPixelW, outerPixelH) = editor.component.let { it.width to it.height }
-                val outerWidth = (outerPixelW / charWidth).coerceAtLeast(1)
-                val outerHeight = (outerPixelH / lineHeight).coerceAtLeast(1)
+                val (pixelW, pixelH) = editor.contentComponent.visibleRect.let { it.width to it.height }
+                val width = (pixelW / charWidth).coerceAtLeast(1)
+                val height = (pixelH / lineHeight).coerceAtLeast(1)
 
-                val (innerPixelW, innerPixelH) = editor.contentComponent.visibleRect.let { it.width to it.height }
-                val innerWidth = (innerPixelW / charWidth).coerceAtLeast(1)
-                val innerHeight = (innerPixelH / lineHeight).coerceAtLeast(1)
-
-                GridSize(outerWidth, outerHeight, innerWidth, innerHeight)
+                GridSize(width, height)
             }
     }
 }

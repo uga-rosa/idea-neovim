@@ -4,7 +4,7 @@ import com.intellij.codeInsight.lookup.LookupManager
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.ex.EditorEx
-import com.ugarosa.neovim.buffer.caret.NeovimCursorHandler
+import com.ugarosa.neovim.buffer.cursor.NeovimCursorHandler
 import com.ugarosa.neovim.buffer.document.NeovimDocumentHandler
 import com.ugarosa.neovim.buffer.selection.NeovimSelectionHandler
 import com.ugarosa.neovim.config.neovim.NeovimOptionManager
@@ -24,7 +24,7 @@ import kotlinx.coroutines.withContext
 class NeovimBuffer private constructor(
     private val editor: EditorEx,
     private val documentHandler: NeovimDocumentHandler,
-    private val caretHandler: NeovimCursorHandler,
+    private val cursorHandler: NeovimCursorHandler,
     private val selectionHandler: NeovimSelectionHandler,
 ) {
     private val logger = myLogger()
@@ -36,13 +36,13 @@ class NeovimBuffer private constructor(
             editor: EditorEx,
         ): NeovimBuffer {
             val documentHandler = NeovimDocumentHandler.create(scope, bufferId, editor)
-            val caretHandler = NeovimCursorHandler.create(scope, bufferId, editor)
+            val cursorHandler = NeovimCursorHandler.create(scope, bufferId, editor)
             val selectionHandler = NeovimSelectionHandler(editor)
             val buffer =
                 NeovimBuffer(
                     editor,
                     documentHandler,
-                    caretHandler,
+                    cursorHandler,
                     selectionHandler,
                 )
 
@@ -61,7 +61,7 @@ class NeovimBuffer private constructor(
     }
 
     suspend fun handleCursorMoveEvent(event: CursorMoveEvent) {
-        caretHandler.syncNeovimToIdea(event)
+        cursorHandler.syncNeovimToIdea(event)
     }
 
     suspend fun handleModeChangeEvent(mode: NeovimMode) {
@@ -69,17 +69,17 @@ class NeovimBuffer private constructor(
 
         val oldMode = getAndSetMode(mode)
 
-        caretHandler.changeCursorShape(oldMode, mode)
+        cursorHandler.changeCursorShape(oldMode, mode)
 
         if (mode.isInsert()) {
-            caretHandler.disableCaretListener()
+            cursorHandler.disableListener()
         } else {
             // Close completion popup
             withContext(Dispatchers.EDT) {
                 LookupManager.getActiveLookup(editor)
                     ?.hideLookup(true)
             }
-            caretHandler.enableCaretListener()
+            cursorHandler.enableListener()
         }
 
         if (!mode.isVisualOrSelect()) {
@@ -92,9 +92,9 @@ class NeovimBuffer private constructor(
     }
 
     suspend fun onSelected() {
-        caretHandler.syncIdeaToNeovim()
+        cursorHandler.syncIdeaToNeovim()
         val mode = getMode()
-        caretHandler.changeCursorShape(mode, mode)
+        cursorHandler.changeCursorShape(mode, mode)
     }
 
     suspend fun changeModifiable() {
