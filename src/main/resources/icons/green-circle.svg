@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8">
+    <!-- A simple green circle badge -->
+    <circle cx="4" cy="4" r="4" fill="#3ac55c"/>
+</svg>

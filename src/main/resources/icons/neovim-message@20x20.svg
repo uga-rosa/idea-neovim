@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20">
+    <!-- bubble outline -->
+    <rect x="2" y="2" width="16" height="14" rx="2"
+          stroke="#000000" stroke-width="1.5" fill="none"/>
+    <!-- diagonal tail at bottom-left -->
+    <polyline points="4,16 3,19 7,16"
+              stroke="#000000" stroke-width="1"
+              fill="#000000" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- stylized 'N' -->
+    <polyline points="6,13 7,5 13,13 14,5"
+              stroke="#000000" stroke-width="1.5"
+              fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
