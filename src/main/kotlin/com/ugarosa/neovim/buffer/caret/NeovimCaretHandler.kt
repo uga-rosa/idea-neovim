@@ -1,13 +1,11 @@
-package com.ugarosa.neovim.session.cursor
+package com.ugarosa.neovim.buffer.caret
 
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
-import com.intellij.openapi.editor.Editor
-import com.intellij.openapi.editor.colors.EditorFontType
 import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.util.TextRange
 import com.ugarosa.neovim.buffer.BufferId
+import com.ugarosa.neovim.common.FontSize
 import com.ugarosa.neovim.common.ListenerGuard
 import com.ugarosa.neovim.common.takeByte
 import com.ugarosa.neovim.config.neovim.NeovimOptionManager
@@ -20,56 +18,55 @@ import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.client.api.setCursor
 import com.ugarosa.neovim.rpc.event.handler.CursorMoveEvent
 import com.ugarosa.neovim.rpc.type.NeovimPosition
+import com.ugarosa.neovim.window.WindowId
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.concurrent.atomic.AtomicReference
 
-class NeovimCursorHandler private constructor(
-    scope: CoroutineScope,
-    private val editor: Editor,
-    private val disposable: Disposable,
+class NeovimCaretHandler private constructor(
+    private val scope: CoroutineScope,
     private val bufferId: BufferId,
-    private val charWidth: Int,
+    private val editor: EditorEx,
+    private val fontSize: FontSize,
 ) {
     private val logger = myLogger()
     private val client = service<NeovimClient>()
     private val optionManager = service<NeovimOptionManager>()
     private val caretListenerGuard =
         ListenerGuard(
-            NeovimCaretListener(scope, this),
-            { editor.caretModel.addCaretListener(it, disposable) },
+            NeovimCaretListener(this),
+            { editor.caretModel.addCaretListener(it) },
             { editor.caretModel.removeCaretListener(it) },
         )
+    private val windowId = AtomicReference<WindowId>()
 
     companion object {
         suspend fun create(
             scope: CoroutineScope,
-            editor: Editor,
-            disposable: Disposable,
             bufferId: BufferId,
-        ): NeovimCursorHandler {
-            val charWidth =
-                withContext(Dispatchers.EDT) {
-                    val font = editor.colorsScheme.getFont(EditorFontType.PLAIN)
-                    editor.contentComponent.getFontMetrics(font).charWidth('W')
-                }
-            val handler = NeovimCursorHandler(scope, editor, disposable, bufferId, charWidth)
-            withContext(Dispatchers.EDT) {
-                editor.settings.isBlockCursor = true
-            }
-            handler.enableCursorListener()
+            editor: EditorEx,
+        ): NeovimCaretHandler {
+            val fontSize = FontSize.fromEditorEx(editor)
+            val handler = NeovimCaretHandler(scope, bufferId, editor, fontSize)
+            handler.enableCaretListener()
             return handler
         }
     }
 
-    fun enableCursorListener() {
+    fun enableCaretListener() {
         logger.trace("Enabling cursor listener for buffer: $bufferId")
         caretListenerGuard.register()
     }
 
-    fun disableCursorListener() {
+    fun disableCaretListener() {
         logger.trace("Disabling cursor listener for buffer: $bufferId")
         caretListenerGuard.unregister()
+    }
+
+    fun setWindow(windowId: WindowId) {
+        this.windowId.set(windowId)
     }
 
     suspend fun syncNeovimToIdea(event: CursorMoveEvent) =
@@ -81,6 +78,8 @@ class NeovimCursorHandler private constructor(
                 logger.trace("No cursor move detected")
                 return@withContext
             }
+
+            logger.trace("Cursor move event: $event")
 
             val direction = determineDirection(originalOffset, rawOffset)
 
@@ -238,33 +237,36 @@ class NeovimCursorHandler private constructor(
         val scrollingModel = editor.scrollingModel
         val visibleArea = scrollingModel.visibleArea
 
-        val firstVisibleColumn = visibleArea.x / charWidth
-        val lastVisibleColumn = (visibleArea.x + visibleArea.width) / charWidth
+        val firstVisibleColumn = visibleArea.x / fontSize.width
+        val lastVisibleColumn = (visibleArea.x + visibleArea.width) / fontSize.width
 
         val targetLeft = column - sidescrolloff.value
         val targetRight = column + sidescrolloff.value
 
         when {
             targetLeft < firstVisibleColumn -> {
-                val scrollToX = (targetLeft.coerceAtLeast(0) * charWidth)
+                val scrollToX = (targetLeft.coerceAtLeast(0) * fontSize.width)
                 scrollingModel.scrollHorizontally(scrollToX)
             }
 
             targetRight > lastVisibleColumn -> {
                 val colsToScroll = targetRight - lastVisibleColumn
-                scrollingModel.scrollHorizontally(visibleArea.x + colsToScroll * charWidth)
+                scrollingModel.scrollHorizontally(visibleArea.x + colsToScroll * fontSize.width)
             }
             // already in view
         }
     }
 
-    suspend fun syncIdeaToNeovim(position: NeovimPosition? = null) {
-        val pos =
-            position ?: withContext(Dispatchers.EDT) {
-                val offset = editor.caretModel.offset
-                NeovimPosition.fromOffset(offset, editor.document)
-            }
-        client.setCursor(bufferId, pos)
+    fun syncIdeaToNeovim(position: NeovimPosition? = null) {
+        val windowId = this.windowId.get() ?: error("Buffer $bufferId is not set to a window")
+        scope.launch {
+            val pos =
+                position ?: withContext(Dispatchers.EDT) {
+                    val offset = editor.caretModel.offset
+                    NeovimPosition.fromOffset(offset, editor.document)
+                }
+            client.setCursor(windowId, pos)
+        }
     }
 
     suspend fun changeCursorShape(
@@ -284,9 +286,8 @@ class NeovimCursorHandler private constructor(
     }
 
     private fun changeCaretVisible(isVisible: Boolean) {
-        val editorEx = editor as? EditorEx ?: return
-        editorEx.setCaretVisible(isVisible)
-        editorEx.setCaretEnabled(isVisible)
-        editorEx.contentComponent.repaint()
+        editor.setCaretVisible(isVisible)
+        editor.setCaretEnabled(isVisible)
+        editor.contentComponent.repaint()
     }
 }

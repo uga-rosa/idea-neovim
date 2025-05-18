@@ -95,7 +95,13 @@ sealed class NeovimObject() {
             else -> error("Cannot convert $this to BufferId")
         }
 
-    fun asWindowId(): WindowId = WindowId((this as Window).long)
+    fun asWindowId(): WindowId =
+        when (this) {
+            is Window -> WindowId(long)
+            // My custom event sends windowId as just an Int64
+            is Int64 -> WindowId(long)
+            else -> error("Cannot convert $this to WindowId")
+        }
 
     fun asTabpageId(): TabpageId = TabpageId((this as Tabpage).long)
 

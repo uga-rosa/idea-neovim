@@ -4,7 +4,7 @@ import com.intellij.ide.DataManager
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.application.EDT
-import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.IdeFocusManager
 import com.ugarosa.neovim.logger.MyLogger
@@ -14,12 +14,13 @@ import kotlinx.coroutines.withContext
 private val logger = MyLogger.getInstance("com.ugarosa.neovim.common.FocusUtils")
 
 // This function is not safe to call from a non-EDT thread.
-fun unsafeFocusEditor(): Editor? {
+fun unsafeFocusEditor(): EditorEx? {
     val dataContext = getFocusContext() ?: return null
-    return CommonDataKeys.EDITOR.getData(dataContext)
+    val editor = CommonDataKeys.EDITOR.getData(dataContext)
+    return editor as? EditorEx
 }
 
-suspend fun focusEditor(): Editor? = withContext(Dispatchers.EDT) { unsafeFocusEditor() }
+suspend fun focusEditor(): EditorEx? = withContext(Dispatchers.EDT) { unsafeFocusEditor() }
 
 suspend fun focusProject(): Project? =
     withContext(Dispatchers.EDT) {

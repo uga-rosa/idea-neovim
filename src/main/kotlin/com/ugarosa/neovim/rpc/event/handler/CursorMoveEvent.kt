@@ -1,10 +1,9 @@
 package com.ugarosa.neovim.rpc.event.handler
 
-import com.intellij.openapi.components.service
 import com.ugarosa.neovim.buffer.BufferId
+import com.ugarosa.neovim.buffer.NeovimBufferManager
 import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.type.NeovimPosition
-import com.ugarosa.neovim.session.NeovimSessionManager
 
 data class CursorMoveEvent(
     val bufferId: BufferId,
@@ -19,7 +18,7 @@ fun onCursorMoveEvent(client: NeovimClient) {
         val curswant = params[3].asInt()
         val event = CursorMoveEvent(bufferId, NeovimPosition(line, col, curswant))
 
-        val session = service<NeovimSessionManager>().getSession(bufferId)
-        session.handleCursorMoveEvent(event)
+        val buffer = NeovimBufferManager.findById(bufferId)
+        buffer.handleCursorMoveEvent(event)
     }
 }

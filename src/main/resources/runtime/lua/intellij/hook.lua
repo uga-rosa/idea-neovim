@@ -112,6 +112,7 @@ function M.global_hooks(chan_id)
 	create_exec_action(chan_id)
 end
 
+-- TODO: Separate the buffer and window
 function M.local_hooks(chan_id, buffer_id)
 	local_option_set(chan_id, buffer_id)
 end

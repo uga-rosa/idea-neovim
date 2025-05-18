@@ -1,4 +1,4 @@
-package com.ugarosa.neovim.session.document
+package com.ugarosa.neovim.buffer.document
 
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.command.WriteCommandAction
@@ -13,7 +13,6 @@ import com.ugarosa.neovim.common.ListenerGuard
 import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.mode.getMode
 import com.ugarosa.neovim.rpc.client.NeovimClient
-import com.ugarosa.neovim.rpc.client.api.activateBuffer
 import com.ugarosa.neovim.rpc.client.api.bufferAttach
 import com.ugarosa.neovim.rpc.client.api.bufferSetLines
 import com.ugarosa.neovim.rpc.client.api.bufferSetText
@@ -32,8 +31,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 class NeovimDocumentHandler private constructor(
     private val scope: CoroutineScope,
-    private val editor: Editor,
     private val bufferId: BufferId,
+    private val editor: Editor,
 ) {
     private val logger = myLogger()
     private val client = service<NeovimClient>()
@@ -48,10 +47,10 @@ class NeovimDocumentHandler private constructor(
     companion object {
         suspend fun create(
             scope: CoroutineScope,
-            editor: Editor,
             bufferId: BufferId,
+            editor: Editor,
         ): NeovimDocumentHandler {
-            val handler = NeovimDocumentHandler(scope, editor, bufferId)
+            val handler = NeovimDocumentHandler(scope, bufferId, editor)
             handler.initializeBuffer()
             handler.enableListener()
             return handler
@@ -85,10 +84,6 @@ class NeovimDocumentHandler private constructor(
     private fun enableListener() {
         logger.trace("Enabling document listener for buffer: $bufferId")
         documentListenerGuard.register()
-    }
-
-    suspend fun activateBuffer() {
-        client.activateBuffer(bufferId)
     }
 
     suspend fun applyBufferLinesEvent(e: BufLinesEvent) {

@@ -1,67 +1,105 @@
 package com.ugarosa.neovim.window
 
-import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.fileEditor.ex.FileEditorManagerEx
-import com.intellij.openapi.fileEditor.impl.EditorWindow
+import com.intellij.openapi.components.service
+import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.Splitter
-import com.intellij.ui.tabs.JBTabs
+import com.ugarosa.neovim.buffer.NeovimBufferManager
+import com.ugarosa.neovim.common.focusEditor
 import com.ugarosa.neovim.logger.myLogger
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.awt.Component
-import javax.swing.JPanel
+import com.ugarosa.neovim.rpc.client.NeovimClient
+import com.ugarosa.neovim.rpc.client.api.SplitDirection
+import com.ugarosa.neovim.rpc.client.api.resetWindow
+import com.ugarosa.neovim.rpc.client.api.splitWindow
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicReference
 
 @Service(Service.Level.PROJECT)
 class NeovimWindowManager(
     private val project: Project,
 ) {
     private val logger = myLogger()
+    private val client = service<NeovimClient>()
+    private val bufferManager = project.service<NeovimBufferManager>()
 
-    suspend fun walkSplitLayout() =
-        withContext(Dispatchers.EDT) {
-            val manager = FileEditorManagerEx.getInstanceEx(project)
-            val splitters = manager.splitters
-            val tabsToWindowMap = manager.windows.associateBy { it.tabbedPane.tabs }
-            val layout = extraLayout(splitters, tabsToWindowMap)
-            logger.warn("Layout: $layout")
+    private val prevLayout = AtomicReference<EditorLayout>()
+    private val windowMap = ConcurrentHashMap<WindowId, NeovimWindow>()
+
+    suspend fun syncLayout() {
+        val layout = EditorLayout.Parser.current(project) ?: return
+        if (layout == prevLayout.get()) {
+            onSelected()
+            return
         }
+        prevLayout.set(layout)
 
-    private suspend fun extraLayout(
-        component: Component,
-        tabsToWindowMap: Map<JBTabs, EditorWindow>,
-    ): EditorLayout? {
-        return when (component) {
-            is Splitter -> {
-                val first = extraLayout(component.firstComponent, tabsToWindowMap)
-                val second = extraLayout(component.secondComponent, tabsToWindowMap)
+        logger.warn("Layout changed: $layout")
+        val lastWindowId = client.resetWindow()
+        splitNeovimWindow(layout, lastWindowId)
 
-                if (first == null && second == null) {
-                    null
-                } else if (first == null) {
-                    second
-                } else if (second == null) {
-                    first
-                } else if (component.orientation) {
-                    EditorLayout.HorizontalSplit(first, second)
-                } else {
-                    EditorLayout.VerticalSplit(first, second)
-                }
-            }
+        onSelected()
+    }
 
-            is JBTabs -> {
-                val window = tabsToWindowMap[component] ?: return null
-                EditorLayout.Leaf.fromWindow(window)
-            }
-
-            is JPanel -> {
-                component.components
-                    .mapNotNull { extraLayout(it, tabsToWindowMap) }
-                    .singleOrNull()
-            }
-
-            else -> null
+    private suspend fun onSelected() {
+        focusEditor()?.let { editor ->
+            val buffer = bufferManager.findByEditor(editor)
+            buffer.onSelected()
         }
+    }
+
+    private suspend fun splitNeovimWindow(
+        layout: EditorLayout,
+        windowId: WindowId,
+    ) {
+        when (layout) {
+            is EditorLayout.Leaf.Grid -> {
+                windowMap[windowId] = initializeGrid(windowId, layout.editor)
+            }
+
+            is EditorLayout.Leaf.Diff -> {
+                val rightWindowId = client.splitWindow(windowId, SplitDirection.Right)
+
+                val leftWindow = initializeGrid(windowId, layout.left.editor)
+                val rightWindow = initializeGrid(rightWindowId, layout.right.editor)
+                val diff = NeovimWindow.Diff(leftWindow, rightWindow)
+
+                windowMap[windowId] = diff
+                windowMap[rightWindowId] = diff
+            }
+
+            is EditorLayout.Leaf.Patch -> {
+                val midWindowId = client.splitWindow(windowId, SplitDirection.Right)
+                val rightWindowId = client.splitWindow(midWindowId, SplitDirection.Right)
+
+                val leftWindow = initializeGrid(windowId, layout.left.editor)
+                val midWindow = initializeGrid(midWindowId, layout.mid.editor)
+                val rightWindow = initializeGrid(rightWindowId, layout.right.editor)
+                val patch = NeovimWindow.Patch(leftWindow, midWindow, rightWindow)
+
+                windowMap[windowId] = patch
+                windowMap[midWindowId] = patch
+                windowMap[rightWindowId] = patch
+            }
+
+            is EditorLayout.HorizontalSplit -> {
+                val belowWindowId = client.splitWindow(windowId, SplitDirection.Below)
+                splitNeovimWindow(layout.top, windowId)
+                splitNeovimWindow(layout.bottom, belowWindowId)
+            }
+
+            is EditorLayout.VerticalSplit -> {
+                val rightWindowId = client.splitWindow(windowId, SplitDirection.Right)
+                splitNeovimWindow(layout.left, windowId)
+                splitNeovimWindow(layout.right, rightWindowId)
+            }
+        }
+    }
+
+    private suspend fun initializeGrid(
+        windowId: WindowId,
+        editor: EditorEx,
+    ): NeovimWindow.Grid {
+        val buffer = bufferManager.register(editor, windowId)
+        return NeovimWindow.Grid(windowId, buffer)
     }
 }

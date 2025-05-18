@@ -1,11 +1,12 @@
-package com.ugarosa.neovim.session
+package com.ugarosa.neovim.buffer
 
 import com.intellij.codeInsight.lookup.LookupManager
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
-import com.intellij.openapi.editor.Editor
-import com.ugarosa.neovim.buffer.BufferId
+import com.intellij.openapi.editor.ex.EditorEx
+import com.ugarosa.neovim.buffer.caret.NeovimCaretHandler
+import com.ugarosa.neovim.buffer.document.NeovimDocumentHandler
+import com.ugarosa.neovim.buffer.selection.NeovimSelectionHandler
 import com.ugarosa.neovim.config.neovim.NeovimOptionManager
 import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.mode.NeovimMode
@@ -13,44 +14,40 @@ import com.ugarosa.neovim.mode.getAndSetMode
 import com.ugarosa.neovim.mode.getMode
 import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.client.api.localHooks
+import com.ugarosa.neovim.rpc.client.api.winSetBuf
 import com.ugarosa.neovim.rpc.event.handler.BufLinesEvent
 import com.ugarosa.neovim.rpc.event.handler.CursorMoveEvent
 import com.ugarosa.neovim.rpc.type.NeovimRegion
-import com.ugarosa.neovim.session.cursor.NeovimCursorHandler
-import com.ugarosa.neovim.session.document.NeovimDocumentHandler
-import com.ugarosa.neovim.session.selection.NeovimSelectionHandler
+import com.ugarosa.neovim.window.WindowId
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/**
- * Represents a session of Neovim editor.
- * Manages the interaction between Neovim and the IntelliJ editor.
- * Actual handling of events delegated to specific handlers.
- */
-class NeovimEditorSession private constructor(
-    private val editor: Editor,
+class NeovimBuffer private constructor(
+    private val bufferId: BufferId,
+    private val editor: EditorEx,
     private val documentHandler: NeovimDocumentHandler,
-    private val cursorHandler: NeovimCursorHandler,
+    private val caretHandler: NeovimCaretHandler,
     private val selectionHandler: NeovimSelectionHandler,
 ) {
     private val logger = myLogger()
+    private val client = service<NeovimClient>()
 
     companion object {
         suspend fun create(
             scope: CoroutineScope,
-            editor: Editor,
-            disposable: Disposable,
             bufferId: BufferId,
-        ): NeovimEditorSession {
-            val documentHandler = NeovimDocumentHandler.create(scope, editor, bufferId)
-            val cursorHandler = NeovimCursorHandler.create(scope, editor, disposable, bufferId)
+            editor: EditorEx,
+        ): NeovimBuffer {
+            val documentHandler = NeovimDocumentHandler.create(scope, bufferId, editor)
+            val caretHandler = NeovimCaretHandler.create(scope, bufferId, editor)
             val selectionHandler = NeovimSelectionHandler(editor)
-            val session =
-                NeovimEditorSession(
+            val buffer =
+                NeovimBuffer(
+                    bufferId,
                     editor,
                     documentHandler,
-                    cursorHandler,
+                    caretHandler,
                     selectionHandler,
                 )
 
@@ -60,7 +57,7 @@ class NeovimEditorSession private constructor(
             val client = service<NeovimClient>()
             client.localHooks(bufferId)
 
-            return session
+            return buffer
         }
     }
 
@@ -69,7 +66,7 @@ class NeovimEditorSession private constructor(
     }
 
     suspend fun handleCursorMoveEvent(event: CursorMoveEvent) {
-        cursorHandler.syncNeovimToIdea(event)
+        caretHandler.syncNeovimToIdea(event)
     }
 
     suspend fun handleModeChangeEvent(mode: NeovimMode) {
@@ -77,17 +74,17 @@ class NeovimEditorSession private constructor(
 
         val oldMode = getAndSetMode(mode)
 
-        cursorHandler.changeCursorShape(oldMode, mode)
+        caretHandler.changeCursorShape(oldMode, mode)
 
         if (mode.isInsert()) {
-            cursorHandler.disableCursorListener()
+            caretHandler.disableCaretListener()
         } else {
             // Close completion popup
             withContext(Dispatchers.EDT) {
                 LookupManager.getActiveLookup(editor)
                     ?.hideLookup(true)
             }
-            cursorHandler.enableCursorListener()
+            caretHandler.enableCaretListener()
         }
 
         if (!mode.isVisualOrSelect()) {
@@ -99,11 +96,15 @@ class NeovimEditorSession private constructor(
         selectionHandler.applyVisualSelectionEvent(regions)
     }
 
-    suspend fun activateBuffer() {
-        documentHandler.activateBuffer()
-        cursorHandler.syncIdeaToNeovim()
+    suspend fun setWindow(windowId: WindowId) {
+        client.winSetBuf(windowId, bufferId)
+        caretHandler.setWindow(windowId)
+    }
+
+    suspend fun onSelected() {
+        caretHandler.syncIdeaToNeovim()
         val mode = getMode()
-        cursorHandler.changeCursorShape(mode, mode)
+        caretHandler.changeCursorShape(mode, mode)
     }
 
     suspend fun changeModifiable() {

@@ -1,9 +1,8 @@
 package com.ugarosa.neovim.rpc.event.handler
 
-import com.intellij.openapi.components.service
+import com.ugarosa.neovim.buffer.NeovimBufferManager
 import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.type.NeovimRegion
-import com.ugarosa.neovim.session.NeovimSessionManager
 
 fun onVisualSelectionEvent(client: NeovimClient) {
     client.register("nvim_visual_selection_event") { params ->
@@ -17,7 +16,7 @@ fun onVisualSelectionEvent(client: NeovimClient) {
                 NeovimRegion(row, startColumn, endColumn)
             }
 
-        val session = service<NeovimSessionManager>().getSession(bufferId)
-        session.handleVisualSelectionEvent(regions)
+        val buffer = NeovimBufferManager.findById(bufferId)
+        buffer.handleVisualSelectionEvent(regions)
     }
 }
