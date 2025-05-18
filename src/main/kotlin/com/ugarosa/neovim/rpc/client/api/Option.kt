@@ -15,13 +15,13 @@ suspend fun NeovimClient.setFiletype(
     bufferId: BufferId,
     path: String,
 ) {
-    execLuaNotify("option", "set_filetype", listOf(bufferId, path))
+    execLua("option", "set_filetype", listOf(bufferId, path))
 }
 
 suspend fun NeovimClient.modifiable(bufferId: BufferId) {
-    execLuaNotify("option", "set_writable", listOf(bufferId))
+    execLua("option", "set_writable", listOf(bufferId))
 }
 
 suspend fun NeovimClient.noModifiable(bufferId: BufferId) {
-    execLuaNotify("option", "set_no_writable", listOf(bufferId))
+    execLua("option", "set_no_writable", listOf(bufferId))
 }

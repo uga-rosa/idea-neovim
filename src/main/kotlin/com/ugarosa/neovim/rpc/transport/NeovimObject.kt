@@ -2,7 +2,7 @@ package com.ugarosa.neovim.rpc.transport
 
 import com.ugarosa.neovim.buffer.BufferId
 import com.ugarosa.neovim.rpc.type.TabpageId
-import com.ugarosa.neovim.window.WindowId
+import com.ugarosa.neovim.rpc.type.WindowId
 
 /**
  * Response object from Neovim. :h api-types
@@ -95,13 +95,7 @@ sealed class NeovimObject() {
             else -> error("Cannot convert $this to BufferId")
         }
 
-    fun asWindowId(): WindowId =
-        when (this) {
-            is Window -> WindowId(long)
-            // My custom event sends windowId as just an Int64
-            is Int64 -> WindowId(long)
-            else -> error("Cannot convert $this to WindowId")
-        }
+    fun asWindowId(): WindowId = WindowId((this as Window).long)
 
     fun asTabpageId(): TabpageId = TabpageId((this as Tabpage).long)
 

@@ -44,5 +44,5 @@ suspend fun NeovimClient.bufferSetText(
 }
 
 suspend fun NeovimClient.bufferAttach(bufferId: BufferId) {
-    notify("nvim_buf_attach", listOf(bufferId, false, mapOf<String, Any>()))
+    request("nvim_buf_attach", listOf(bufferId, false, mapOf<String, Any>()))
 }

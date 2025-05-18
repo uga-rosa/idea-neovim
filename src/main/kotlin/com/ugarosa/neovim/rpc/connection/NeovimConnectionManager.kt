@@ -40,7 +40,7 @@ class NeovimConnectionManager(
                 while (isActive) {
                     when (val msg = transport.receive()) {
                         is RpcMessage.Response -> {
-                            logger.trace("Received response: $msg")
+                            logger.trace("Received response [${msg.id}]: $msg")
                             pending.remove(msg.id)?.complete(msg)
                         }
 
@@ -66,10 +66,10 @@ class NeovimConnectionManager(
         method: String,
         params: List<Any?>,
     ): NeovimObject {
-        logger.trace("Request: $method, params: $params")
         val id = msgIdGen.getAndIncrement()
         val deferred = CompletableDeferred<RpcMessage.Response>()
         pending[id] = deferred
+        logger.trace("Request [$id]: $method, params: $params")
 
         sendMutex.withLock {
             transport.sendRequest(id, method, params)

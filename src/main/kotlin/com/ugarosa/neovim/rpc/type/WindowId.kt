@@ -1,4 +1,4 @@
-package com.ugarosa.neovim.window
+package com.ugarosa.neovim.rpc.type
 
 @JvmInline
 value class WindowId(val id: Long)

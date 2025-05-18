@@ -18,14 +18,12 @@ import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.client.api.setCursor
 import com.ugarosa.neovim.rpc.event.handler.CursorMoveEvent
 import com.ugarosa.neovim.rpc.type.NeovimPosition
-import com.ugarosa.neovim.window.WindowId
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.concurrent.atomic.AtomicReference
 
-class NeovimCaretHandler private constructor(
+class NeovimCursorHandler private constructor(
     private val scope: CoroutineScope,
     private val bufferId: BufferId,
     private val editor: EditorEx,
@@ -36,20 +34,19 @@ class NeovimCaretHandler private constructor(
     private val optionManager = service<NeovimOptionManager>()
     private val caretListenerGuard =
         ListenerGuard(
-            NeovimCaretListener(this),
+            NeovimCursorListener(this),
             { editor.caretModel.addCaretListener(it) },
             { editor.caretModel.removeCaretListener(it) },
         )
-    private val windowId = AtomicReference<WindowId>()
 
     companion object {
         suspend fun create(
             scope: CoroutineScope,
             bufferId: BufferId,
             editor: EditorEx,
-        ): NeovimCaretHandler {
+        ): NeovimCursorHandler {
             val fontSize = FontSize.fromEditorEx(editor)
-            val handler = NeovimCaretHandler(scope, bufferId, editor, fontSize)
+            val handler = NeovimCursorHandler(scope, bufferId, editor, fontSize)
             handler.enableCaretListener()
             return handler
         }
@@ -63,10 +60,6 @@ class NeovimCaretHandler private constructor(
     fun disableCaretListener() {
         logger.trace("Disabling cursor listener for buffer: $bufferId")
         caretListenerGuard.unregister()
-    }
-
-    fun setWindow(windowId: WindowId) {
-        this.windowId.set(windowId)
     }
 
     suspend fun syncNeovimToIdea(event: CursorMoveEvent) =
@@ -258,14 +251,13 @@ class NeovimCaretHandler private constructor(
     }
 
     fun syncIdeaToNeovim(position: NeovimPosition? = null) {
-        val windowId = this.windowId.get() ?: error("Buffer $bufferId is not set to a window")
         scope.launch {
             val pos =
                 position ?: withContext(Dispatchers.EDT) {
                     val offset = editor.caretModel.offset
                     NeovimPosition.fromOffset(offset, editor.document)
                 }
-            client.setCursor(windowId, pos)
+            client.setCursor(bufferId, pos)
         }
     }
 

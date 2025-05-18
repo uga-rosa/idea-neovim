@@ -2,6 +2,7 @@ package com.ugarosa.neovim.startup
 
 import com.intellij.ide.AppLifecycleListener
 import com.intellij.openapi.components.service
+import com.ugarosa.neovim.buffer.NeovimBufferManager
 import com.ugarosa.neovim.config.neovim.NeovimOptionManager
 import com.ugarosa.neovim.keymap.router.NeovimKeyRouter
 import com.ugarosa.neovim.logger.myLogger
@@ -25,6 +26,7 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
 
     // Hooks that should be called only once at application startup.
     override fun appFrameCreated(commandLineArgs: List<String>) {
+        service<NeovimBufferManager>().listenEditorFactory()
         registerNotificationHandlers()
         initialize()
     }
