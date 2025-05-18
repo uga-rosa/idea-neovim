@@ -36,8 +36,8 @@ class NeovimMessageManager {
     suspend fun handleMessageEvent(event: MessageEvent) =
         withContext(Dispatchers.EDT) {
             val project = focusProject() ?: return@withContext
-            val livePane = project.service<MessageLivePane>()
-            val historyPane = project.service<MessageHistoryPane>()
+            val livePane = project.service<MessageLiveView>()
+            val historyPane = project.service<MessageHistoryView>()
 
             logger.trace("Handling message event: $event")
 

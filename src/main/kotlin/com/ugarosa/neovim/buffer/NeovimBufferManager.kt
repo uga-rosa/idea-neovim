@@ -8,6 +8,7 @@ import com.intellij.openapi.editor.event.EditorFactoryEvent
 import com.intellij.openapi.editor.event.EditorFactoryListener
 import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.util.Disposer
+import com.ugarosa.neovim.common.isCustomEditor
 import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.client.api.createBuffer
 import kotlinx.coroutines.CompletableDeferred
@@ -27,6 +28,7 @@ class NeovimBufferManager(
             object : EditorFactoryListener {
                 override fun editorCreated(event: EditorFactoryEvent) {
                     val editor = event.editor as? EditorEx ?: return
+                    if (isCustomEditor(editor)) return
                     scope.launch { register(editor) }
                 }
 

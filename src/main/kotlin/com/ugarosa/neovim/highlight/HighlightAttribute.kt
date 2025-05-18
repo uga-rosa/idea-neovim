@@ -1,7 +1,10 @@
 package com.ugarosa.neovim.highlight
 
+import com.intellij.openapi.editor.markup.EffectType
+import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.ui.JBColor
 import java.awt.Color
+import java.awt.Font
 import javax.swing.text.AttributeSet
 import javax.swing.text.SimpleAttributeSet
 import javax.swing.text.StyleConstants
@@ -9,7 +12,7 @@ import javax.swing.text.StyleConstants
 data class HighlightAttribute(
     val foreground: Color? = null,
     val background: Color? = null,
-    val special: String? = null,
+    val special: Color? = null,
     val reverse: Boolean = false,
     val italic: Boolean = false,
     val bold: Boolean = false,
@@ -25,7 +28,7 @@ data class HighlightAttribute(
             return HighlightAttribute(
                 foreground = (map["foreground"] as? Int)?.let { newColor(it) },
                 background = (map["background"] as? Int)?.let { newColor(it) },
-                special = map["special"] as? String,
+                special = (map["special"] as? Int)?.let { newColor(it) },
                 reverse = map["reverse"] as? Boolean ?: false,
                 italic = map["italic"] as? Boolean ?: false,
                 bold = map["bold"] as? Boolean ?: false,
@@ -65,4 +68,38 @@ data class HighlightAttribute(
             if (underdotted) StyleConstants.setUnderline(this, true)
             if (underdashed) StyleConstants.setUnderline(this, true)
         }
+
+    fun toTextAttributes(): TextAttributes {
+        val attrs = TextAttributes()
+
+        foreground?.let { attrs.foregroundColor = it }
+        background?.let { attrs.backgroundColor = it }
+
+        // You can merge multiple styles using bitwise OR
+        var fontType = Font.PLAIN
+        if (bold) fontType = fontType or Font.BOLD
+        if (italic) fontType = fontType or Font.ITALIC
+        attrs.fontType = fontType
+
+        special?.let { attrs.effectColor = it }
+
+        attrs.effectType =
+            when {
+                strikethrough -> EffectType.STRIKEOUT
+                underline -> EffectType.LINE_UNDERSCORE
+                undercurl -> EffectType.WAVE_UNDERSCORE
+                underdouble -> EffectType.LINE_UNDERSCORE
+                underdotted -> EffectType.BOLD_DOTTED_LINE
+                underdashed -> EffectType.BOLD_LINE_UNDERSCORE
+                else -> null
+            }
+
+        if (reverse) {
+            val fg = attrs.foregroundColor
+            attrs.foregroundColor = attrs.backgroundColor
+            attrs.backgroundColor = fg
+        }
+
+        return attrs
+    }
 }
