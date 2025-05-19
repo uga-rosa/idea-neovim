@@ -5,13 +5,16 @@ import com.intellij.ui.JBColor
 
 @Service(Service.Level.APP)
 class NeovimHighlightManager {
+    val defaultForeground = JBColor.foreground()
+    val defaultBackground = JBColor.background()
+
     private val define = mutableMapOf<Int, HighlightAttribute>()
 
     init {
         define[0] =
             HighlightAttribute(
-                foreground = JBColor.foreground(),
-                background = JBColor.background(),
+                foreground = defaultForeground,
+                background = defaultBackground,
             )
     }
 
@@ -24,11 +27,10 @@ class NeovimHighlightManager {
     }
 
     fun get(attrId: Int): HighlightAttribute {
-        val default = define[0] ?: error("Default highlight not set")
         val highlight = define[attrId] ?: error("Highlight $attrId not defined")
         return highlight.copy(
-            foreground = highlight.foreground ?: default.foreground,
-            background = highlight.background ?: default.background,
+            foreground = highlight.foreground ?: defaultForeground,
+            background = highlight.background ?: defaultBackground,
         )
     }
 }

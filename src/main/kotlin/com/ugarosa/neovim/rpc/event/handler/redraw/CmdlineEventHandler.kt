@@ -1,15 +1,23 @@
 package com.ugarosa.neovim.rpc.event.handler.redraw
 
+import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
 import com.ugarosa.neovim.cmdline.CmdChunk
 import com.ugarosa.neovim.cmdline.CmdlineEvent
 import com.ugarosa.neovim.cmdline.NeovimCmdlineManager
+import com.ugarosa.neovim.common.focusProject
 import com.ugarosa.neovim.rpc.event.handler.RedrawEvent
 import com.ugarosa.neovim.rpc.transport.NeovimObject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 suspend fun onCmdlineEvent(redraw: RedrawEvent) {
     maybeCmdlineEvent(redraw)?.let { event ->
-        service<NeovimCmdlineManager>().handleEvent(event)
+        val cmdlineManager =
+            withContext(Dispatchers.EDT) {
+                focusProject()?.service<NeovimCmdlineManager>()
+            } ?: return
+        cmdlineManager.handleEvent(event)
     }
 }
 
@@ -24,6 +32,7 @@ fun maybeCmdlineEvent(redraw: RedrawEvent): CmdlineEvent? {
                 redraw.param[3].asString(),
                 redraw.param[4].asInt(),
                 redraw.param[5].asInt(),
+                redraw.param[6].asInt(),
             )
         }
 

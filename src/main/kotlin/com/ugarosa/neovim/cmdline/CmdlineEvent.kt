@@ -9,6 +9,8 @@ sealed interface CmdlineEvent {
         val prompt: String,
         val indent: Int,
         val level: Int,
+        // used for prompt
+        val hlId: Int,
     ) : CmdlineEvent
 
     data class Pos(val pos: Int, val level: Int) : CmdlineEvent

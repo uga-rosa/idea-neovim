@@ -4,6 +4,7 @@ import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.JBPopup
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.openapi.ui.popup.JBPopupListener
@@ -21,15 +22,22 @@ import kotlinx.coroutines.withContext
 import java.awt.Dimension
 import java.awt.Point
 
-@Service(Service.Level.APP)
+@Service(Service.Level.PROJECT)
 class NeovimCmdlineManager(
+    project: Project,
     private val scope: CoroutineScope,
 ) {
     private val logger = myLogger()
     private val client = service<NeovimClient>()
 
     private var popup: JBPopup? = null
-    private val pane = CmdlineTextPane()
+    private lateinit var view: CmdlineView
+
+    init {
+        scope.launch(Dispatchers.EDT) {
+            view = project.service<CmdlineView>()
+        }
+    }
 
     suspend fun handleEvent(event: CmdlineEvent) {
         val editor =
@@ -42,19 +50,19 @@ class NeovimCmdlineManager(
         logger.trace("Handling CmdlineEvent: $event")
         withContext(Dispatchers.EDT) {
             when (event) {
-                is CmdlineEvent.Show -> pane.updateModel(show = event)
-                is CmdlineEvent.Pos -> pane.updateModel(pos = event.pos)
-                is CmdlineEvent.SpecialChar -> pane.updateModel(specialChar = event.c)
-                is CmdlineEvent.Hide -> pane.clearSingle()
-                is CmdlineEvent.BlockShow -> pane.updateModel(blockShow = event.lines)
-                is CmdlineEvent.BlockAppend -> pane.updateModel(blockAppend = event.line)
-                is CmdlineEvent.BlockHide -> pane.clearBlock()
+                is CmdlineEvent.Show -> view.updateModel(show = event)
+                is CmdlineEvent.Pos -> view.updateModel(pos = event.pos)
+                is CmdlineEvent.SpecialChar -> view.updateModel(specialChar = event.c)
+                is CmdlineEvent.Hide -> view.clearSingle()
+                is CmdlineEvent.BlockShow -> view.updateModel(blockShow = event.lines)
+                is CmdlineEvent.BlockAppend -> view.updateModel(blockAppend = event.line)
+                is CmdlineEvent.BlockHide -> view.clearBlock()
                 is CmdlineEvent.Flush -> {
-                    if (pane.isHidden()) {
+                    if (view.isHidden()) {
                         logger.trace("Cmdline is hidden, not showing popup: $event")
                         destroy()
                     } else {
-                        pane.flush()
+                        view.flush()
                         if (popup == null || popup!!.isDisposed) {
                             logger.trace("Cmdline is shown, creating popup: $event")
                             showPopup(editor)
@@ -68,29 +76,31 @@ class NeovimCmdlineManager(
         }
     }
 
-    suspend fun destroy() =
+    private suspend fun destroy() =
         withContext(Dispatchers.EDT) {
-            pane.reset()
+            view.reset()
             popup?.cancel()
             popup = null
         }
 
     private fun showPopup(editor: Editor) {
-        val (loc, size) = centerLocationAndSize(editor)
+        val (loc, size) = bottomLocationAndSize(editor)
         popup =
             JBPopupFactory.getInstance()
-                .createComponentPopupBuilder(pane, null)
+                .createComponentPopupBuilder(view.component, null)
                 .setResizable(true)
                 .setMovable(false)
                 .setFocusable(false)
                 .setRequestFocus(false)
+                .setShowBorder(false)
+                .setShowShadow(false)
                 .setMinSize(size)
+                .addListener(PopupCloseListener(scope, client))
                 .createPopup()
                 .apply {
-                    addListener(PopupCloseListener(scope, client))
+                    this.size = size
+                    show(RelativePoint(editor.component, loc))
                 }
-
-        popup?.show(RelativePoint(editor.component, loc))
     }
 
     private class PopupCloseListener(
@@ -107,18 +117,20 @@ class NeovimCmdlineManager(
     }
 
     private fun resize(editor: Editor) {
-        popup?.size = pane.preferredSize
-        val (_, size) = centerLocationAndSize(editor)
-        popup?.size = size
+        val (loc, size) = bottomLocationAndSize(editor)
+        popup?.apply {
+            this.size = size
+            this.setLocation(RelativePoint(editor.component, loc).screenPoint)
+        }
     }
 
-    private fun centerLocationAndSize(editor: Editor): Pair<Point, Dimension> {
-        val component = editor.component
-        val pref = pane.preferredSize
-        val width = (component.width * 0.8).toInt().coerceAtLeast(pref.width)
-        val height = pref.height
-        val x = (component.width - width) / 2
-        val y = (component.height - height) / 2
+    private fun bottomLocationAndSize(editor: Editor): Pair<Point, Dimension> {
+        val width = editor.component.width
+        val height = view.getHeight()
+
+        val x = 0
+        val y = editor.component.height - height
+
         return Point(x, y) to Dimension(width, height)
     }
 }
