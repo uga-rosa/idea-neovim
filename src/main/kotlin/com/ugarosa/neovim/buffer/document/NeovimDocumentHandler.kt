@@ -88,10 +88,6 @@ class NeovimDocumentHandler private constructor(
     }
 
     suspend fun applyBufferLinesEvent(e: BufLinesEvent) {
-        if (getMode().isInsert()) {
-            logger.trace("Ignore event in insert mode: $e")
-            return
-        }
         if (ignoreChangedTicks.remove(e.changedTick)) {
             logger.trace("Ignore event by changed tick: $e")
             return
