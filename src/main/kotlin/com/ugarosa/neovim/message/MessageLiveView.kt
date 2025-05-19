@@ -1,6 +1,6 @@
 package com.ugarosa.neovim.message
 
-import com.intellij.openapi.application.runWriteAction
+import com.intellij.openapi.application.runUndoTransparentWriteAction
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.editor.markup.HighlighterLayer
 import com.intellij.openapi.editor.markup.HighlighterTargetArea
@@ -53,7 +53,7 @@ class MessageLiveView(
         if (!isDirty) return false
         isDirty = false
 
-        runWriteAction {
+        runUndoTransparentWriteAction {
             // Set the text. It replaces the whole document.
             val text = chunks.joinToString("\n") { it.text }
             document.setText(text)

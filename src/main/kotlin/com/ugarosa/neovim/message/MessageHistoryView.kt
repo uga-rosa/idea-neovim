@@ -1,6 +1,6 @@
 package com.ugarosa.neovim.message
 
-import com.intellij.openapi.application.runWriteAction
+import com.intellij.openapi.application.runUndoTransparentWriteAction
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.editor.markup.HighlighterLayer
 import com.intellij.openapi.editor.markup.HighlighterTargetArea
@@ -21,7 +21,7 @@ class MessageHistoryView(
     fun updateHistory(show: MessageEvent.Show) {
         if (!show.history) return
 
-        runWriteAction {
+        runUndoTransparentWriteAction {
             val markup = editor.markupModel
 
             if (document.textLength > 0) {

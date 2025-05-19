@@ -28,10 +28,10 @@ class OverlayIcon(
         x: Int,
         y: Int,
     ) {
-        // 1) draw the base icon
+        // draw the base icon
         base.paintIcon(c, g, x, y)
 
-        // 2) decide where to draw the badge
+        // decide where to draw the badge
         val bx =
             when (corner) {
                 Corner.TOP_LEFT, Corner.BOTTOM_LEFT -> x + padding
@@ -43,7 +43,7 @@ class OverlayIcon(
                 Corner.BOTTOM_LEFT, Corner.BOTTOM_RIGHT -> y + base.iconHeight - badge.iconHeight - padding
             }
 
-        // 3) draw the badge
+        // draw the badge
         badge.paintIcon(c, g, bx, by)
     }
 
