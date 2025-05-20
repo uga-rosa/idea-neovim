@@ -58,18 +58,18 @@ class NeovimCmdlineManager(
                 is CmdlineEvent.BlockAppend -> view.updateModel(blockAppend = event.line)
                 is CmdlineEvent.BlockHide -> view.clearBlock()
                 is CmdlineEvent.Flush -> {
+                    // No change in model
+                    if (!view.flush()) return@withContext
+
                     if (view.isHidden()) {
                         logger.trace("Cmdline is hidden, not showing popup: $event")
                         destroy()
+                    } else if (popup == null || popup!!.isDisposed) {
+                        logger.trace("Cmdline is shown, creating popup: $event")
+                        showPopup(editor)
                     } else {
-                        view.flush()
-                        if (popup == null || popup!!.isDisposed) {
-                            logger.trace("Cmdline is shown, creating popup: $event")
-                            showPopup(editor)
-                        } else {
-                            logger.trace("Cmdline is shown, updating popup: $event")
-                            resize(editor)
-                        }
+                        logger.trace("Cmdline is shown, updating popup: $event")
+                        resize(editor)
                     }
                 }
             }
@@ -78,7 +78,6 @@ class NeovimCmdlineManager(
 
     private suspend fun destroy() =
         withContext(Dispatchers.EDT) {
-            view.reset()
             popup?.cancel()
             popup = null
         }

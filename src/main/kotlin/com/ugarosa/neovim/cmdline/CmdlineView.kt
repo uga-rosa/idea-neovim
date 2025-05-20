@@ -1,7 +1,6 @@
 package com.ugarosa.neovim.cmdline
 
 import com.intellij.openapi.application.runUndoTransparentWriteAction
-import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.markup.HighlighterLayer
@@ -22,6 +21,7 @@ class CmdlineView(
     private var show: CmdlineEvent.Show = emptyShow
     private var specialChar: String = ""
     private var blockLines: MutableList<List<CmdChunk>> = mutableListOf()
+    private var isDirty = false
 
     fun updateModel(
         show: CmdlineEvent.Show? = null,
@@ -47,31 +47,26 @@ class CmdlineView(
         blockAppend?.let {
             blockLines.add(it)
         }
+        isDirty = true
     }
 
     fun clearSingle() {
         show = emptyShow
         specialChar = ""
+        isDirty = true
     }
 
     fun clearBlock() {
         blockLines = mutableListOf()
+        isDirty = true
     }
 
-    fun reset() {
-        clearSingle()
-        clearBlock()
-        runWriteAction {
-            document.setText("")
-            editor.markupModel.removeAllHighlighters()
-        }
-    }
+    fun isHidden(): Boolean = show.level == 0
 
-    fun isHidden(): Boolean {
-        return show.level == 0
-    }
+    fun flush(): Boolean {
+        if (!isDirty) return false
+        isDirty = false
 
-    fun flush() {
         logger.trace("Flushing CmdlinePane: show=$show, specialChar=$specialChar, blockLines=$blockLines")
 
         runUndoTransparentWriteAction {
@@ -92,6 +87,7 @@ class CmdlineView(
 
             drawFakeCaret()
         }
+        return true
     }
 
     private fun Document.insertLine(

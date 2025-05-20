@@ -29,14 +29,13 @@ class MessageLiveView(
                 this.chunks.clear()
             }
             this.chunks.addAll(it.content)
-            isDirty = true
         }
         history?.let { it ->
             this.kind = MessageKind.History
             this.chunks.clear()
             this.chunks.addAll(it.entries.flatMap { it.content })
-            isDirty = true
         }
+        isDirty = true
     }
 
     fun clear() {
