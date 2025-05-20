@@ -2,15 +2,19 @@ package com.ugarosa.neovim.keymap.router
 
 import com.intellij.ide.IdeEventQueue
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.editor.actionSystem.TypedAction
+import com.intellij.openapi.editor.ex.EditorEx
 import com.ugarosa.neovim.action.NeovimActionManager
 import com.ugarosa.neovim.config.idea.KeyMappingAction
 import com.ugarosa.neovim.config.idea.NeovimKeymapSettings
 import com.ugarosa.neovim.keymap.dispatcher.NeovimKeyEventDispatcher
 import com.ugarosa.neovim.keymap.notation.NeovimKeyNotation
 import com.ugarosa.neovim.logger.myLogger
+import com.ugarosa.neovim.mode.NeovimMode
 import com.ugarosa.neovim.mode.getMode
 import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.client.api.input
@@ -44,7 +48,7 @@ class NeovimKeyRouter(
 
     fun enqueueKey(
         key: NeovimKeyNotation,
-        editor: Editor?,
+        editor: EditorEx,
     ): Boolean {
         // If the editor is different, clear the buffer
         val oldEditor = currentEditor.getAndUpdate { if (it == editor) it else editor }
@@ -57,7 +61,7 @@ class NeovimKeyRouter(
         return processBuffer(editor)
     }
 
-    private fun processBuffer(editor: Editor?): Boolean {
+    private fun processBuffer(editor: EditorEx): Boolean {
         val mode = getMode()
         val snapshot = buffer.toList()
 
@@ -75,16 +79,7 @@ class NeovimKeyRouter(
             // No match found.
             prefixMatches.isEmpty() -> {
                 buffer.clear()
-                // Don't consume the key if the mode is insert-mode
-                if (mode.isInsert()) {
-                    logger.trace("No match found, but in insert mode: $mode")
-                    return false
-                }
-                scope.launch {
-                    logger.trace("No match found, sending keys to Neovim: $snapshot")
-                    client.input(snapshot.joinToString(separator = ""))
-                }
-                return true
+                return fallback(snapshot, editor, mode)
             }
 
             // Exact match found.
@@ -105,9 +100,38 @@ class NeovimKeyRouter(
         }
     }
 
+    private fun fallback(
+        keys: List<NeovimKeyNotation>,
+        editor: EditorEx,
+        mode: NeovimMode,
+    ): Boolean {
+        if (mode.isInsert()) {
+            // Don't consume the key if the mode is insert-mode
+            logger.trace("Fallback to IDEA: $keys")
+            runWriteAction {
+                keys.dropLast(1)
+                    .mapNotNull { it.toPrintableChar() }
+                    .forEach { char ->
+                        TypedAction.getInstance().handler.execute(
+                            editor,
+                            char,
+                            editor.dataContext,
+                        )
+                    }
+            }
+            return false
+        } else {
+            logger.trace("Fallback to Neovim: $keys")
+            scope.launch {
+                client.input(keys.joinToString(""))
+            }
+            return true
+        }
+    }
+
     private suspend fun executeRhs(
         actions: List<KeyMappingAction>,
-        editor: Editor?,
+        editor: EditorEx,
     ) {
         actions.forEach { action ->
             when (action) {

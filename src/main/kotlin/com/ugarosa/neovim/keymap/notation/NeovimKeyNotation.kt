@@ -37,10 +37,7 @@ data class NeovimKeyNotation(
             supportedKeys.associate { it.awtKeyCode to it.neovimName }
 
         fun fromKeyPressedEvent(event: KeyEvent): NeovimKeyNotation? {
-            if (event.id != KeyEvent.KEY_PRESSED) {
-                logger.warn("Not a KEY_PRESSED event: $event")
-                return null
-            }
+            check(event.id == KeyEvent.KEY_PRESSED) { "Not a KEY_PRESSED event: $event" }
 
             val modifiers =
                 mutableListOf<NeovimKeyModifier>().apply {
@@ -59,10 +56,8 @@ data class NeovimKeyNotation(
         }
 
         fun fromKeyTypedEvent(event: KeyEvent): NeovimKeyNotation? {
-            if (event.id == KeyEvent.KEY_PRESSED) {
-                logger.warn("Not a KEY_TYPED event: $event")
-                return null
-            }
+            check(event.id == KeyEvent.KEY_TYPED) { "Not a KEY_TYPED event: $event" }
+
             val c = event.keyChar
             if (c == KeyEvent.CHAR_UNDEFINED || c.isISOControl()) {
                 logger.trace("Not a printable character: $event")
@@ -132,6 +127,18 @@ data class NeovimKeyNotation(
                 return NeovimKeyNotation(emptyList(), text)
             }
         }
+    }
+
+    fun toPrintableChar(): Char? {
+        if (modifiers.isNotEmpty()) {
+            logger.debug("Cannot convert to printable char: $this")
+            return null
+        }
+        if (key.length != 1) {
+            logger.debug("Cannot convert to printable char: $this")
+            return null
+        }
+        return key[0]
     }
 
     /**
