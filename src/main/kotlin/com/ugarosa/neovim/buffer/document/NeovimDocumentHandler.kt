@@ -26,12 +26,13 @@ import com.ugarosa.neovim.rpc.event.handler.BufLinesEvent
 import com.ugarosa.neovim.rpc.type.NeovimPosition
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentHashMap
 
 class NeovimDocumentHandler private constructor(
-    private val scope: CoroutineScope,
+    scope: CoroutineScope,
     private val bufferId: BufferId,
     private val editor: Editor,
 ) : Disposable {
@@ -44,6 +45,28 @@ class NeovimDocumentHandler private constructor(
             { editor.document.removeDocumentListener(it) },
         )
     private val ignoreChangedTicks = ConcurrentHashMap.newKeySet<Long>()
+
+    private val docChangeChannel = Channel<DocChange>(Channel.UNLIMITED)
+
+    init {
+        scope.launch {
+            for (docChange in docChangeChannel) {
+                client.changedTick(bufferId)
+                    .also { ignoreChangedTicks.add(it + 1) }
+                when (docChange) {
+                    is DocChange.Input -> client.input(docChange.text)
+
+                    is DocChange.SetText ->
+                        client.bufferSetText(
+                            bufferId,
+                            docChange.start,
+                            docChange.end,
+                            docChange.replacement,
+                        )
+                }
+            }
+        }
+    }
 
     companion object {
         suspend fun create(
@@ -212,11 +235,8 @@ class NeovimDocumentHandler private constructor(
         val deleteStr = beforeDeleteStr.repeat(beforeDelete) + afterDeleteStr.repeat(afterDelete)
         val insertStr = event.newFragment.toString()
 
-        scope.launch {
-            client.changedTick(bufferId)
-                .also { ignoreChangedTicks.add(it + 1) }
-            client.input(deleteStr + insertStr)
-        }
+        val change = DocChange.Input(deleteStr + insertStr)
+        docChangeChannel.trySend(change)
     }
 
     // Apply multiline text change
@@ -229,11 +249,8 @@ class NeovimDocumentHandler private constructor(
                 .replace("\r\n", "\n")
                 .split("\n")
 
-        scope.launch {
-            client.changedTick(bufferId)
-                .also { ignoreChangedTicks.add(it + 1) }
-            client.bufferSetText(bufferId, start, end, replacement)
-        }
+        val change = DocChange.SetText(start, end, replacement)
+        docChangeChannel.trySend(change)
     }
 
     override fun dispose() {
