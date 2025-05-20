@@ -2,6 +2,7 @@ package com.ugarosa.neovim.buffer.cursor
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.EDT
+import com.intellij.openapi.application.runUndoTransparentWriteAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.util.TextRange
@@ -85,10 +86,12 @@ class NeovimCursorHandler private constructor(
                 // LogicalPosition does not strictly match the number of characters, such as counting a hard tab as
                 // multiple characters. Since it is difficult to calculate the appropriate position considering this, a
                 // simpler and more accurate offset is used instead.
-                editor.caretModel.moveToOffset(adjustedOffset)
-                val pos = editor.offsetToLogicalPosition(adjustedOffset)
-                scrollLineIntoView(pos.line, scrolloff)
-                scrollColumnIntoView(pos.column, sidescrolloff)
+                runUndoTransparentWriteAction {
+                    editor.caretModel.moveToOffset(adjustedOffset)
+                    val pos = editor.offsetToLogicalPosition(adjustedOffset)
+                    scrollLineIntoView(pos.line, scrolloff)
+                    scrollColumnIntoView(pos.column, sidescrolloff)
+                }
             }
 
             if (adjustedOffset != rawOffset) {
