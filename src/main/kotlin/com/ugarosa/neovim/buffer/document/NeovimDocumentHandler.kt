@@ -26,8 +26,9 @@ import com.ugarosa.neovim.rpc.event.handler.BufLinesEvent
 import com.ugarosa.neovim.rpc.type.NeovimPosition
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.channels.actor
 import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentHashMap
 
@@ -46,16 +47,14 @@ class NeovimDocumentHandler private constructor(
         )
     private val ignoreChangedTicks = ConcurrentHashMap.newKeySet<Long>()
 
-    private val docChangeChannel = Channel<DocChange>(Channel.UNLIMITED)
-
-    init {
-        scope.launch {
-            for (docChange in docChangeChannel) {
+    @OptIn(ObsoleteCoroutinesApi::class)
+    private val docChangeActor =
+        scope.actor<DocChange>(capacity = Channel.UNLIMITED) {
+            for (docChange in channel) {
                 client.changedTick(bufferId)
                     .also { ignoreChangedTicks.add(it + 1) }
                 when (docChange) {
                     is DocChange.Input -> client.input(docChange.text)
-
                     is DocChange.SetText ->
                         client.bufferSetText(
                             bufferId,
@@ -66,7 +65,6 @@ class NeovimDocumentHandler private constructor(
                 }
             }
         }
-    }
 
     companion object {
         suspend fun create(
@@ -236,7 +234,7 @@ class NeovimDocumentHandler private constructor(
         val insertStr = event.newFragment.toString()
 
         val change = DocChange.Input(deleteStr + insertStr)
-        docChangeChannel.trySend(change)
+        docChangeActor.trySend(change)
     }
 
     // Apply multiline text change
@@ -250,7 +248,7 @@ class NeovimDocumentHandler private constructor(
                 .split("\n")
 
         val change = DocChange.SetText(start, end, replacement)
-        docChangeChannel.trySend(change)
+        docChangeActor.trySend(change)
     }
 
     override fun dispose() {
