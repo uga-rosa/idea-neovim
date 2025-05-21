@@ -19,13 +19,15 @@ import com.ugarosa.neovim.mode.getMode
 import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.client.api.input
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.ObsoleteCoroutinesApi
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.actor
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.atomic.AtomicReference
 
 @Service(Service.Level.APP)
 class NeovimKeyRouter(
-    private val scope: CoroutineScope,
+    scope: CoroutineScope,
 ) : Disposable {
     private val logger = myLogger()
 
@@ -36,6 +38,14 @@ class NeovimKeyRouter(
 
     private val buffer = ConcurrentLinkedDeque<NeovimKeyNotation>()
     private val currentEditor = AtomicReference<Editor?>()
+
+    @OptIn(ObsoleteCoroutinesApi::class)
+    private val actionQueue =
+        scope.actor<suspend () -> Unit>(capacity = Channel.UNLIMITED) {
+            for (lambda in channel) {
+                lambda()
+            }
+        }
 
     fun start() {
         IdeEventQueue.getInstance().addDispatcher(dispatcher, this)
@@ -86,9 +96,7 @@ class NeovimKeyRouter(
             exactlyMatch != null && prefixMatches.size == 1 -> {
                 buffer.clear()
                 logger.trace("Executing exact match: $exactlyMatch in mode: $mode")
-                scope.launch {
-                    executeRhs(exactlyMatch.rhs, editor)
-                }
+                executeRhs(exactlyMatch.rhs, editor)
                 return true
             }
 
@@ -108,28 +116,29 @@ class NeovimKeyRouter(
         if (mode.isInsert()) {
             // Don't consume the key if the mode is insert-mode
             logger.trace("Fallback to IDEA: $keys")
-            runWriteAction {
+            val printableChars =
                 keys.dropLast(1)
                     .mapNotNull { it.toPrintableChar() }
-                    .forEach { char ->
-                        TypedAction.getInstance().handler.execute(
-                            editor,
-                            char,
-                            editor.dataContext,
-                        )
+            if (printableChars.isNotEmpty()) {
+                actionQueue.trySend {
+                    runWriteAction {
+                        printableChars.forEach { char ->
+                            TypedAction.getInstance().handler.execute(editor, char, editor.dataContext)
+                        }
                     }
+                }
             }
             return false
         } else {
             logger.trace("Fallback to Neovim: $keys")
-            scope.launch {
+            actionQueue.trySend {
                 client.input(keys.joinToString(""))
             }
             return true
         }
     }
 
-    private suspend fun executeRhs(
+    private fun executeRhs(
         actions: List<KeyMappingAction>,
         editor: EditorEx,
     ) {
@@ -137,12 +146,16 @@ class NeovimKeyRouter(
             when (action) {
                 is KeyMappingAction.SendToNeovim -> {
                     logger.trace("Sending key to Neovim: ${action.key}")
-                    client.input(action.key.toString())
+                    actionQueue.trySend {
+                        client.input(action.key.toString())
+                    }
                 }
 
                 is KeyMappingAction.ExecuteIdeaAction -> {
                     logger.trace("Executing action: ${action.actionId}")
-                    actionHandler.executeAction(action.actionId, editor)
+                    actionQueue.trySend {
+                        actionHandler.executeAction(action.actionId, editor)
+                    }
                 }
             }
         }
