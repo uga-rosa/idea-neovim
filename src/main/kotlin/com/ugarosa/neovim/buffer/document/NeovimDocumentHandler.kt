@@ -211,11 +211,17 @@ class NeovimDocumentHandler private constructor(
 
         val deleteStr = beforeDeleteStr.repeat(beforeDelete) + afterDeleteStr.repeat(afterDelete)
         val insertStr = event.newFragment.toString()
+        val text = deleteStr + insertStr
 
         sharedChannel.trySend {
-            client.changedTick(bufferId)
-                .also { ignoreChangedTicks.add(it + 1) }
-            client.input(deleteStr + insertStr)
+            client.changedTick(bufferId).also {
+                // The nvim_buf_lines_event will be fired by each char input.
+                // Ignore all changes.
+                (it + 1..it + text.length).forEach { c ->
+                    ignoreChangedTicks.add(c)
+                }
+            }
+            client.input(text)
         }
     }
 
