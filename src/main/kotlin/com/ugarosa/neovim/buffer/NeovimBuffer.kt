@@ -21,6 +21,9 @@ import com.ugarosa.neovim.rpc.event.handler.CursorMoveEvent
 import com.ugarosa.neovim.rpc.type.NeovimRegion
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ObsoleteCoroutinesApi
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.actor
 import kotlinx.coroutines.withContext
 
 class NeovimBuffer private constructor(
@@ -43,8 +46,16 @@ class NeovimBuffer private constructor(
             bufferId: BufferId,
             editor: EditorEx,
         ): NeovimBuffer {
-            val documentHandler = NeovimDocumentHandler.create(scope, bufferId, editor)
-            val cursorHandler = NeovimCursorHandler.create(scope, bufferId, editor)
+            @OptIn(ObsoleteCoroutinesApi::class)
+            val sharedActor =
+                scope.actor<suspend () -> Unit>(capacity = Channel.UNLIMITED) {
+                    for (lambda in channel) {
+                        lambda()
+                    }
+                }
+
+            val documentHandler = NeovimDocumentHandler.create(bufferId, editor, sharedActor)
+            val cursorHandler = NeovimCursorHandler.create(bufferId, editor, sharedActor)
             val selectionHandler = NeovimSelectionHandler(editor)
             val buffer =
                 NeovimBuffer(
@@ -79,15 +90,12 @@ class NeovimBuffer private constructor(
 
         cursorHandler.changeCursorShape(oldMode, mode)
 
-        if (mode.isInsert()) {
-            cursorHandler.disableListener()
-        } else {
+        if (!mode.isInsert()) {
             // Close completion popup
             withContext(Dispatchers.EDT) {
                 LookupManager.getActiveLookup(editor)
                     ?.hideLookup(true)
             }
-            cursorHandler.enableListener()
         }
 
         if (!mode.isVisualOrSelect()) {
@@ -109,5 +117,5 @@ class NeovimBuffer private constructor(
         documentHandler.changeModifiable()
     }
 
-    override fun dispose() { }
+    override fun dispose() {}
 }

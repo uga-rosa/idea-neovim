@@ -2,6 +2,7 @@ package com.ugarosa.neovim.buffer.cursor
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.EDT
+import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.application.runUndoTransparentWriteAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.ex.EditorEx
@@ -20,16 +21,15 @@ import com.ugarosa.neovim.rpc.client.NeovimClient
 import com.ugarosa.neovim.rpc.client.api.setCursor
 import com.ugarosa.neovim.rpc.event.handler.CursorMoveEvent
 import com.ugarosa.neovim.rpc.type.NeovimPosition
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.withContext
 
 class NeovimCursorHandler private constructor(
-    private val scope: CoroutineScope,
     private val bufferId: BufferId,
     private val editor: EditorEx,
     private val fontSize: FontSize,
+    private val sharedChannel: SendChannel<suspend () -> Unit>,
 ) : Disposable {
     private val logger = myLogger()
     private val client = service<NeovimClient>()
@@ -43,25 +43,15 @@ class NeovimCursorHandler private constructor(
 
     companion object {
         suspend fun create(
-            scope: CoroutineScope,
             bufferId: BufferId,
             editor: EditorEx,
+            sharedChannel: SendChannel<suspend () -> Unit>,
         ): NeovimCursorHandler {
             val fontSize = FontSize.fromEditorEx(editor)
-            val handler = NeovimCursorHandler(scope, bufferId, editor, fontSize)
-            handler.enableListener()
+            val handler = NeovimCursorHandler(bufferId, editor, fontSize, sharedChannel)
+            handler.cursorListenerGuard.register()
             return handler
         }
-    }
-
-    fun enableListener() {
-        logger.trace("Enabling cursor listener for buffer: $bufferId")
-        cursorListenerGuard.register()
-    }
-
-    fun disableListener() {
-        logger.trace("Disabling cursor listener for buffer: $bufferId")
-        cursorListenerGuard.unregister()
     }
 
     suspend fun syncNeovimToIdea(event: CursorMoveEvent) =
@@ -255,12 +245,12 @@ class NeovimCursorHandler private constructor(
     }
 
     fun syncIdeaToNeovim(position: NeovimPosition? = null) {
-        scope.launch {
-            val pos =
-                position ?: withContext(Dispatchers.EDT) {
-                    val offset = editor.caretModel.offset
-                    NeovimPosition.fromOffset(offset, editor.document)
-                }
+        val pos =
+            position ?: runReadAction {
+                val offset = editor.caretModel.offset
+                NeovimPosition.fromOffset(offset, editor.document)
+            }
+        sharedChannel.trySend {
             client.setCursor(bufferId, pos)
         }
     }
