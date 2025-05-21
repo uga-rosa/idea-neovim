@@ -8,7 +8,7 @@ import com.ugarosa.neovim.rpc.event.handler.RedrawEvent
 suspend fun onModeChangeEvent(redraw: RedrawEvent) {
     when (redraw.name) {
         "mode_change" -> {
-            val mode = redraw.param[0].asString().let { NeovimMode.fromModeChangeEvent(it) }
+            val mode = redraw.param[0].asString().let { NeovimMode.fromModeChangeEvent(it) } ?: return
 
             val editor = focusEditor() ?: return
             val buffer = NeovimBufferManager.findByEditor(editor)

@@ -26,6 +26,8 @@ class NeovimModeManager(
 
     fun getAndSet(newMode: NeovimMode): NeovimMode {
         val oldMode = atomicMode.getAndSet(newMode)
+        if (oldMode == newMode) return oldMode
+
         scope.launch {
             val project = focusProject() ?: return@launch
             project.service<StatusLineManager>().updateStatusLine(newMode)

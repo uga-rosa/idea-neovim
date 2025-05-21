@@ -8,7 +8,7 @@ data class NeovimMode(
     companion object {
         // The ui `mode_change` event sends the mode string, but it's not same as the return value of mode().
         // For example, this could be "operator", "visual", "replace" or "cmdline_normal".
-        fun fromModeChangeEvent(raw: String): NeovimMode {
+        fun fromModeChangeEvent(raw: String): NeovimMode? {
             val kind =
                 when (raw[0]) {
                     'n', 'o' -> NeovimModeKind.NORMAL
@@ -16,14 +16,14 @@ data class NeovimMode(
                     'i' -> NeovimModeKind.INSERT
                     'r' -> NeovimModeKind.REPLACE
                     'c' -> NeovimModeKind.COMMAND
-                    else -> NeovimModeKind.OTHER
+                    else -> null
                 }
-            return NeovimMode(kind)
+            return kind?.let { NeovimMode(it) }
         }
 
         // The ui `mode_change` event does not send selection mode.
         // So I set autocmd for changing select mode.
-        fun fromMode(raw: String): NeovimMode {
+        fun fromMode(raw: String): NeovimMode? {
             val kind =
                 when (raw[0]) {
                     'n' -> NeovimModeKind.NORMAL
@@ -32,9 +32,9 @@ data class NeovimMode(
                     'i' -> NeovimModeKind.INSERT
                     'R' -> NeovimModeKind.REPLACE
                     'c' -> NeovimModeKind.COMMAND
-                    else -> NeovimModeKind.OTHER
+                    else -> null
                 }
-            return NeovimMode(kind)
+            return kind?.let { NeovimMode(it) }
         }
 
         val default = NeovimMode(NeovimModeKind.NORMAL)
@@ -65,5 +65,4 @@ enum class NeovimModeKind {
     INSERT,
     REPLACE,
     COMMAND,
-    OTHER,
 }
