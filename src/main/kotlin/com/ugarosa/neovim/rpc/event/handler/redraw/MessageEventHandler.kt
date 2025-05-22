@@ -33,11 +33,12 @@ fun maybeMessageEvent(redraw: RedrawEvent): MessageEvent? {
         "msg_history_show" -> {
             val entries =
                 redraw.param.map { entry ->
-                    val list = entry.asArray()
+                    val list = entry.asArray()[0].asArray()
                     val kind = MessageKind.fromValue(list[0].asString())
                     val content =
                         list[1].asArray().map {
-                            MsgChunk(it.asInt(), it.asString())
+                            val chunk = it.asArray()
+                            MsgChunk(chunk[0].asInt(), chunk[1].asString())
                         }
                     MsgHistoryEntry(kind, content)
                 }
