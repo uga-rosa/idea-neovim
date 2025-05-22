@@ -24,20 +24,13 @@ import java.awt.Point
 
 @Service(Service.Level.PROJECT)
 class NeovimCmdlineManager(
-    project: Project,
+    private val project: Project,
     private val scope: CoroutineScope,
 ) {
     private val logger = myLogger()
     private val client = service<NeovimClient>()
 
     private var popup: JBPopup? = null
-    private lateinit var view: CmdlineView
-
-    init {
-        scope.launch(Dispatchers.EDT) {
-            view = project.service<CmdlineView>()
-        }
-    }
 
     suspend fun handleEvent(event: CmdlineEvent) {
         val editor =
@@ -49,6 +42,7 @@ class NeovimCmdlineManager(
 
         logger.trace("Handling CmdlineEvent: $event")
         withContext(Dispatchers.EDT) {
+            val view = project.service<CmdlineView>()
             when (event) {
                 is CmdlineEvent.Show -> view.updateModel(show = event)
                 is CmdlineEvent.Pos -> view.updateModel(pos = event.pos)
@@ -66,10 +60,10 @@ class NeovimCmdlineManager(
                         destroy()
                     } else if (popup == null || popup!!.isDisposed) {
                         logger.trace("Cmdline is shown, creating popup: $event")
-                        showPopup(editor)
+                        showPopup(editor, view)
                     } else {
                         logger.trace("Cmdline is shown, updating popup: $event")
-                        resize(editor)
+                        resize(editor, view)
                     }
                 }
             }
@@ -82,8 +76,11 @@ class NeovimCmdlineManager(
             popup = null
         }
 
-    private fun showPopup(editor: Editor) {
-        val (loc, size) = bottomLocationAndSize(editor)
+    private fun showPopup(
+        editor: Editor,
+        view: CmdlineView,
+    ) {
+        val (loc, size) = bottomLocationAndSize(editor, view)
         popup =
             JBPopupFactory.getInstance()
                 .createComponentPopupBuilder(view.component, null)
@@ -115,15 +112,21 @@ class NeovimCmdlineManager(
         }
     }
 
-    private fun resize(editor: Editor) {
-        val (loc, size) = bottomLocationAndSize(editor)
+    private fun resize(
+        editor: Editor,
+        view: CmdlineView,
+    ) {
+        val (loc, size) = bottomLocationAndSize(editor, view)
         popup?.apply {
             this.size = size
             this.setLocation(RelativePoint(editor.component, loc).screenPoint)
         }
     }
 
-    private fun bottomLocationAndSize(editor: Editor): Pair<Point, Dimension> {
+    private fun bottomLocationAndSize(
+        editor: Editor,
+        view: CmdlineView,
+    ): Pair<Point, Dimension> {
         val width = editor.component.width
         val height = view.getHeight()
 

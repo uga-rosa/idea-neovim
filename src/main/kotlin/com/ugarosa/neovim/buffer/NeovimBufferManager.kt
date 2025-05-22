@@ -23,7 +23,7 @@ class NeovimBufferManager(
     private val editorToHolder = ConcurrentHashMap<EditorEx, BufferHolder>()
     private val idToEditor = ConcurrentHashMap<BufferId, EditorEx>()
 
-    fun listenEditorFactory() {
+    fun install() {
         EditorFactory.getInstance().addEditorFactoryListener(
             object : EditorFactoryListener {
                 override fun editorCreated(event: EditorFactoryEvent) {

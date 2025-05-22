@@ -16,6 +16,7 @@ import com.ugarosa.neovim.rpc.event.handler.onModeChangeEventCustom
 import com.ugarosa.neovim.rpc.event.handler.onOptionSetEvent
 import com.ugarosa.neovim.rpc.event.handler.onRedrawEvent
 import com.ugarosa.neovim.rpc.event.handler.onVisualSelectionEvent
+import com.ugarosa.neovim.undo.NeovimUndoManager
 import kotlinx.coroutines.launch
 
 class NeovimAppLifecycleListener : AppLifecycleListener {
@@ -26,7 +27,8 @@ class NeovimAppLifecycleListener : AppLifecycleListener {
 
     // Hooks that should be called only once at application startup.
     override fun appFrameCreated(commandLineArgs: List<String>) {
-        service<NeovimBufferManager>().listenEditorFactory()
+        service<NeovimBufferManager>().install()
+        service<NeovimUndoManager>().install()
         registerNotificationHandlers()
         initialize()
     }

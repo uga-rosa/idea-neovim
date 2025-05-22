@@ -9,9 +9,13 @@ import com.intellij.openapi.command.undo.UndoManager
 import com.intellij.openapi.command.undo.UndoUtil
 import com.intellij.openapi.command.undo.UndoableAction
 import com.intellij.openapi.components.Service
+import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.project.Project
 import com.intellij.util.DocumentUtil
+import com.ugarosa.neovim.common.focusEditor
+import com.ugarosa.neovim.common.focusProject
+import com.ugarosa.neovim.mode.NeovimModeManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -33,7 +37,19 @@ class NeovimUndoManager {
     private val listener = DocumentUndoListener()
     private var beforeCaret = 0
 
-    suspend fun start(editor: EditorEx) =
+    fun install() {
+        service<NeovimModeManager>().addHook { old, new ->
+            val editor = focusEditor() ?: return@addHook
+            if (new.isInsert()) {
+                start(editor)
+            } else if (old.isInsert()) {
+                val project = focusProject() ?: return@addHook
+                finish(project, editor)
+            }
+        }
+    }
+
+    private suspend fun start(editor: EditorEx) =
         withContext(Dispatchers.EDT) {
             UndoUtil.disableUndoFor(editor.document)
             listener.clear()
@@ -41,7 +57,7 @@ class NeovimUndoManager {
             beforeCaret = editor.caretModel.offset
         }
 
-    suspend fun finish(
+    private suspend fun finish(
         project: Project,
         editor: EditorEx,
     ) = withContext(Dispatchers.EDT) {
