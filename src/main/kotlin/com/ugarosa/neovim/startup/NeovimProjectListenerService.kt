@@ -56,7 +56,6 @@ class NeovimProjectListenerService(
                         .mapNotNull { FileDocumentManager.getInstance().getDocument(it.file) }
                         .flatMap { EditorFactory.getInstance().getEditors(it).toList() }
                         .filterIsInstance<EditorEx>()
-                        .toList()
                         .forEach { editor ->
                             scope.launch {
                                 val buffer = service<NeovimBufferManager>().findByEditor(editor)
