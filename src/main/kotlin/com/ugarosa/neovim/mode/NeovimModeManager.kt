@@ -31,11 +31,11 @@ class NeovimModeManager(
         scope.launch {
             val project = focusProject() ?: return@launch
             project.service<StatusLineManager>().updateStatusLine(newMode)
+            val editor = focusEditor() ?: return@launch
             if (newMode.isInsert()) {
-                val editor = focusEditor() ?: return@launch
-                service<NeovimUndoManager>().start(project, editor.document)
+                service<NeovimUndoManager>().start(editor)
             } else if (oldMode.isInsert()) {
-                service<NeovimUndoManager>().finish()
+                service<NeovimUndoManager>().finish(project, editor)
             }
         }
         return oldMode
