@@ -63,7 +63,12 @@ data class NeovimKeyNotation(
                 logger.trace("Not a printable character: $event")
                 return null
             }
-            return NeovimKeyNotation(emptyList(), c.toString())
+            val key =
+                when (val s = c.toString()) {
+                    "<" -> "<lt>"
+                    else -> s
+                }
+            return NeovimKeyNotation(emptyList(), key)
         }
 
         fun fromModsAndKey(
