@@ -8,7 +8,6 @@ import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.fileEditor.FileDocumentManager
-import com.intellij.openapi.util.TextRange
 import com.ugarosa.neovim.buffer.BufferId
 import com.ugarosa.neovim.common.ListenerGuard
 import com.ugarosa.neovim.logger.myLogger
@@ -18,9 +17,10 @@ import com.ugarosa.neovim.rpc.client.api.bufferAttach
 import com.ugarosa.neovim.rpc.client.api.bufferSetLines
 import com.ugarosa.neovim.rpc.client.api.bufferSetText
 import com.ugarosa.neovim.rpc.client.api.changedTick
-import com.ugarosa.neovim.rpc.client.api.input
 import com.ugarosa.neovim.rpc.client.api.modifiable
 import com.ugarosa.neovim.rpc.client.api.noModifiable
+import com.ugarosa.neovim.rpc.client.api.paste
+import com.ugarosa.neovim.rpc.client.api.sendDeletion
 import com.ugarosa.neovim.rpc.client.api.setFiletype
 import com.ugarosa.neovim.rpc.event.handler.BufLinesEvent
 import com.ugarosa.neovim.rpc.type.NeovimPosition
@@ -142,14 +142,14 @@ class NeovimDocumentHandler private constructor(
     // Must be called before the document is changed
     fun syncDocumentChange(event: DocumentEvent) {
         logger.trace("Sync document change: $event")
-        if (getMode().isInsert() && isSingleLineChange(event)) {
+        if (getMode().isInsert() && isCursorPositionChange(event)) {
             sendInput(event)
         } else {
             sendBufferSetText(event)
         }
     }
 
-    private fun isSingleLineChange(event: DocumentEvent): Boolean {
+    private fun isCursorPositionChange(event: DocumentEvent): Boolean {
         // Compute the range of the change and the cursor position.
         val caretOffset = editor.caretModel.offset
         val startOffset = event.offset
@@ -157,43 +157,8 @@ class NeovimDocumentHandler private constructor(
         // Ensure the caret lies within the deleted range.
         val beforeDelete = caretOffset - startOffset
         val afterDelete = endOffset - caretOffset
-        if (beforeDelete < 0 || afterDelete < 0) {
-            return false
-        }
-        // Change must stay on a single line.
-        val startRow = event.document.getLineNumber(startOffset)
-        val endRow = event.document.getLineNumber(endOffset)
-        if (startRow != endRow) {
-            return false
-        }
-        // Inserted text must not contain newlines.
-        val insertText = event.newFragment.toString()
-        if (insertText.contains("\n")) {
-            return false
-        }
-        // Deletion range must be fully inside the same line boundaries.
-        val lineStartOffset = event.document.getLineStartOffset(startRow)
-        val lineEndOffset = event.document.getLineEndOffset(startRow)
-        if (caretOffset - lineStartOffset < beforeDelete) {
-            return false
-        }
-        if (lineEndOffset - caretOffset < afterDelete) {
-            return false
-        }
-        // Verify that the number of Unicode code points matches the expected length.
-        val deleteText = event.document.getText(TextRange(startOffset, endOffset))
-        if (deleteText.codePointCount(0, deleteText.length) != event.oldLength) {
-            return false
-        }
-        if (insertText.codePointCount(0, insertText.length) != event.newLength) {
-            return false
-        }
-
-        return true
+        return !(beforeDelete < 0 || afterDelete < 0)
     }
-
-    private val beforeDeleteStr = "<C-g>U<Left><Del>"
-    private val afterDeleteStr = "<Del>"
 
     // Apply oneline text change with dot-repeat
     private fun sendInput(event: DocumentEvent) {
@@ -204,19 +169,20 @@ class NeovimDocumentHandler private constructor(
         val beforeDelete = caretOffset - startOffset
         val afterDelete = endOffset - caretOffset
 
-        val deleteStr = beforeDeleteStr.repeat(beforeDelete) + afterDeleteStr.repeat(afterDelete)
-        val insertStr = event.newFragment.toString()
-        val text = deleteStr + insertStr
+        val text =
+            event.newFragment.toString()
+                .replace("\r\n", "\n")
 
         sendChan.trySend {
             client.changedTick(bufferId).also {
-                // The nvim_buf_lines_event will be fired by each char input.
-                // Ignore all changes.
-                (it + 1..it + text.length).forEach { c ->
+                (it + 1..it + beforeDelete + afterDelete + 1).forEach { c ->
                     ignoreChangedTicks.add(c)
                 }
             }
-            client.input(text)
+            if (beforeDelete > 0 || afterDelete > 0) {
+                client.sendDeletion(beforeDelete, afterDelete)
+            }
+            client.paste(text)
         }
     }
 
