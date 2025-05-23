@@ -19,6 +19,6 @@ fun onCursorMoveEvent(client: NeovimClient) {
         val event = CursorMoveEvent(bufferId, NeovimPosition(line, col, curswant))
 
         val buffer = NeovimBufferManager.findById(bufferId)
-        buffer.handleCursorMoveEvent(event)
+        buffer.onCursorMoveEvent(event)
     }
 }

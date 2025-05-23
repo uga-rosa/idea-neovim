@@ -29,7 +29,7 @@ class NeovimCursorHandler private constructor(
     private val bufferId: BufferId,
     private val editor: EditorEx,
     private val fontSize: FontSize,
-    private val sharedChannel: SendChannel<suspend () -> Unit>,
+    private val sendChan: SendChannel<suspend () -> Unit>,
 ) : Disposable {
     private val logger = myLogger()
     private val client = service<NeovimClient>()
@@ -45,16 +45,16 @@ class NeovimCursorHandler private constructor(
         suspend fun create(
             bufferId: BufferId,
             editor: EditorEx,
-            sharedChannel: SendChannel<suspend () -> Unit>,
+            sendChan: SendChannel<suspend () -> Unit>,
         ): NeovimCursorHandler {
             val fontSize = FontSize.fromEditorEx(editor)
-            val handler = NeovimCursorHandler(bufferId, editor, fontSize, sharedChannel)
+            val handler = NeovimCursorHandler(bufferId, editor, fontSize, sendChan)
             handler.cursorListenerGuard.register()
             return handler
         }
     }
 
-    suspend fun syncNeovimToIdea(event: CursorMoveEvent) =
+    suspend fun handleCursorMoveEvent(event: CursorMoveEvent) =
         withContext(Dispatchers.EDT) {
             val originalOffset = editor.caretModel.offset
             val rawOffset = event.position.toOffset(editor.document)
@@ -250,7 +250,8 @@ class NeovimCursorHandler private constructor(
                 val offset = editor.caretModel.offset
                 NeovimPosition.fromOffset(offset, editor.document)
             }
-        sharedChannel.trySend {
+        sendChan.trySend {
+            logger.debug("Syncing cursor position to Neovim: $pos")
             client.setCursor(bufferId, pos)
         }
     }

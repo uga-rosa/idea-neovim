@@ -24,6 +24,6 @@ fun onBufLinesEvent(client: NeovimClient) {
         val event = BufLinesEvent(bufferId, changedTick, firstLine, lastLine, replacementLines)
 
         val buffer = NeovimBufferManager.findById(bufferId)
-        buffer.handleBufferLinesEvent(event)
+        buffer.onBufferLinesEvent(event)
     }
 }

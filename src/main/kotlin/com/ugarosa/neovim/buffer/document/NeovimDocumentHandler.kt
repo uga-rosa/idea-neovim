@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap
 class NeovimDocumentHandler private constructor(
     private val bufferId: BufferId,
     private val editor: Editor,
-    private val sharedChannel: SendChannel<suspend () -> Unit>,
+    private val sendChan: SendChannel<suspend () -> Unit>,
 ) : Disposable {
     private val logger = myLogger()
     private val client = service<NeovimClient>()
@@ -48,9 +48,9 @@ class NeovimDocumentHandler private constructor(
         suspend fun create(
             bufferId: BufferId,
             editor: Editor,
-            sharedChannel: SendChannel<suspend () -> Unit>,
+            sendChan: SendChannel<suspend () -> Unit>,
         ): NeovimDocumentHandler {
-            val handler = NeovimDocumentHandler(bufferId, editor, sharedChannel)
+            val handler = NeovimDocumentHandler(bufferId, editor, sendChan)
             handler.initializeBuffer()
             handler.enableListener()
             return handler
@@ -86,20 +86,15 @@ class NeovimDocumentHandler private constructor(
         documentListenerGuard.register()
     }
 
-    suspend fun applyBufferLinesEvent(e: BufLinesEvent) {
-        if (ignoreChangedTicks.remove(e.changedTick)) {
-            logger.trace("Ignore event by changed tick: $e")
-            return
-        }
-        logger.trace("Apply buffer lines event: $e")
-
+    suspend fun handleBufferLinesEvents(events: List<BufLinesEvent>) =
         withContext(Dispatchers.EDT) {
             WriteCommandAction.writeCommandAction(editor.project)
                 .run<Exception> {
-                    applyLinesToDocument(editor.document, e)
+                    events
+                        .filter { !ignoreChangedTicks.remove(it.changedTick) }
+                        .forEach { applyLinesToDocument(editor.document, it) }
                 }
         }
-    }
 
     private fun applyLinesToDocument(
         doc: Document,
@@ -213,7 +208,7 @@ class NeovimDocumentHandler private constructor(
         val insertStr = event.newFragment.toString()
         val text = deleteStr + insertStr
 
-        sharedChannel.trySend {
+        sendChan.trySend {
             client.changedTick(bufferId).also {
                 // The nvim_buf_lines_event will be fired by each char input.
                 // Ignore all changes.
@@ -235,7 +230,7 @@ class NeovimDocumentHandler private constructor(
                 .replace("\r\n", "\n")
                 .split("\n")
 
-        sharedChannel.trySend {
+        sendChan.trySend {
             client.changedTick(bufferId)
                 .also { ignoreChangedTicks.add(it + 1) }
             client.bufferSetText(bufferId, start, end, replacement)
