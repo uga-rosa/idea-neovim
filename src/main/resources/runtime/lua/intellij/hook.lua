@@ -90,7 +90,7 @@ local function mode_change(chan_id)
 			end
 
 			vim.rpcnotify(chan_id, "nvim_mode_change_event", vim.v.event.new_mode)
-		end
+		end,
 	})
 end
 
