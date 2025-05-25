@@ -13,6 +13,7 @@ import com.ugarosa.neovim.rpc.client.api.modifiable
 import com.ugarosa.neovim.rpc.client.api.noModifiable
 import com.ugarosa.neovim.rpc.client.api.paste
 import com.ugarosa.neovim.rpc.client.api.sendDeletion
+import com.ugarosa.neovim.rpc.client.api.setCursor
 import com.ugarosa.neovim.rpc.client.api.setFiletype
 
 class DocumentCommandAdapter(
@@ -38,6 +39,7 @@ class DocumentCommandAdapter(
         ignoreTicks.addAll(currentTick + 1..currentTick + event.ignoreIncrement)
         when (event) {
             is IdeaDocumentChanged.NearCursor -> {
+                client.setCursor(bufferId, event.cursor)
                 client.sendDeletion(event.beforeDelete, event.afterDelete)
                 client.paste(event.text)
             }
