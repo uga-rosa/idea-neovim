@@ -1,15 +1,15 @@
 package com.ugarosa.neovim.rpc.client.api
 
-import com.ugarosa.neovim.buffer.BufferId
-import com.ugarosa.neovim.rpc.client.NeovimClient
-import com.ugarosa.neovim.rpc.type.NeovimPosition
+import com.ugarosa.neovim.domain.id.BufferId
+import com.ugarosa.neovim.domain.position.NvimPosition
+import com.ugarosa.neovim.rpc.client.NvimClient
 
-suspend fun NeovimClient.createBuffer(): BufferId {
+suspend fun NvimClient.createBuffer(): BufferId {
     val result = request("nvim_create_buf", listOf(true, false))
     return result.asBufferId()
 }
 
-suspend fun NeovimClient.bufferSetLines(
+suspend fun NvimClient.bufferSetLines(
     bufferId: BufferId,
     start: Int,
     end: Int,
@@ -23,10 +23,10 @@ suspend fun NeovimClient.bufferSetLines(
     )
 }
 
-suspend fun NeovimClient.bufferSetText(
+suspend fun NvimClient.bufferSetText(
     bufferId: BufferId,
-    start: NeovimPosition,
-    end: NeovimPosition,
+    start: NvimPosition,
+    end: NvimPosition,
     replacement: List<String>,
 ) {
     // Indexing is zero-based. Row indices are end-inclusive, and column indices are end-exclusive.
@@ -43,6 +43,6 @@ suspend fun NeovimClient.bufferSetText(
     )
 }
 
-suspend fun NeovimClient.bufferAttach(bufferId: BufferId) {
+suspend fun NvimClient.bufferAttach(bufferId: BufferId) {
     request("nvim_buf_attach", listOf(bufferId, false, mapOf<String, Any>()))
 }

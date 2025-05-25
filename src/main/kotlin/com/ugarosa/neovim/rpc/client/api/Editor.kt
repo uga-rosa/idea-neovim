@@ -1,27 +1,27 @@
 package com.ugarosa.neovim.rpc.client.api
 
-import com.ugarosa.neovim.buffer.BufferId
-import com.ugarosa.neovim.rpc.client.NeovimClient
-import com.ugarosa.neovim.rpc.type.NeovimPosition
+import com.ugarosa.neovim.domain.id.BufferId
+import com.ugarosa.neovim.domain.position.NvimPosition
+import com.ugarosa.neovim.rpc.client.NvimClient
 
-suspend fun NeovimClient.input(text: String) {
+suspend fun NvimClient.input(text: String) {
     notify("nvim_input", listOf(text))
 }
 
-suspend fun NeovimClient.paste(text: String) {
+suspend fun NvimClient.paste(text: String) {
     notify("nvim_paste", listOf(text, false, -1))
 }
 
-suspend fun NeovimClient.sendDeletion(
+suspend fun NvimClient.sendDeletion(
     before: Int,
     after: Int,
 ) {
     execLuaNotify("buffer", "send_deletion", listOf(before, after))
 }
 
-suspend fun NeovimClient.setCursor(
+suspend fun NvimClient.setCursor(
     bufferId: BufferId,
-    pos: NeovimPosition,
+    pos: NvimPosition,
 ) {
     execLuaNotify("buffer", "cursor", listOf(bufferId, pos.line, pos.col, pos.curswant))
 }

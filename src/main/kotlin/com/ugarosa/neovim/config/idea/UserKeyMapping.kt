@@ -3,8 +3,8 @@ package com.ugarosa.neovim.config.idea
 import com.intellij.util.xmlb.annotations.Attribute
 import com.intellij.util.xmlb.annotations.Tag
 import com.intellij.util.xmlb.annotations.XCollection
-import com.ugarosa.neovim.keymap.notation.NeovimKeyNotation
-import com.ugarosa.neovim.mode.NeovimModeKind
+import com.ugarosa.neovim.adapter.idea.input.notation.NeovimKeyNotation
+import com.ugarosa.neovim.domain.mode.NvimModeKind
 
 data class UserKeyMapping(
     @Tag
@@ -31,17 +31,17 @@ data class MapMode(
 ) {
     constructor() : this("")
 
-    fun toModeKinds(): List<NeovimModeKind> {
-        if (value.isEmpty()) return listOf(NeovimModeKind.NORMAL, NeovimModeKind.VISUAL, NeovimModeKind.SELECT)
+    fun toModeKinds(): List<NvimModeKind> {
+        if (value.isEmpty()) return listOf(NvimModeKind.NORMAL, NvimModeKind.VISUAL, NvimModeKind.SELECT)
         return value.toList().flatMap {
             when (it) {
-                'n' -> listOf(NeovimModeKind.NORMAL)
-                'v' -> listOf(NeovimModeKind.VISUAL, NeovimModeKind.SELECT)
-                'x' -> listOf(NeovimModeKind.VISUAL)
-                's' -> listOf(NeovimModeKind.SELECT)
-                '!' -> listOf(NeovimModeKind.INSERT, NeovimModeKind.COMMAND)
-                'i' -> listOf(NeovimModeKind.INSERT)
-                'c' -> listOf(NeovimModeKind.COMMAND)
+                'n' -> listOf(NvimModeKind.NORMAL)
+                'v' -> listOf(NvimModeKind.VISUAL, NvimModeKind.SELECT)
+                'x' -> listOf(NvimModeKind.VISUAL)
+                's' -> listOf(NvimModeKind.SELECT)
+                '!' -> listOf(NvimModeKind.INSERT, NvimModeKind.COMMAND)
+                'i' -> listOf(NvimModeKind.INSERT)
+                'c' -> listOf(NvimModeKind.COMMAND)
                 else -> emptyList()
             }
         }

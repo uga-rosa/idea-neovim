@@ -1,8 +1,13 @@
 package com.ugarosa.neovim.rpc.client.api
 
-import com.ugarosa.neovim.buffer.BufferId
-import com.ugarosa.neovim.rpc.client.NeovimClient
+import com.ugarosa.neovim.domain.id.BufferId
+import com.ugarosa.neovim.rpc.client.NvimClient
 
-suspend fun NeovimClient.changedTick(bufferId: BufferId): Long {
-    return request("nvim_buf_get_var", listOf(bufferId, "changedtick")).asLong()
+const val CHANGED_TICK = "changedtick"
+
+suspend fun NvimClient.bufVar(
+    bufferId: BufferId,
+    name: String,
+): Long {
+    return request("nvim_buf_get_var", listOf(bufferId, name)).asLong()
 }

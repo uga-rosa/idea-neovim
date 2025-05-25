@@ -11,18 +11,19 @@
     <depends>com.intellij.modules.platform</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <postStartupActivity implementation="com.ugarosa.neovim.startup.NeovimProjectActivity"/>
+        <postStartupActivity implementation="com.ugarosa.neovim.adapter.idea.lifecycle.NvimProjectActivity"/>
         <statusBarWidgetFactory id="NeovimModeWidgetId"
-                                implementation="com.ugarosa.neovim.statusline.NeovimModeWidgetFactory"/>
+                                implementation="com.ugarosa.neovim.adapter.idea.ui.statusline.NeovimModeWidgetFactory"/>
         <applicationConfigurable key="configurable.display.name.neovim"
                                  bundle="messages.NeovimBundle"
-                                 instance="com.ugarosa.neovim.config.idea.NeovimKeymapConfigurable"/>
-        <toolWindow id="Neovim Messages" factoryClass="com.ugarosa.neovim.message.NeovimMessageToolWindowFactory"
+                                 instance="com.ugarosa.neovim.config.idea.NvimKeymapConfigurable"/>
+        <toolWindow id="Neovim Messages"
+                    factoryClass="com.ugarosa.neovim.adapter.idea.ui.message.NeovimMessageToolWindowFactory"
                     anchor="bottom" canCloseContents="false" secondary="true"/>
     </extensions>
 
     <applicationListeners>
-        <listener class="com.ugarosa.neovim.startup.NeovimAppLifecycleListener"
+        <listener class="com.ugarosa.neovim.adapter.idea.lifecycle.NvimAppLifecycleListener"
                   topic="com.intellij.ide.AppLifecycleListener"/>
     </applicationListeners>
 </idea-plugin>

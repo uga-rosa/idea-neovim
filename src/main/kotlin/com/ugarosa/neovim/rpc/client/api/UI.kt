@@ -1,8 +1,8 @@
 package com.ugarosa.neovim.rpc.client.api
 
-import com.ugarosa.neovim.rpc.client.NeovimClient
+import com.ugarosa.neovim.rpc.client.NvimClient
 
-suspend fun NeovimClient.uiAttach() {
+suspend fun NvimClient.uiAttach() {
     request(
         "nvim_ui_attach",
         listOf(
