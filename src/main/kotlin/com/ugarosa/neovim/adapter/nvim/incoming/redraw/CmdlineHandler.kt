@@ -4,7 +4,7 @@ import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
 import com.ugarosa.neovim.adapter.idea.ui.cmdline.CmdChunk
 import com.ugarosa.neovim.adapter.idea.ui.cmdline.CmdlineEvent
-import com.ugarosa.neovim.adapter.idea.ui.cmdline.NeovimCmdlineManager
+import com.ugarosa.neovim.adapter.idea.ui.cmdline.NvimCmdlineManager
 import com.ugarosa.neovim.common.focusProject
 import com.ugarosa.neovim.rpc.transport.NvimObject
 import kotlinx.coroutines.Dispatchers
@@ -17,7 +17,7 @@ suspend fun onCmdlineEvent(
     maybeCmdlineEvent(name, param)?.let { event ->
         val cmdlineManager =
             withContext(Dispatchers.EDT) {
-                focusProject()?.service<NeovimCmdlineManager>()
+                focusProject()?.service<NvimCmdlineManager>()
             } ?: return
         cmdlineManager.handleEvent(event)
     }

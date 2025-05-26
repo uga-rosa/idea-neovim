@@ -9,7 +9,7 @@ import com.ugarosa.neovim.logger.myLogger
 import java.awt.AWTEvent
 import java.awt.event.KeyEvent
 
-class NeovimKeyEventDispatcher(
+class NvimKeyEventDispatcher(
     private val keyRouter: NvimKeyRouter,
 ) : IdeEventQueue.EventDispatcher {
     private val logger = myLogger()

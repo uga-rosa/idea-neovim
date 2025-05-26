@@ -17,7 +17,7 @@ class NeovimModeWidgetFactory : StatusBarWidgetFactory {
     override fun canBeEnabledOn(statusBar: StatusBar): Boolean = true
 
     override fun createWidget(project: Project): StatusBarWidget {
-        return NeovimModeWidget()
+        return NvimModeWidget()
     }
 
     override fun disposeWidget(widget: StatusBarWidget) {

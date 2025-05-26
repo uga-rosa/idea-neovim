@@ -23,7 +23,7 @@ import java.awt.Dimension
 import java.awt.Point
 
 @Service(Service.Level.PROJECT)
-class NeovimCmdlineManager(
+class NvimCmdlineManager(
     private val project: Project,
     private val scope: CoroutineScope,
 ) {

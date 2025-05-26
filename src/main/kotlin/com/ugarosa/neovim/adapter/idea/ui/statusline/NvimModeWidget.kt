@@ -10,7 +10,7 @@ import com.ugarosa.neovim.domain.mode.NvimMode
 import com.ugarosa.neovim.domain.mode.NvimModeKind
 import javax.swing.JLabel
 
-class NeovimModeWidget : CustomStatusBarWidget {
+class NvimModeWidget : CustomStatusBarWidget {
     init {
         service<NeovimModeManager>().addHook { _, new ->
             updateMode(new)

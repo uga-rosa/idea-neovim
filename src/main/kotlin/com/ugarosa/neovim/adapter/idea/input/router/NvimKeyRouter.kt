@@ -8,7 +8,7 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.actionSystem.TypedAction
 import com.intellij.openapi.editor.ex.EditorEx
 import com.ugarosa.neovim.adapter.idea.action.executeAction
-import com.ugarosa.neovim.adapter.idea.input.dispatcher.NeovimKeyEventDispatcher
+import com.ugarosa.neovim.adapter.idea.input.dispatcher.NvimKeyEventDispatcher
 import com.ugarosa.neovim.adapter.idea.input.notation.NeovimKeyNotation
 import com.ugarosa.neovim.config.idea.KeyMappingAction
 import com.ugarosa.neovim.config.idea.NvimKeymapSettings
@@ -29,7 +29,7 @@ class NvimKeyRouter(
 ) : Disposable {
     private val logger = myLogger()
 
-    private val dispatcher = NeovimKeyEventDispatcher(this)
+    private val dispatcher = NvimKeyEventDispatcher(this)
     private val client = service<NvimClient>()
     private val settings = service<NvimKeymapSettings>()
 
