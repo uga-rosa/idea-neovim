@@ -18,7 +18,7 @@ import kotlin.time.Duration.Companion.milliseconds
 class NvimToIdeaBus(
     private val scope: CoroutineScope,
 ) : Disposable {
-    private val batchWindow: Duration = 50.milliseconds
+    private val batchWindow: Duration = 20.milliseconds
     private val channel = Channel<NvimToIdeaEvent>(Channel.UNLIMITED)
 
     fun tryEmit(event: NvimToIdeaEvent) {

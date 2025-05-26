@@ -23,7 +23,7 @@ data class BufferChanged(
 class IdeaToNvimBus(
     private val scope: CoroutineScope,
 ) : Disposable {
-    private val batchWindow: Duration = 50.milliseconds
+    private val batchWindow: Duration = 20.milliseconds
     private val channel = Channel<IdeaToNvimEvent>(Channel.UNLIMITED)
 
     fun tryEmit(event: IdeaToNvimEvent) {
