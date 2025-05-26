@@ -8,16 +8,14 @@ suspend fun NvimClient.input(text: String) {
     notify("nvim_input", listOf(text))
 }
 
-suspend fun NvimClient.paste(text: String) {
-    notify("nvim_paste", listOf(text, false, -1))
-}
-
-suspend fun NvimClient.sendDeletion(
-    before: Int,
-    after: Int,
-) {
-    execLuaNotify("buffer", "send_deletion", listOf(before, after))
-}
+suspend fun NvimClient.insert(
+    beforeDelete: Int,
+    afterDelete: Int,
+    inputBefore: String,
+    inputAfter: String,
+): Int =
+    execLua("insert", "input", listOf(beforeDelete, afterDelete, inputBefore, inputAfter))
+        .asInt()
 
 suspend fun NvimClient.setCursor(
     bufferId: BufferId,

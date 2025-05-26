@@ -31,8 +31,9 @@ class IdeaCaretListener(
 
     override fun caretPositionChanged(event: CaretEvent) {
         val editor = event.editor
-        val pos = NvimPosition.fromOffset(editor.caretModel.offset, editor.document)
-        bus.tryEmit(IdeaCaretMoved(bufferId, pos))
+        val offset = editor.caretModel.offset
+        val pos = NvimPosition.fromOffset(offset, editor.document)
+        bus.tryEmit(IdeaCaretMoved(bufferId, pos, offset))
     }
 
     override fun dispose() {

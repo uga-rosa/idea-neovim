@@ -48,8 +48,6 @@ class BufferCoordinator private constructor(
     // Idea -> Nvim adapters
     private val documentCommand: DocumentCommandAdapter,
     private val cursorCommand: CursorCommandAdapter,
-    // Listeners
-    private val caretListener: IdeaCaretListener,
 ) : Disposable {
     private val logger = myLogger()
     private val optionManager = service<NvimOptionManager>()
@@ -83,7 +81,6 @@ class BufferCoordinator private constructor(
                     SelectionSyncAdapter(editor),
                     DocumentCommandAdapter(bufferId),
                     CursorCommandAdapter(),
-                    caretListener,
                 )
 
             Disposer.register(buffer, documentListener)
@@ -110,8 +107,8 @@ class BufferCoordinator private constructor(
         }
 
         // Subscribe to events from Idea
-        ideaToNvimBus.documentChanges
-            .filter { it.bufferId == bufferId }
+        ideaToNvimBus.bufferChanges
+            .filter { it.documentChanged.bufferId == bufferId }
             .onEach { event ->
                 logger.debug("Document change event: $event")
                 documentCommand.send(event)
@@ -172,13 +169,10 @@ class BufferCoordinator private constructor(
 
                 caretShapeSync.apply(bufferId, event.mode)
 
-                if (event.mode.isInsert()) {
-                    caretListener.disable()
-                } else {
+                if (!event.mode.isInsert()) {
                     withContext(Dispatchers.EDT) {
                         LookupManager.getActiveLookup(editor)?.hideLookup(true)
                     }
-                    caretListener.enable()
                 }
 
                 if (!event.mode.isVisualOrSelect()) {

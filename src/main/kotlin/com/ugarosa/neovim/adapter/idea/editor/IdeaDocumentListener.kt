@@ -68,7 +68,7 @@ class IdeaDocumentListener(
 
         return IdeaDocumentChanged.NearCursor(
             bufferId = bufferId,
-            cursor = NvimPosition.fromOffset(caretOffset, editor.document),
+            caretOffset = caretOffset,
             beforeDelete = beforeDelete,
             afterDelete = afterDelete,
             text = text,

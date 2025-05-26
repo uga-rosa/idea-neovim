@@ -8,31 +8,27 @@ sealed interface IdeaToNvimEvent
 
 sealed interface IdeaDocumentChanged : IdeaToNvimEvent {
     val bufferId: BufferId
-    val ignoreIncrement: Int
 
     data class NearCursor(
         override val bufferId: BufferId,
-        val cursor: NvimPosition,
+        val caretOffset: Int,
         val beforeDelete: Int,
         val afterDelete: Int,
         val text: String,
-    ) : IdeaDocumentChanged {
-        override val ignoreIncrement = beforeDelete + afterDelete + (if (text.isEmpty()) 0 else 1)
-    }
+    ) : IdeaDocumentChanged
 
     data class FarCursor(
         override val bufferId: BufferId,
         val start: NvimPosition,
         val end: NvimPosition,
         val replacement: List<String>,
-    ) : IdeaDocumentChanged {
-        override val ignoreIncrement = 1
-    }
+    ) : IdeaDocumentChanged
 }
 
 data class IdeaCaretMoved(
     val bufferId: BufferId,
     val pos: NvimPosition,
+    val offset: Int,
 ) : IdeaToNvimEvent
 
 data class EditorSelected(

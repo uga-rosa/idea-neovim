@@ -69,7 +69,8 @@ class CaretPositionSyncAdapter(
                 // If the offset was adjusted, we need to update the cursor position in Neovim
                 // Restore the original curswant
                 val pos = currentPosition().copy(curswant = curswant)
-                ideaToNvimBus.tryEmit(IdeaCaretMoved(event.bufferId, pos))
+                val offset = editor.caretModel.offset
+                ideaToNvimBus.tryEmit(IdeaCaretMoved(event.bufferId, pos, offset))
             }
         }
 
