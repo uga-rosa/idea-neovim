@@ -9,7 +9,7 @@ fun Value.asNeovimObject(): NvimObject =
         isBooleanValue -> NvimObject.Bool(asBooleanValue().boolean)
         isIntegerValue -> NvimObject.Int64(asIntegerValue().toLong())
         isFloatValue -> NvimObject.Float64(asFloatValue().toDouble())
-        isStringValue -> NvimObject.Str(asStringValue().asString())
+        isStringValue -> NvimObject.Str(asStringValue().toString())
         isArrayValue -> NvimObject.Array(asArrayValue().list().map { it.asNeovimObject() })
         isMapValue ->
             NvimObject.Dict(
