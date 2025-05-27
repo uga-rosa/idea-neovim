@@ -1,5 +1,6 @@
 package com.ugarosa.neovim.rpc.client.api
 
+import com.ugarosa.neovim.domain.buffer.RepeatableChange
 import com.ugarosa.neovim.domain.id.BufferId
 import com.ugarosa.neovim.domain.position.NvimPosition
 import com.ugarosa.neovim.rpc.client.NvimClient
@@ -39,6 +40,18 @@ suspend fun NvimClient.bufferSetText(
             end.line,
             end.col,
             replacement,
+        ),
+    )
+}
+
+suspend fun NvimClient.sendRepeatableChange(change: RepeatableChange) {
+    execLuaNotify(
+        "buffer",
+        "send_repeatable_change",
+        listOf(
+            change.beforeDelete,
+            change.afterDelete,
+            change.text,
         ),
     )
 }

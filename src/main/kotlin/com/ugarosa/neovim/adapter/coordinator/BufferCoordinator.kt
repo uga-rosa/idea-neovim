@@ -15,10 +15,12 @@ import com.ugarosa.neovim.adapter.idea.editor.IdeaDocumentListener
 import com.ugarosa.neovim.adapter.idea.editor.SelectionSyncAdapter
 import com.ugarosa.neovim.adapter.nvim.outgoing.CursorCommandAdapter
 import com.ugarosa.neovim.adapter.nvim.outgoing.DocumentCommandAdapter
+import com.ugarosa.neovim.bus.IdeaDocumentChanged
 import com.ugarosa.neovim.bus.IdeaToNvimBus
 import com.ugarosa.neovim.bus.NvimBufLines
 import com.ugarosa.neovim.bus.NvimToIdeaBus
 import com.ugarosa.neovim.config.nvim.NvimOptionManager
+import com.ugarosa.neovim.domain.buffer.RepeatableChange
 import com.ugarosa.neovim.domain.id.BufferId
 import com.ugarosa.neovim.domain.mode.getMode
 import com.ugarosa.neovim.domain.mode.setMode
@@ -106,12 +108,55 @@ class BufferCoordinator private constructor(
             optionManager.initializeLocal(bufferId)
         }
 
+        val repeatableChanges =
+            object {
+                private val changes = mutableListOf<RepeatableChange>()
+
+                fun add(change: RepeatableChange) {
+                    changes.add(change)
+                }
+
+                suspend fun flush() {
+                    if (changes.isEmpty()) return
+                    documentCommand.sendRepeatableChanges(changes)
+                    changes.clear()
+                    cursorCommand.send(bufferId, caretPositionSync.currentPosition())
+                }
+            }
+
         // Subscribe to events from Idea
         ideaToNvimBus.bufferChanges
             .filter { it.documentChanged.bufferId == bufferId }
             .onEach { event ->
                 logger.debug("Document change event: $event")
-                documentCommand.send(event)
+                when (val docChange = event.documentChanged) {
+                    is IdeaDocumentChanged.NearCursor -> {
+                        val beforeCaret = docChange.caretOffset
+                        // HACK: Normally, a document change that involves caret movement triggers the CaretListener,
+                        // and event.caretMoved holds a value. However, certain actions like ACTION_EDITOR_BACKSPACE
+                        // are somehow implemented to stop the CaretListener and move the position.
+                        val afterCaret =
+                            event.caretMoved?.offset
+                                ?: if (docChange.text.isEmpty()) {
+                                    beforeCaret - docChange.beforeDelete
+                                } else {
+                                    beforeCaret
+                                }
+                        val caretAdvance = afterCaret - (beforeCaret - docChange.beforeDelete)
+                        val change =
+                            RepeatableChange(
+                                beforeDelete = docChange.beforeDelete,
+                                afterDelete = docChange.afterDelete,
+                                text = docChange.text,
+                                caretAdvance = caretAdvance,
+                            )
+                        repeatableChanges.add(change)
+                    }
+
+                    is IdeaDocumentChanged.FarCursor -> {
+                        documentCommand.setText(docChange)
+                    }
+                }
             }
             .launchIn(scope)
 
@@ -119,6 +164,11 @@ class BufferCoordinator private constructor(
             .filter { it.bufferId == bufferId }
             .onEach {
                 logger.debug("Caret moved event: $it")
+
+                if (getMode().isInsert()) {
+                    repeatableChanges.flush()
+                }
+
                 cursorCommand.send(it.bufferId, it.pos)
             }
             .launchIn(scope)
@@ -173,6 +223,8 @@ class BufferCoordinator private constructor(
                     withContext(Dispatchers.EDT) {
                         LookupManager.getActiveLookup(editor)?.hideLookup(true)
                     }
+                    // TODO: Create ESC action and flush should be called by it before the mode change
+                    repeatableChanges.flush()
                 }
 
                 if (!event.mode.isVisualOrSelect()) {
