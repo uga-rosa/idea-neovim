@@ -9,6 +9,35 @@ function M.cursor(bufferId, line, col, curswant)
 	end)
 end
 
+---@param bufferId number
+---@param offset number 0-based char offset
+---@return number line 0-based line number
+---@return number col 0-based column number
+local function offset_to_pos(bufferId, offset)
+	local ff = vim.api.nvim_get_option_value("fileformat", { scope = "local" })
+	local nl_len = ff == "dos" and 2 or 1
+
+	local lines = vim.api.nvim_buf_get_lines(bufferId, 0, -1, false)
+	local rem = offset
+	for i, line in ipairs(lines) do
+		local char_cnt = vim.fn.strchars(line)
+		if rem <= char_cnt then
+			local prefix = vim.fn.strcharpart(line, 0, rem)
+			return i - 1, #prefix
+		end
+		rem = rem - (char_cnt + nl_len)
+	end
+	local last = #lines
+	local tail = lines[last] or ""
+	return last - 1, #tail
+end
+
+function M.set_text(bufferId, start, end_, lines)
+	local start_line, start_col = offset_to_pos(bufferId, start)
+	local end_line, end_col = offset_to_pos(bufferId, end_)
+	vim.api.nvim_buf_set_text(bufferId, start_line, start_col, end_line, end_col, lines)
+end
+
 local bs = vim.keycode("<BS>")
 local del = vim.keycode("<Del>")
 

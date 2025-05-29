@@ -1,62 +1,99 @@
 package com.ugarosa.neovim.domain.buffer
 
+import com.ugarosa.neovim.bus.IdeaDocumentChange
+
 data class RepeatableChange(
-    val beforeDelete: Int,
-    val afterDelete: Int,
-    val text: String,
-    val caretAdvance: Int,
+    var anchor: Int,
+    var leftDel: Int,
+    var rightDel: Int,
+    val body: StringBuilder,
 ) {
-    val ignoreTickIncrement = beforeDelete + afterDelete + if (text.isEmpty()) 0 else 1
+    val start: Int get() = anchor - leftDel
+    val end: Int get() = anchor + body.length + rightDel
+    val delta: Int get() = body.length - (leftDel + rightDel)
+    val ignoreTickIncrement = leftDel + rightDel + if (body.isEmpty()) 0 else 1
 
-    companion object {
-        fun merge(changes: List<RepeatableChange>): RepeatableChange {
-            require(changes.isNotEmpty()) { "Cannot merge an empty list of changes" }
+    fun overlap(c: IdeaDocumentChange): Boolean {
+        return !(c.end < start || c.offset > end)
+    }
 
-            var beforeDelete = changes.first().beforeDelete
-            var afterDelete = changes.first().afterDelete
-            val body = StringBuilder(changes.first().text)
-            var caret = changes.first().caretAdvance
+    fun merge(c: IdeaDocumentChange) {
+        var caretInBody = c.caret - start
 
-            for (c in changes.drop(1)) {
-                if (c.beforeDelete > 0) {
-                    val deleteStart = caret - c.beforeDelete
-                    if (deleteStart < 0) {
-                        beforeDelete += -deleteStart
-                        body.delete(0, caret)
-                        caret = 0
-                    } else {
-                        body.delete(deleteStart, caret)
-                        caret -= c.beforeDelete
-                    }
-                }
+        val needL = c.caret - c.offset
+        val overL = needL - caretInBody
+        if (overL > 0) {
+            body.delete(0, caretInBody)
+            leftDel += overL
+            caretInBody = 0
+        } else {
+            body.delete(caretInBody - needL, caretInBody)
+            caretInBody -= needL
+        }
 
-                if (c.afterDelete > 0) {
-                    val deleteEnd = caret + c.afterDelete
-                    val overflow = deleteEnd - body.length
-                    if (overflow > 0) {
-                        afterDelete += overflow
-                        body.delete(caret, body.length)
-                    } else {
-                        body.delete(caret, deleteEnd)
-                    }
-                }
+        val needR = c.end - c.caret
+        val overR = needR - (body.length - caretInBody)
+        if (overR > 0) {
+            body.delete(caretInBody, body.length)
+            rightDel += overR
+        } else {
+            body.delete(caretInBody, caretInBody + needR)
+        }
 
-                if (c.text.isNotEmpty()) {
-                    body.insert(caret, c.text)
-                }
+        body.insert(caretInBody, c.newText)
+    }
+}
 
-                if (c.caretAdvance != 0) {
-                    caret += c.caretAdvance
-                }
-                caret = caret.coerceIn(0, body.length)
+data class FixedChange(
+    val start: Int,
+    val end: Int,
+    val replacement: List<String>,
+)
+
+fun splitDocumentChanges(changes: List<IdeaDocumentChange>): Pair<List<FixedChange>, RepeatableChange?> {
+    var block: RepeatableChange? = null
+    val queue = mutableListOf<FixedChange>()
+
+    for (c in changes) {
+        when {
+            block == null && c.caretInside -> {
+                block =
+                    RepeatableChange(
+                        anchor = c.caret,
+                        leftDel = c.caret - c.offset,
+                        rightDel = c.end - c.caret,
+                        body = StringBuilder(c.newText),
+                    )
             }
 
-            return RepeatableChange(
-                beforeDelete = beforeDelete,
-                afterDelete = afterDelete,
-                text = body.toString(),
-                caretAdvance = caret,
-            )
+            block != null && block.overlap(c) -> {
+                block.merge(c)
+            }
+
+            block == null || c.end <= block.start -> {
+                queue.add(
+                    FixedChange(
+                        start = c.offset,
+                        end = c.end,
+                        replacement = c.lines,
+                    ),
+                )
+                block?.apply {
+                    anchor += c.delta
+                }
+            }
+
+            else -> {
+                queue.add(
+                    FixedChange(
+                        start = c.offset - block.delta,
+                        end = c.end - block.delta,
+                        replacement = c.lines,
+                    ),
+                )
+            }
         }
     }
+
+    return queue to block
 }

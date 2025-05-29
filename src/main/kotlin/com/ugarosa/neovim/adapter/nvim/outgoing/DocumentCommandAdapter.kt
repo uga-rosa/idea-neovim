@@ -1,7 +1,7 @@
 package com.ugarosa.neovim.adapter.nvim.outgoing
 
 import com.intellij.openapi.components.service
-import com.ugarosa.neovim.bus.IdeaDocumentChanged
+import com.ugarosa.neovim.domain.buffer.FixedChange
 import com.ugarosa.neovim.domain.buffer.RepeatableChange
 import com.ugarosa.neovim.domain.id.BufferId
 import com.ugarosa.neovim.rpc.client.NvimClient
@@ -10,6 +10,7 @@ import com.ugarosa.neovim.rpc.client.api.bufVar
 import com.ugarosa.neovim.rpc.client.api.bufferAttach
 import com.ugarosa.neovim.rpc.client.api.bufferSetLines
 import com.ugarosa.neovim.rpc.client.api.bufferSetText
+import com.ugarosa.neovim.rpc.client.api.input
 import com.ugarosa.neovim.rpc.client.api.modifiable
 import com.ugarosa.neovim.rpc.client.api.noModifiable
 import com.ugarosa.neovim.rpc.client.api.sendRepeatableChange
@@ -33,17 +34,20 @@ class DocumentCommandAdapter(
         client.bufferAttach(bufferId)
     }
 
-    suspend fun setText(event: IdeaDocumentChanged.FarCursor) {
+    suspend fun setText(change: FixedChange) {
         val currentTick = client.bufVar(bufferId, CHANGED_TICK)
         ignoreTicks.add(currentTick + 1)
-        client.bufferSetText(bufferId, event.start, event.end, event.replacement)
+        client.bufferSetText(bufferId, change.start, change.end, change.replacement)
     }
 
-    suspend fun sendRepeatableChanges(changes: List<RepeatableChange>) {
-        val mergedChange = RepeatableChange.merge(changes)
+    suspend fun sendRepeatableChange(change: RepeatableChange) {
         val currentTick = client.bufVar(bufferId, CHANGED_TICK)
-        ignoreTicks.addAll(currentTick + 1..currentTick + mergedChange.ignoreTickIncrement)
-        client.sendRepeatableChange(mergedChange)
+        ignoreTicks.addAll(currentTick + 1..currentTick + change.ignoreTickIncrement)
+        client.sendRepeatableChange(change)
+    }
+
+    suspend fun escape() {
+        client.input("<Esc>")
     }
 
     fun isIgnored(tick: Long): Boolean {

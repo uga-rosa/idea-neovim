@@ -15,12 +15,12 @@ import com.ugarosa.neovim.adapter.idea.editor.IdeaDocumentListener
 import com.ugarosa.neovim.adapter.idea.editor.SelectionSyncAdapter
 import com.ugarosa.neovim.adapter.nvim.outgoing.CursorCommandAdapter
 import com.ugarosa.neovim.adapter.nvim.outgoing.DocumentCommandAdapter
-import com.ugarosa.neovim.bus.IdeaDocumentChanged
+import com.ugarosa.neovim.bus.IdeaDocumentChange
 import com.ugarosa.neovim.bus.IdeaToNvimBus
 import com.ugarosa.neovim.bus.NvimBufLines
 import com.ugarosa.neovim.bus.NvimToIdeaBus
 import com.ugarosa.neovim.config.nvim.NvimOptionManager
-import com.ugarosa.neovim.domain.buffer.RepeatableChange
+import com.ugarosa.neovim.domain.buffer.splitDocumentChanges
 import com.ugarosa.neovim.domain.id.BufferId
 import com.ugarosa.neovim.domain.mode.getMode
 import com.ugarosa.neovim.domain.mode.setMode
@@ -50,6 +50,8 @@ class BufferCoordinator private constructor(
     // Idea -> Nvim adapters
     private val documentCommand: DocumentCommandAdapter,
     private val cursorCommand: CursorCommandAdapter,
+    // Listeners
+    private val caretListener: IdeaCaretListener,
 ) : Disposable {
     private val logger = myLogger()
     private val optionManager = service<NvimOptionManager>()
@@ -83,6 +85,7 @@ class BufferCoordinator private constructor(
                     SelectionSyncAdapter(editor),
                     DocumentCommandAdapter(bufferId),
                     CursorCommandAdapter(),
+                    caretListener,
                 )
 
             Disposer.register(buffer, documentListener)
@@ -108,55 +111,14 @@ class BufferCoordinator private constructor(
             optionManager.initializeLocal(bufferId)
         }
 
-        val repeatableChanges =
-            object {
-                private val changes = mutableListOf<RepeatableChange>()
-
-                fun add(change: RepeatableChange) {
-                    changes.add(change)
-                }
-
-                suspend fun flush() {
-                    if (changes.isEmpty()) return
-                    documentCommand.sendRepeatableChanges(changes)
-                    changes.clear()
-                    cursorCommand.send(bufferId, caretPositionSync.currentPosition())
-                }
-            }
+        val documentChanges = mutableListOf<IdeaDocumentChange>()
 
         // Subscribe to events from Idea
-        ideaToNvimBus.bufferChanges
-            .filter { it.documentChanged.bufferId == bufferId }
+        ideaToNvimBus.documentChange
+            .filter { it.bufferId == bufferId }
             .onEach { event ->
                 logger.debug("Document change event: $event")
-                when (val docChange = event.documentChanged) {
-                    is IdeaDocumentChanged.NearCursor -> {
-                        val beforeCaret = docChange.caretOffset
-                        // HACK: Normally, a document change that involves caret movement triggers the CaretListener,
-                        // and event.caretMoved holds a value. However, certain actions like ACTION_EDITOR_BACKSPACE
-                        // are somehow implemented to stop the CaretListener and move the position.
-                        val afterCaret =
-                            event.caretMoved?.offset
-                                ?: if (docChange.text.isEmpty()) {
-                                    beforeCaret - docChange.beforeDelete
-                                } else {
-                                    beforeCaret
-                                }
-                        val caretAdvance = afterCaret - (beforeCaret - docChange.beforeDelete)
-                        val change =
-                            RepeatableChange(
-                                beforeDelete = docChange.beforeDelete,
-                                afterDelete = docChange.afterDelete,
-                                text = docChange.text,
-                                caretAdvance = caretAdvance,
-                            )
-                        repeatableChanges.add(change)
-                    }
-
-                    is IdeaDocumentChanged.FarCursor -> {
-                        documentCommand.setText(docChange)
-                    }
-                }
+                documentChanges.add(event)
             }
             .launchIn(scope)
 
@@ -164,11 +126,6 @@ class BufferCoordinator private constructor(
             .filter { it.bufferId == bufferId }
             .onEach {
                 logger.debug("Caret moved event: $it")
-
-                if (getMode().isInsert()) {
-                    repeatableChanges.flush()
-                }
-
                 cursorCommand.send(it.bufferId, it.pos)
             }
             .launchIn(scope)
@@ -189,6 +146,28 @@ class BufferCoordinator private constructor(
                 logger.debug("Change modifiable event: $it")
                 val isWritable = !editor.isViewer && editor.document.isWritable
                 documentCommand.changeModifiable(isWritable)
+            }
+            .launchIn(scope)
+
+        ideaToNvimBus.escapeInsert
+            .filter { it.editor == editor }
+            .onEach {
+                logger.debug("Escape insert event: $it")
+
+                // Flush document changes before escaping
+                val (fixed, block) = splitDocumentChanges(documentChanges)
+                fixed.forEach { c ->
+                    documentCommand.setText(c)
+                }
+                block?.let {
+                    documentCommand.sendRepeatableChange(block)
+                }
+
+                documentCommand.escape()
+
+                // Sync cursor position after escaping
+                val curPos = caretPositionSync.currentPosition()
+                cursorCommand.send(bufferId, curPos)
             }
             .launchIn(scope)
 
@@ -223,8 +202,9 @@ class BufferCoordinator private constructor(
                     withContext(Dispatchers.EDT) {
                         LookupManager.getActiveLookup(editor)?.hideLookup(true)
                     }
-                    // TODO: Create ESC action and flush should be called by it before the mode change
-                    repeatableChanges.flush()
+                    caretListener.enable()
+                } else {
+                    caretListener.disable()
                 }
 
                 if (!event.mode.isVisualOrSelect()) {

@@ -26,4 +26,9 @@
         <listener class="com.ugarosa.neovim.adapter.idea.lifecycle.NvimAppLifecycleListener"
                   topic="com.intellij.ide.AppLifecycleListener"/>
     </applicationListeners>
+
+    <actions>
+        <action id="NvimEscapeAction"
+                class="com.ugarosa.neovim.adapter.idea.action.NvimEscapeAction"/>
+    </actions>
 </idea-plugin>

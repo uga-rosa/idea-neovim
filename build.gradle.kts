@@ -30,6 +30,8 @@ dependencies {
         // Add necessary plugin dependencies for compilation here, example:
         bundledPlugin("com.intellij.java")
     }
+
+    testImplementation(libs.bundles.test)
 }
 
 intellijPlatform {
@@ -67,4 +69,8 @@ tasks.prepareSandbox {
     from("src/main/resources/runtime") {
         into("${rootProject.name}/runtime")
     }
+}
+
+tasks.test {
+    useJUnitPlatform()
 }

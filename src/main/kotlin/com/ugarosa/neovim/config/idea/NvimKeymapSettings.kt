@@ -7,6 +7,7 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.util.xmlb.annotations.XCollection
+import com.ugarosa.neovim.adapter.idea.action.NvimEscapeAction
 import com.ugarosa.neovim.adapter.idea.input.notation.NeovimKeyNotation
 
 @Service(Service.Level.APP)
@@ -54,7 +55,7 @@ class NvimKeymapSettings :
                 }
 
                 // Insert mode Esc
-                mapNvim("i", "<Esc>", "<Esc>")
+                mapIdea("i", "<Esc>", NvimEscapeAction.ACTION_ID)
                 // Undo/Redo
                 mapIdea("n", "u", IdeActions.ACTION_UNDO)
                 mapIdea("n", "<C-r>", IdeActions.ACTION_REDO)

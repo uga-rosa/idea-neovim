@@ -3,6 +3,9 @@ kotlin = "2.1.20"
 intellij-platform = "2.5.0"
 ktlint = "12.2.0"
 msgpack = "0.9.9"
+junit = "5.12.2"
+kotest = "5.9.1"
+mockk = "1.14.2"
 
 [plugins]
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
@@ -11,3 +14,11 @@ ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
 
 [libraries]
 msgpack = { module = "org.msgpack:msgpack-core", version.ref = "msgpack" }
+# tests
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+junit-vintage = { module = "org.junit.vintage:junit-vintage-engine", version.ref = "junit" }
+kotest = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotest" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+
+[bundles]
+test = ["junit-jupiter", "junit-vintage", "kotest", "mockk"]

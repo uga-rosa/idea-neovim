@@ -6,23 +6,17 @@ import com.ugarosa.neovim.domain.position.NvimPosition
 
 sealed interface IdeaToNvimEvent
 
-sealed interface IdeaDocumentChanged : IdeaToNvimEvent {
-    val bufferId: BufferId
-
-    data class NearCursor(
-        override val bufferId: BufferId,
-        val caretOffset: Int,
-        val beforeDelete: Int,
-        val afterDelete: Int,
-        val text: String,
-    ) : IdeaDocumentChanged
-
-    data class FarCursor(
-        override val bufferId: BufferId,
-        val start: NvimPosition,
-        val end: NvimPosition,
-        val replacement: List<String>,
-    ) : IdeaDocumentChanged
+data class IdeaDocumentChange(
+    val bufferId: BufferId,
+    val offset: Int,
+    val oldLen: Int,
+    val newText: String,
+    val caret: Int,
+) : IdeaToNvimEvent {
+    val end: Int get() = offset + oldLen
+    val caretInside get() = caret in offset..end
+    val delta get() = newText.length - oldLen
+    val lines: List<String> get() = newText.replace("\r\n", "\n").split("\n")
 }
 
 data class IdeaCaretMoved(
@@ -36,5 +30,9 @@ data class EditorSelected(
 ) : IdeaToNvimEvent
 
 data class ChangeModifiable(
+    val editor: EditorEx,
+) : IdeaToNvimEvent
+
+data class EscapeInsert(
     val editor: EditorEx,
 ) : IdeaToNvimEvent

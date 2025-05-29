@@ -2,7 +2,6 @@ package com.ugarosa.neovim.rpc.client.api
 
 import com.ugarosa.neovim.domain.buffer.RepeatableChange
 import com.ugarosa.neovim.domain.id.BufferId
-import com.ugarosa.neovim.domain.position.NvimPosition
 import com.ugarosa.neovim.rpc.client.NvimClient
 
 suspend fun NvimClient.createBuffer(): BufferId {
@@ -26,22 +25,11 @@ suspend fun NvimClient.bufferSetLines(
 
 suspend fun NvimClient.bufferSetText(
     bufferId: BufferId,
-    start: NvimPosition,
-    end: NvimPosition,
+    start: Int,
+    end: Int,
     replacement: List<String>,
 ) {
-    // Indexing is zero-based. Row indices are end-inclusive, and column indices are end-exclusive.
-    request(
-        "nvim_buf_set_text",
-        listOf(
-            bufferId,
-            start.line,
-            start.col,
-            end.line,
-            end.col,
-            replacement,
-        ),
-    )
+    execLuaNotify("buffer", "set_text", listOf(bufferId, start, end, replacement))
 }
 
 suspend fun NvimClient.sendRepeatableChange(change: RepeatableChange) {
@@ -49,9 +37,9 @@ suspend fun NvimClient.sendRepeatableChange(change: RepeatableChange) {
         "buffer",
         "send_repeatable_change",
         listOf(
-            change.beforeDelete,
-            change.afterDelete,
-            change.text,
+            change.leftDel,
+            change.rightDel,
+            change.body.toString(),
         ),
     )
 }
