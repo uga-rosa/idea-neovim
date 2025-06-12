@@ -15,12 +15,10 @@ import com.ugarosa.neovim.adapter.idea.editor.IdeaDocumentListener
 import com.ugarosa.neovim.adapter.idea.editor.SelectionSyncAdapter
 import com.ugarosa.neovim.adapter.nvim.outgoing.CursorCommandAdapter
 import com.ugarosa.neovim.adapter.nvim.outgoing.DocumentCommandAdapter
-import com.ugarosa.neovim.bus.IdeaDocumentChange
 import com.ugarosa.neovim.bus.IdeaToNvimBus
 import com.ugarosa.neovim.bus.NvimBufLines
 import com.ugarosa.neovim.bus.NvimToIdeaBus
 import com.ugarosa.neovim.config.nvim.NvimOptionManager
-import com.ugarosa.neovim.domain.buffer.splitDocumentChanges
 import com.ugarosa.neovim.domain.id.BufferId
 import com.ugarosa.neovim.domain.mode.getMode
 import com.ugarosa.neovim.domain.mode.setMode
@@ -111,14 +109,12 @@ class BufferCoordinator private constructor(
             optionManager.initializeLocal(bufferId)
         }
 
-        val documentChanges = mutableListOf<IdeaDocumentChange>()
-
         // Subscribe to events from Idea
         ideaToNvimBus.documentChange
             .filter { it.bufferId == bufferId }
             .onEach { event ->
                 logger.debug("Document change event: $event")
-                documentChanges.add(event)
+                documentCommand.setText(event)
             }
             .launchIn(scope)
 
@@ -153,15 +149,6 @@ class BufferCoordinator private constructor(
             .filter { it.editor == editor }
             .onEach {
                 logger.debug("Escape insert event: $it")
-
-                // Flush document changes before escaping
-                val (fixed, block) = splitDocumentChanges(documentChanges)
-                fixed.forEach { c ->
-                    documentCommand.setText(c)
-                }
-                block?.let {
-                    documentCommand.sendRepeatableChange(block)
-                }
 
                 documentCommand.escape()
 

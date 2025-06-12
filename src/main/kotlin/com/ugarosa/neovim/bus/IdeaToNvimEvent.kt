@@ -8,16 +8,10 @@ sealed interface IdeaToNvimEvent
 
 data class IdeaDocumentChange(
     val bufferId: BufferId,
-    val offset: Int,
-    val oldLen: Int,
-    val newText: String,
-    val caret: Int,
-) : IdeaToNvimEvent {
-    val end: Int get() = offset + oldLen
-    val caretInside get() = caret in offset..end
-    val delta get() = newText.length - oldLen
-    val lines: List<String> get() = newText.replace("\r\n", "\n").split("\n")
-}
+    val start: NvimPosition,
+    val end: NvimPosition,
+    val replacement: List<String>,
+) : IdeaToNvimEvent
 
 data class IdeaCaretMoved(
     val bufferId: BufferId,
