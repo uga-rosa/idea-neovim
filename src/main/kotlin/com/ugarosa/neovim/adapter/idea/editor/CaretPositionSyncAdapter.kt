@@ -4,7 +4,6 @@ import com.intellij.openapi.application.EDT
 import com.intellij.openapi.application.runUndoTransparentWriteAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.ex.EditorEx
-import com.intellij.openapi.util.TextRange
 import com.ugarosa.neovim.bus.IdeaCaretMoved
 import com.ugarosa.neovim.bus.IdeaToNvimBus
 import com.ugarosa.neovim.bus.NvimCursorMoved
@@ -15,6 +14,7 @@ import com.ugarosa.neovim.config.nvim.option.Sidescrolloff
 import com.ugarosa.neovim.domain.id.BufferId
 import com.ugarosa.neovim.domain.mode.getMode
 import com.ugarosa.neovim.domain.position.NvimPosition
+import com.ugarosa.neovim.domain.position.getLineText
 import com.ugarosa.neovim.domain.position.takeByte
 import com.ugarosa.neovim.logger.myLogger
 import kotlinx.coroutines.Dispatchers
@@ -121,42 +121,49 @@ class CaretPositionSyncAdapter(
     ): Int {
         if (getMode().isInsert()) return offset
 
-        if (direction == MoveDirection.LEFT || direction == MoveDirection.RIGHT) {
-            return offset
-        }
-
         val foldingModel = editor.foldingModel
         // Get the most outer folded region at the current offset
         val foldRegion =
             foldingModel.getCollapsedRegionAtOffset(offset)
                 ?: return offset
 
-        // When moving DOWN into the first folded line, if the folded line is short and the cursor ends up at the end of
-        // the line, it may be mistakenly judged as having entered the fold region.
-        if (direction == MoveDirection.DOWN) {
-            val startLine = editor.document.getLineNumber(offset)
-            val foldStartLine = editor.document.getLineNumber(foldRegion.startOffset)
-            if (startLine == foldStartLine) {
-                return offset
-            }
-        }
+        when (direction) {
+            MoveDirection.DOWN -> {
+                // When moving DOWN into the first folded line, if the folded line is short and the cursor ends up at
+                // the end of the line, it may be mistakenly judged as having entered the fold region.
+                val startLine = editor.document.getLineNumber(offset)
+                val foldStartLine = editor.document.getLineNumber(foldRegion.startOffset)
+                if (startLine == foldStartLine) {
+                    // should not expand the fold region
+                    return offset.coerceAtMost(foldRegion.startOffset)
+                }
 
-        val adjustedLine =
-            if (direction == MoveDirection.UP) {
-                val startLine = editor.document.getLineNumber(foldRegion.startOffset)
-                startLine
-            } else {
                 val endOffset = foldRegion.endOffset
                 val endLine = editor.document.getLineNumber(endOffset)
                 val maxLine = (editor.document.lineCount - 1).coerceAtLeast(0)
-                (endLine + 1).coerceAtMost(maxLine)
+                val adjustedLine = (endLine + 1).coerceAtMost(maxLine)
+
+                val lineText = editor.document.getLineText(adjustedLine)
+                val maxCol = (lineText.length - 1).coerceAtLeast(0)
+                val curswantCol = lineText.takeByte(curswant).length.coerceAtMost(maxCol)
+                val lineStartOffset = editor.document.getLineStartOffset(adjustedLine)
+                return lineStartOffset + curswantCol
             }
-        val lineStartOffset = editor.document.getLineStartOffset(adjustedLine)
-        val lineEndOffset = editor.document.getLineEndOffset(adjustedLine)
-        val lineText = editor.document.getText(TextRange(lineStartOffset, lineEndOffset))
-        val maxCol = (lineText.length - 1).coerceAtLeast(0)
-        val curswantOffset = lineText.takeByte(curswant).length.coerceAtMost(maxCol)
-        return lineStartOffset + curswantOffset
+
+            MoveDirection.UP -> {
+                val startLine = editor.document.getLineNumber(foldRegion.startOffset)
+                val lineStartOffset = editor.document.getLineStartOffset(startLine)
+                // should not expand the fold region
+                val maxCol = foldRegion.startOffset - lineStartOffset
+                val lineText = editor.document.getLineText(startLine)
+                val curswantCol = lineText.takeByte(curswant).length.coerceAtMost(maxCol)
+                return lineStartOffset + curswantCol
+            }
+
+            else -> {
+                return offset
+            }
+        }
     }
 
     private suspend fun getScrollOptions(bufferId: BufferId): Pair<Scrolloff, Sidescrolloff> {

@@ -25,11 +25,9 @@ data class NvimPosition(
             document: Document,
         ): NvimPosition {
             val line = document.getLineNumber(offset)
+            val lineText = document.getLineText(line)
             val lineStartOffset = document.getLineStartOffset(line)
-            val lineEndOffset = document.getLineEndOffset(line)
-            val lineText = document.getText(TextRange(lineStartOffset, lineEndOffset))
             val byteCol = charOffsetToUtf8ByteOffset(lineText, offset - lineStartOffset)
-
             return NvimPosition(line, byteCol)
         }
     }
