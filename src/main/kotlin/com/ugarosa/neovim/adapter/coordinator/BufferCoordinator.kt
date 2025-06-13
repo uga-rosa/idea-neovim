@@ -34,6 +34,8 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 class BufferCoordinator private constructor(
@@ -158,6 +160,11 @@ class BufferCoordinator private constructor(
             }
             .launchIn(scope)
 
+        // You have to control both updating the document and moving the caret with a mutex. For instance, if you add a
+        // new line with “o” while a move happens at the same time, without a mutex it tries to move to a line that does
+        // not exist, causing an error.
+        val docCaretMutex = Mutex()
+
         // Subscribe to events from Neovim
         nvimToIdeaBus.batchedBufLines
             .forBuffer(bufferId)
@@ -165,7 +172,9 @@ class BufferCoordinator private constructor(
                 logger.debug("Received buffer lines: $events")
                 val filtered = events.filter { !documentCommand.isIgnored(it.changedTick) }
                 if (filtered.isEmpty()) return@onEach
-                documentSync.apply(filtered)
+                docCaretMutex.withLock {
+                    documentSync.apply(filtered)
+                }
             }
             .launchIn(scope)
 
@@ -173,7 +182,9 @@ class BufferCoordinator private constructor(
             .filter { it.bufferId == bufferId }
             .onEach { event ->
                 logger.debug("Received cursor event: $event")
-                caretPositionSync.apply(event)
+                docCaretMutex.withLock {
+                    caretPositionSync.apply(event)
+                }
             }
             .launchIn(scope)
 
