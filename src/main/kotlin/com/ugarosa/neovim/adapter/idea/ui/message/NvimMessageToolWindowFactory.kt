@@ -7,18 +7,18 @@ import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.content.ContentFactory
 
-object NeovimMessageIcon {
-    val base = IconLoader.getIcon("/icons/neovim-message@20x20.svg", javaClass)
+object NvimMessageIcon {
+    val base = IconLoader.getIcon("/icons/nvim-message@20x20.svg", javaClass)
     private val badge = IconLoader.getIcon("/icons/green-circle.svg", javaClass)
     val withBadge = OverlayIcon(base, badge)
 }
 
-class NeovimMessageToolWindowFactory : ToolWindowFactory {
+class NvimMessageToolWindowFactory : ToolWindowFactory {
     override fun createToolWindowContent(
         project: Project,
         toolWindow: ToolWindow,
     ) {
-        toolWindow.setIcon(NeovimMessageIcon.base)
+        toolWindow.setIcon(NvimMessageIcon.base)
 
         val contentFactory = ContentFactory.getInstance()
 

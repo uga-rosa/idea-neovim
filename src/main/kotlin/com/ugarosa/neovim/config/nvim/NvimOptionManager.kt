@@ -13,10 +13,10 @@ import java.util.concurrent.ConcurrentHashMap
 class NvimOptionManager {
     private val logger = myLogger()
 
-    private val globalOptionsManager = NeovimGlobalOptionsManager()
+    private val globalOptionsManager = NvimGlobalOptionsManager()
     private val globalInit = CompletableDeferred<Unit>()
 
-    private val localOptionsManagers = ConcurrentHashMap<BufferId, NeovimLocalOptionsManager>()
+    private val localOptionsManagers = ConcurrentHashMap<BufferId, NvimLocalOptionsManager>()
     private val localInits = ConcurrentHashMap<BufferId, CompletableDeferred<Unit>>()
 
     suspend fun initializeGlobal() {
@@ -27,12 +27,12 @@ class NvimOptionManager {
     suspend fun initializeLocal(bufferId: BufferId) {
         val initDeferred = CompletableDeferred<Unit>()
         localInits[bufferId] = initDeferred
-        val localOptionsManager = NeovimLocalOptionsManager().apply { initialize(bufferId) }
+        val localOptionsManager = NvimLocalOptionsManager().apply { initialize(bufferId) }
         localOptionsManagers[bufferId] = localOptionsManager
         initDeferred.complete(Unit)
     }
 
-    suspend fun getGlobal(): NeovimGlobalOptions {
+    suspend fun getGlobal(): NvimGlobalOptions {
         globalInit.await()
         return globalOptionsManager.get()
     }

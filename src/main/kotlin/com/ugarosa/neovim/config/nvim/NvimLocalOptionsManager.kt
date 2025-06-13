@@ -11,23 +11,23 @@ import com.ugarosa.neovim.rpc.client.api.getLocalOption
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-interface NeovimLocalOptions {
+interface NvimLocalOptions {
     val filetype: Filetype
     val scrolloff: Scrolloff?
     val sidescrolloff: Sidescrolloff?
 }
 
-private data class MutableNeovimLocalOptions(
+private data class MutableNvimLocalOptions(
     override var filetype: Filetype = Filetype.default,
     override var scrolloff: Scrolloff? = null,
     override var sidescrolloff: Sidescrolloff? = null,
-) : NeovimLocalOptions
+) : NvimLocalOptions
 
-class NeovimLocalOptionsManager() {
+class NvimLocalOptionsManager() {
     private val logger = myLogger()
     private val client = service<NvimClient>()
     private val mutex = Mutex()
-    private val options = MutableNeovimLocalOptions()
+    private val options = MutableNvimLocalOptions()
     private val setters: Map<String, (Any) -> Unit> =
         mapOf(
             "filetype" to { raw -> options.filetype = Filetype.fromRaw(raw) },
@@ -41,7 +41,7 @@ class NeovimLocalOptionsManager() {
         putAll(localOptions)
     }
 
-    suspend fun get(): NeovimLocalOptions = mutex.withLock { options.copy() }
+    suspend fun get(): NvimLocalOptions = mutex.withLock { options.copy() }
 
     suspend fun putAll(options: Map<String, Any>) {
         mutex.withLock {

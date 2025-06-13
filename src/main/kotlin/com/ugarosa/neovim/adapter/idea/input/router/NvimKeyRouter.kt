@@ -9,7 +9,7 @@ import com.intellij.openapi.editor.actionSystem.TypedAction
 import com.intellij.openapi.editor.ex.EditorEx
 import com.ugarosa.neovim.adapter.idea.action.executeAction
 import com.ugarosa.neovim.adapter.idea.input.dispatcher.NvimKeyEventDispatcher
-import com.ugarosa.neovim.adapter.idea.input.notation.NeovimKeyNotation
+import com.ugarosa.neovim.adapter.idea.input.notation.NvimKeyNotation
 import com.ugarosa.neovim.config.idea.KeyMappingAction
 import com.ugarosa.neovim.config.idea.NvimKeymapSettings
 import com.ugarosa.neovim.domain.mode.NvimMode
@@ -33,7 +33,7 @@ class NvimKeyRouter(
     private val client = service<NvimClient>()
     private val settings = service<NvimKeymapSettings>()
 
-    private val buffer = ConcurrentLinkedDeque<NeovimKeyNotation>()
+    private val buffer = ConcurrentLinkedDeque<NvimKeyNotation>()
 
     @OptIn(ObsoleteCoroutinesApi::class)
     private val actionQueue =
@@ -53,7 +53,7 @@ class NvimKeyRouter(
     }
 
     fun enqueueKey(
-        key: NeovimKeyNotation,
+        key: NvimKeyNotation,
         editor: EditorEx,
     ): Boolean {
         buffer.add(key)
@@ -98,7 +98,7 @@ class NvimKeyRouter(
     }
 
     private fun fallback(
-        keys: List<NeovimKeyNotation>,
+        keys: List<NvimKeyNotation>,
         editor: EditorEx,
         mode: NvimMode,
     ): Boolean {
@@ -130,7 +130,7 @@ class NvimKeyRouter(
     private fun executeRhs(actions: List<KeyMappingAction>) {
         actions.forEach { action ->
             when (action) {
-                is KeyMappingAction.SendToNeovim -> {
+                is KeyMappingAction.SendToNvim -> {
                     logger.trace("Sending key to Neovim: ${action.key}")
                     actionQueue.trySend {
                         client.input(action.key.toString())

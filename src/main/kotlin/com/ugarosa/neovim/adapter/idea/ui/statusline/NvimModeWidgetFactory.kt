@@ -5,10 +5,10 @@ import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.openapi.wm.StatusBarWidgetFactory
 
-const val NEOVIM_MODE_ID = "NeovimModeWidgetId"
+const val NVIM_MODE_ID = "NvimModeWidgetId"
 
-class NeovimModeWidgetFactory : StatusBarWidgetFactory {
-    override fun getId(): String = NEOVIM_MODE_ID
+class NvimModeWidgetFactory : StatusBarWidgetFactory {
+    override fun getId(): String = NVIM_MODE_ID
 
     override fun getDisplayName(): String = "Neovim Mode Display"
 

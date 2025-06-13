@@ -3,8 +3,8 @@ package com.ugarosa.neovim.rpc.client
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.ugarosa.neovim.rpc.connection.NvimConnectionManager
-import com.ugarosa.neovim.rpc.event.NeovimEventDispatcher
 import com.ugarosa.neovim.rpc.event.NotificationHandler
+import com.ugarosa.neovim.rpc.event.NvimEventDispatcher
 import com.ugarosa.neovim.rpc.process.NvimProcessManager
 import com.ugarosa.neovim.rpc.transport.NvimObject
 import com.ugarosa.neovim.rpc.transport.NvimTransport
@@ -19,7 +19,7 @@ class NvimClient(
     private val processManager = NvimProcessManager()
     private val transport = NvimTransport(processManager)
     private val connectionManager = NvimConnectionManager(transport, scope)
-    private val dispatcher = NeovimEventDispatcher(connectionManager, scope)
+    private val dispatcher = NvimEventDispatcher(connectionManager, scope)
 
     internal val deferredChanId = CompletableDeferred<Long>()
 

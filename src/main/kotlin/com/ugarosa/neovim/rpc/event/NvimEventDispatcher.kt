@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.onEach
 
 typealias NotificationHandler = suspend (List<NvimObject>) -> Unit
 
-class NeovimEventDispatcher(
+class NvimEventDispatcher(
     connectionManager: NvimConnectionManager,
     scope: CoroutineScope,
 ) {

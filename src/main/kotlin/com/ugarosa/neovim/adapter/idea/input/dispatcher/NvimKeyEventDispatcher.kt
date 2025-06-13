@@ -1,7 +1,7 @@
 package com.ugarosa.neovim.adapter.idea.input.dispatcher
 
 import com.intellij.ide.IdeEventQueue
-import com.ugarosa.neovim.adapter.idea.input.notation.NeovimKeyNotation
+import com.ugarosa.neovim.adapter.idea.input.notation.NvimKeyNotation
 import com.ugarosa.neovim.adapter.idea.input.notation.printableVKs
 import com.ugarosa.neovim.adapter.idea.input.router.NvimKeyRouter
 import com.ugarosa.neovim.common.unsafeFocusEditor
@@ -43,7 +43,7 @@ class NvimKeyEventDispatcher(
                     return false
                 }
 
-                NeovimKeyNotation.fromKeyPressedEvent(e)?.also {
+                NvimKeyNotation.fromKeyPressedEvent(e)?.also {
                     logger.debug("Pressed key: $it")
                     return keyRouter.enqueueKey(it, editor)
                 }
@@ -63,12 +63,12 @@ class NvimKeyEventDispatcher(
 
                 // Special case for space
                 if (c == ' ') {
-                    val notation = NeovimKeyNotation.fromModsAndKey(mods, "Space")
+                    val notation = NvimKeyNotation.fromModsAndKey(mods, "Space")
                     logger.debug("Typed Space key: $notation")
                     return keyRouter.enqueueKey(notation, editor)
                 }
 
-                NeovimKeyNotation.fromKeyTypedEvent(e)?.also {
+                NvimKeyNotation.fromKeyTypedEvent(e)?.also {
                     logger.debug("Typed key: $it")
                     return keyRouter.enqueueKey(it, editor)
                 }

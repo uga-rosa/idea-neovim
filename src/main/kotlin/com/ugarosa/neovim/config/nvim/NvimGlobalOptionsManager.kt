@@ -10,23 +10,23 @@ import com.ugarosa.neovim.rpc.client.api.getGlobalOption
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-interface NeovimGlobalOptions {
+interface NvimGlobalOptions {
     val selection: Selection
     val scrolloff: Scrolloff
     val sidescrolloff: Sidescrolloff
 }
 
-private data class MutableNeovimGlobalOptions(
+private data class MutableNvimGlobalOptions(
     override var selection: Selection = Selection.default,
     override var scrolloff: Scrolloff = Scrolloff.default,
     override var sidescrolloff: Sidescrolloff = Sidescrolloff.default,
-) : NeovimGlobalOptions
+) : NvimGlobalOptions
 
-class NeovimGlobalOptionsManager() {
+class NvimGlobalOptionsManager() {
     private val logger = myLogger()
     private val client = service<NvimClient>()
     private val mutex = Mutex()
-    private val options = MutableNeovimGlobalOptions()
+    private val options = MutableNvimGlobalOptions()
     private val setters: Map<String, (Any) -> Unit> =
         mapOf(
             "selection" to { raw -> options.selection = Selection.fromRaw(raw) },
@@ -40,7 +40,7 @@ class NeovimGlobalOptionsManager() {
         putAll(globalOptions)
     }
 
-    suspend fun get(): NeovimGlobalOptions = mutex.withLock { options.copy() }
+    suspend fun get(): NvimGlobalOptions = mutex.withLock { options.copy() }
 
     suspend fun putAll(options: Map<String, Any>) {
         mutex.withLock {

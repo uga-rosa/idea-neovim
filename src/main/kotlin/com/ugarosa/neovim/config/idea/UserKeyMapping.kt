@@ -3,7 +3,7 @@ package com.ugarosa.neovim.config.idea
 import com.intellij.util.xmlb.annotations.Attribute
 import com.intellij.util.xmlb.annotations.Tag
 import com.intellij.util.xmlb.annotations.XCollection
-import com.ugarosa.neovim.adapter.idea.input.notation.NeovimKeyNotation
+import com.ugarosa.neovim.adapter.idea.input.notation.NvimKeyNotation
 import com.ugarosa.neovim.domain.mode.NvimModeKind
 
 data class UserKeyMapping(
@@ -12,13 +12,13 @@ data class UserKeyMapping(
     @XCollection(
         propertyElementName = "lhs",
         elementName = "key",
-        elementTypes = [NeovimKeyNotation::class],
+        elementTypes = [NvimKeyNotation::class],
     )
-    val lhs: List<NeovimKeyNotation>,
+    val lhs: List<NvimKeyNotation>,
     @XCollection(
         propertyElementName = "rhs",
         elementName = "action",
-        elementTypes = [KeyMappingAction.SendToNeovim::class, KeyMappingAction.ExecuteIdeaAction::class],
+        elementTypes = [KeyMappingAction.SendToNvim::class, KeyMappingAction.ExecuteIdeaAction::class],
     )
     val rhs: List<KeyMappingAction>,
 ) {
@@ -49,11 +49,11 @@ data class MapMode(
 }
 
 sealed class KeyMappingAction {
-    data class SendToNeovim(
-        @Tag val key: NeovimKeyNotation,
+    data class SendToNvim(
+        @Tag val key: NvimKeyNotation,
     ) : KeyMappingAction() {
         @Suppress("unused")
-        constructor() : this(NeovimKeyNotation())
+        constructor() : this(NvimKeyNotation())
 
         override fun toString(): String {
             return key.toString()
@@ -76,14 +76,14 @@ sealed class KeyMappingAction {
         private val regex = Regex("""<Action>\(([^)]+)\)""")
 
         fun parseNotations(notations: String): List<KeyMappingAction> {
-            return NeovimKeyNotation.parseNotations(notations)
+            return NvimKeyNotation.parseNotations(notations)
                 .map { notation ->
                     val mr = regex.find(notation.toString())
                     if (mr != null) {
                         val actionId = mr.groupValues[1]
                         ExecuteIdeaAction(actionId)
                     } else {
-                        SendToNeovim(notation)
+                        SendToNvim(notation)
                     }
                 }
         }

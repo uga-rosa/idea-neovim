@@ -24,9 +24,9 @@ class NvimMessageManager {
             ToolWindowManagerListener.TOPIC,
             object : ToolWindowManagerListener {
                 override fun toolWindowShown(toolWindow: ToolWindow) {
-                    if (toolWindow.id != NeovimMessageToolWindowFactory.WINDOW_ID) return
+                    if (toolWindow.id != NvimMessageToolWindowFactory.WINDOW_ID) return
                     invokeLater {
-                        toolWindow.setIcon(NeovimMessageIcon.base)
+                        toolWindow.setIcon(NvimMessageIcon.base)
                     }
                 }
             },
@@ -60,7 +60,7 @@ class NvimMessageManager {
                 is MessageEvent.Flush -> {
                     toolWindow(project)?.let { tw ->
                         if (livePane.flush()) {
-                            tw.setIcon(NeovimMessageIcon.withBadge)
+                            tw.setIcon(NvimMessageIcon.withBadge)
                         } else {
                             tw.hide()
                         }
@@ -71,5 +71,5 @@ class NvimMessageManager {
 
     private fun toolWindow(project: Project): ToolWindow? =
         ToolWindowManager.getInstance(project)
-            .getToolWindow(NeovimMessageToolWindowFactory.WINDOW_ID)
+            .getToolWindow(NvimMessageToolWindowFactory.WINDOW_ID)
 }

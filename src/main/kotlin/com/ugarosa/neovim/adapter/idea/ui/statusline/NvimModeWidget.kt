@@ -5,14 +5,14 @@ import com.intellij.openapi.wm.CustomStatusBarWidget
 import com.intellij.openapi.wm.StatusBar
 import com.intellij.ui.JBColor
 import com.intellij.util.ui.JBUI
-import com.ugarosa.neovim.domain.mode.NeovimModeManager
 import com.ugarosa.neovim.domain.mode.NvimMode
 import com.ugarosa.neovim.domain.mode.NvimModeKind
+import com.ugarosa.neovim.domain.mode.NvimModeManager
 import javax.swing.JLabel
 
 class NvimModeWidget : CustomStatusBarWidget {
     init {
-        service<NeovimModeManager>().addHook { _, new ->
+        service<NvimModeManager>().addHook { _, new ->
             updateMode(new)
         }
     }
@@ -28,7 +28,7 @@ class NvimModeWidget : CustomStatusBarWidget {
             background = modeToColor(mode)
         }
 
-    override fun ID(): String = NEOVIM_MODE_ID
+    override fun ID(): String = NVIM_MODE_ID
 
     override fun install(statusBar: StatusBar) {
         this.statusBar = statusBar

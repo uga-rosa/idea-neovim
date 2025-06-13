@@ -3,19 +3,19 @@ package com.ugarosa.neovim.rpc.transport
 import org.msgpack.core.MessagePack
 import org.msgpack.value.Value
 
-fun Value.asNeovimObject(): NvimObject =
+fun Value.asNvimObject(): NvimObject =
     when {
         isNilValue -> NvimObject.Nil
         isBooleanValue -> NvimObject.Bool(asBooleanValue().boolean)
         isIntegerValue -> NvimObject.Int64(asIntegerValue().toLong())
         isFloatValue -> NvimObject.Float64(asFloatValue().toDouble())
         isStringValue -> NvimObject.Str(asStringValue().toString())
-        isArrayValue -> NvimObject.Array(asArrayValue().list().map { it.asNeovimObject() })
+        isArrayValue -> NvimObject.Array(asArrayValue().list().map { it.asNvimObject() })
         isMapValue ->
             NvimObject.Dict(
                 asMapValue().map()
                     .mapKeys { it.key.asStringValue().asString() }
-                    .mapValues { it.value.asNeovimObject() },
+                    .mapValues { it.value.asNvimObject() },
             )
 
         isExtensionValue -> {

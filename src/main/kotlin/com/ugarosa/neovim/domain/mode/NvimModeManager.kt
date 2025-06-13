@@ -9,14 +9,14 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.actor
 import java.util.concurrent.atomic.AtomicReference
 
-fun getMode() = service<NeovimModeManager>().get()
+fun getMode() = service<NvimModeManager>().get()
 
-fun setMode(mode: NvimMode) = service<NeovimModeManager>().set(mode)
+fun setMode(mode: NvimMode) = service<NvimModeManager>().set(mode)
 
 private typealias OnModeChange = suspend (old: NvimMode, new: NvimMode) -> Unit
 
 @Service(Service.Level.APP)
-class NeovimModeManager(
+class NvimModeManager(
     scope: CoroutineScope,
 ) {
     private val atomicMode = AtomicReference(NvimMode.default)

@@ -51,14 +51,14 @@ class NvimTransport(
                 RESPONSE_TYPE -> {
                     // [type, msgId, error, result]
                     val id = unpacker.unpackInt()
-                    val error = unpacker.unpackValue().asNeovimObject()
-                    val result = unpacker.unpackValue().asNeovimObject()
+                    val error = unpacker.unpackValue().asNvimObject()
+                    val result = unpacker.unpackValue().asNvimObject()
                     RpcMessage.Response(id, result, error)
                 }
 
                 NOTIFICATION_TYPE -> {
                     val method = unpacker.unpackString()
-                    val params = unpacker.unpackValue().asArrayValue().list().map { it.asNeovimObject() }
+                    val params = unpacker.unpackValue().asArrayValue().list().map { it.asNvimObject() }
                     RpcMessage.Notification(method, params)
                 }
 

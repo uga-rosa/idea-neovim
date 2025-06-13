@@ -12,13 +12,13 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <postStartupActivity implementation="com.ugarosa.neovim.adapter.idea.lifecycle.NvimProjectActivity"/>
-        <statusBarWidgetFactory id="NeovimModeWidgetId"
-                                implementation="com.ugarosa.neovim.adapter.idea.ui.statusline.NeovimModeWidgetFactory"/>
+        <statusBarWidgetFactory id="NvimModeWidgetId"
+                                implementation="com.ugarosa.neovim.adapter.idea.ui.statusline.NvimModeWidgetFactory"/>
         <applicationConfigurable key="configurable.display.name.neovim"
                                  bundle="messages.NeovimBundle"
                                  instance="com.ugarosa.neovim.config.idea.NvimKeymapConfigurable"/>
-        <toolWindow id="Neovim Messages"
-                    factoryClass="com.ugarosa.neovim.adapter.idea.ui.message.NeovimMessageToolWindowFactory"
+        <toolWindow id="Nvim Messages"
+                    factoryClass="com.ugarosa.neovim.adapter.idea.ui.message.NvimMessageToolWindowFactory"
                     anchor="bottom" canCloseContents="false" secondary="true"/>
     </extensions>
 

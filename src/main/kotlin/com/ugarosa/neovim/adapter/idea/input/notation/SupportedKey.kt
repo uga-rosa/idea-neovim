@@ -10,7 +10,7 @@ private val logger = MyLogger.getInstance("com.ugarosa.neovim.keymap.notation.Su
  */
 data class SupportedKey(
     val awtName: String,
-    val neovimName: String,
+    val nvimName: String,
     // Whether this key is considered a printable character (i.e. should be passed through to KEY_TYPED)
     val printable: Boolean,
 ) {

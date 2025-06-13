@@ -8,11 +8,11 @@ import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.util.xmlb.annotations.XCollection
 import com.ugarosa.neovim.adapter.idea.action.NvimEscapeAction
-import com.ugarosa.neovim.adapter.idea.input.notation.NeovimKeyNotation
+import com.ugarosa.neovim.adapter.idea.input.notation.NvimKeyNotation
 
 @Service(Service.Level.APP)
 @State(
-    name = "NeovimKeymapSettings",
+    name = "NvimKeymapSettings",
     storages = [
         Storage(value = "neovim_keymap.xml", roamingType = RoamingType.DEFAULT),
     ],
@@ -37,10 +37,10 @@ class NvimKeymapSettings :
                     lhsStr: String,
                     rhsStr: String,
                 ) {
-                    val lhs = NeovimKeyNotation.parseNotations(lhsStr)
+                    val lhs = NvimKeyNotation.parseNotations(lhsStr)
                     val rhs =
-                        NeovimKeyNotation.parseNotations(rhsStr)
-                            .map { KeyMappingAction.SendToNeovim(it) }
+                        NvimKeyNotation.parseNotations(rhsStr)
+                            .map { KeyMappingAction.SendToNvim(it) }
                     add(UserKeyMapping(MapMode(mode), lhs, rhs))
                 }
 
@@ -49,7 +49,7 @@ class NvimKeymapSettings :
                     lhsStr: String,
                     actionId: String,
                 ) {
-                    val lhs = NeovimKeyNotation.parseNotations(lhsStr)
+                    val lhs = NvimKeyNotation.parseNotations(lhsStr)
                     val rhs = listOf(KeyMappingAction.ExecuteIdeaAction(actionId))
                     add(UserKeyMapping(MapMode(mode), lhs, rhs))
                 }

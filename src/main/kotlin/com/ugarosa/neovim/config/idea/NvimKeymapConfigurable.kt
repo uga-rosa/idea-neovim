@@ -6,7 +6,7 @@ import com.intellij.ui.ToolbarDecorator
 import com.intellij.ui.table.TableView
 import com.intellij.util.ui.ColumnInfo
 import com.intellij.util.ui.ListTableModel
-import com.ugarosa.neovim.adapter.idea.input.notation.NeovimKeyNotation
+import com.ugarosa.neovim.adapter.idea.input.notation.NvimKeyNotation
 import java.awt.BorderLayout
 import javax.swing.JComponent
 import javax.swing.JPanel
@@ -107,7 +107,7 @@ class NvimKeymapConfigurable : Configurable {
         tableModel.items.map { row ->
             UserKeyMapping(
                 mode = MapMode(row.mode),
-                lhs = NeovimKeyNotation.parseNotations(row.lhs),
+                lhs = NvimKeyNotation.parseNotations(row.lhs),
                 rhs = KeyMappingAction.parseNotations(row.rhs),
             )
         }

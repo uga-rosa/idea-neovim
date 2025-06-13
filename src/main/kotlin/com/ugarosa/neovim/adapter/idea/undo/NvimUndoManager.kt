@@ -15,7 +15,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.util.DocumentUtil
 import com.ugarosa.neovim.common.focusEditor
 import com.ugarosa.neovim.common.focusProject
-import com.ugarosa.neovim.domain.mode.NeovimModeManager
+import com.ugarosa.neovim.domain.mode.NvimModeManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -38,7 +38,7 @@ class NvimUndoManager {
     private var beforeCaret = 0
 
     init {
-        service<NeovimModeManager>().addHook { old, new ->
+        service<NvimModeManager>().addHook { old, new ->
             val editor = focusEditor() ?: return@addHook
             if (new.isInsert()) {
                 start(editor)
