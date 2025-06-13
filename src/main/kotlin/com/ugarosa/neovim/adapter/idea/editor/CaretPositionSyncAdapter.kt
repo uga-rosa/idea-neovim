@@ -143,21 +143,19 @@ class CaretPositionSyncAdapter(
                 val maxLine = (editor.document.lineCount - 1).coerceAtLeast(0)
                 val adjustedLine = (endLine + 1).coerceAtMost(maxLine)
 
-                val lineText = editor.document.getLineText(adjustedLine)
-                val maxCol = (lineText.length - 1).coerceAtLeast(0)
-                val curswantCol = lineText.takeByte(curswant).length.coerceAtMost(maxCol)
-                val lineStartOffset = editor.document.getLineStartOffset(adjustedLine)
-                return lineStartOffset + curswantCol
+                val documentLine = editor.document.getLineText(adjustedLine)
+                val maxCol = (documentLine.text.length - 1).coerceAtLeast(0)
+                val curswantCol = documentLine.text.takeByte(curswant).length.coerceAtMost(maxCol)
+                return documentLine.startOffset + curswantCol
             }
 
             MoveDirection.UP -> {
                 val startLine = editor.document.getLineNumber(foldRegion.startOffset)
-                val lineStartOffset = editor.document.getLineStartOffset(startLine)
+                val documentLine = editor.document.getLineText(startLine)
                 // should not expand the fold region
-                val maxCol = foldRegion.startOffset - lineStartOffset
-                val lineText = editor.document.getLineText(startLine)
-                val curswantCol = lineText.takeByte(curswant).length.coerceAtMost(maxCol)
-                return lineStartOffset + curswantCol
+                val maxCol = foldRegion.startOffset - documentLine.startOffset
+                val curswantCol = documentLine.text.takeByte(curswant).length.coerceAtMost(maxCol)
+                return documentLine.startOffset + curswantCol
             }
 
             else -> {
