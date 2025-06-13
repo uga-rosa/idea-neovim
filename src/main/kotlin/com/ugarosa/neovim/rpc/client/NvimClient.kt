@@ -29,6 +29,7 @@ class NvimClient(
             val result = connectionManager.request("nvim_get_api_info", emptyList())
             val chanId = result.asArray()[0].asLong()
             deferredChanId.complete(chanId)
+            execLuaNotify("channel", "install", listOf(chanId))
         }
     }
 

@@ -1,15 +1,7 @@
-local M = {}
-
-function M.install(chan_id)
-	M.on_cursor_moved(chan_id)
-	M.on_option_set(chan_id)
-	M.on_visual_selection_changed(chan_id)
-	M.on_mode_changed(chan_id)
-	M.create_command(chan_id)
-end
+local channel = require("intellij.channel")
 
 -- CursorMoved events
-function M.on_cursor_moved(chan_id)
+do
 	local group = vim.api.nvim_create_augroup("IdeaNeovim:CursorMoved", { clear = true })
 
 	local on_cursor_moved = function()
@@ -17,7 +9,7 @@ function M.on_cursor_moved(chan_id)
 		local pos = vim.fn.getcurpos()
 		local _, lnum, col, _, curswant = unpack(pos)
 		-- [bufferId, line, column]
-		vim.rpcnotify(chan_id, "IdeaNeovim:CursorMoved", bufferId, lnum - 1, col - 1, curswant - 1)
+		channel.notify("IdeaNeovim:CursorMoved", bufferId, lnum - 1, col - 1, curswant - 1)
 	end
 
 	vim.api.nvim_create_autocmd("CursorMoved", {
@@ -32,7 +24,7 @@ function M.on_cursor_moved(chan_id)
 end
 
 -- OptionSet events
-function M.on_option_set(chan_id)
+do
 	vim.api.nvim_create_autocmd("OptionSet", {
 		group = vim.api.nvim_create_augroup("IdeaNeovim:OptionSet:Global", { clear = true }),
 		pattern = { "filetype", "selection", "scrolloff", "sidescrolloff" },
@@ -41,7 +33,7 @@ function M.on_option_set(chan_id)
 				return
 			end
 			-- [bufferId, scope, name, value]
-			vim.rpcnotify(chan_id, "IdeaNeovim:OptionSet", -1, "global", event.match, vim.v.option_new)
+			channel.notify("IdeaNeovim:OptionSet", -1, "global", event.match, vim.v.option_new)
 		end,
 	})
 
@@ -63,7 +55,7 @@ function M.on_option_set(chan_id)
 						return
 					end
 					-- [bufferId, scope, name, value]
-					vim.rpcnotify(chan_id, "IdeaNeovim:OptionSet", buffer_id, "local", event2.match, vim.v.option_new)
+					channel.notify("IdeaNeovim:OptionSet", buffer_id, "local", event2.match, vim.v.option_new)
 				end,
 			})
 		end,
@@ -71,7 +63,7 @@ function M.on_option_set(chan_id)
 end
 
 -- VisualSelection events
-function M.on_visual_selection_changed(chan_id)
+do
 	vim.api.nvim_create_autocmd({ "CursorMoved", "ModeChanged" }, {
 		group = vim.api.nvim_create_augroup("IdeaNeovim:VisualSelection", { clear = true }),
 		callback = function()
@@ -93,30 +85,28 @@ function M.on_visual_selection_changed(chan_id)
 				:totable()
 			-- [bufferId, regions]
 			-- regions = []{ row, start_col, end_col }
-			vim.rpcnotify(chan_id, "IdeaNeovim:VisualSelection", buffer_id, regions)
+			channel.notify("IdeaNeovim:VisualSelection", buffer_id, regions)
 		end,
 	})
 end
 
 -- ModeChanged events
-function M.on_mode_changed(chan_id)
+do
 	vim.api.nvim_create_autocmd("ModeChanged", {
 		group = vim.api.nvim_create_augroup("IdeaNeovim:ModeChanged", { clear = true }),
 		callback = function()
 			local buffer_id = vim.api.nvim_get_current_buf()
-			vim.rpcnotify(chan_id, "IdeaNeovim:ModeChanged", buffer_id, vim.v.event.new_mode)
+			channel.notify("IdeaNeovim:ModeChanged", buffer_id, vim.v.event.new_mode)
 		end,
 	})
 end
 
 -- ExecIdeaAction command
-function M.create_command(chan_id)
+do
 	vim.api.nvim_create_user_command("ExecIdeaAction", function(opt)
 		local action_id = opt.args
-		vim.rpcnotify(chan_id, "IdeaNeovim:ExecIdeaAction", action_id)
+		channel.notify("IdeaNeovim:ExecIdeaAction", action_id)
 	end, {
 		nargs = 1,
 	})
 end
-
-return M

@@ -6,7 +6,6 @@ import com.ugarosa.neovim.adapter.idea.input.router.NvimKeyRouter
 import com.ugarosa.neovim.config.nvim.NvimOptionManager
 import com.ugarosa.neovim.logger.myLogger
 import com.ugarosa.neovim.rpc.client.NvimClient
-import com.ugarosa.neovim.rpc.client.api.installHook
 import com.ugarosa.neovim.rpc.client.api.uiAttach
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -24,9 +23,6 @@ class AppInitializer(
         scope.launch {
             client.uiAttach()
             logger.debug("Attached UI")
-
-            client.installHook()
-            logger.debug("Installed autocmd hooks")
 
             optionManager.initializeGlobal()
             logger.debug("Initialized global options")
