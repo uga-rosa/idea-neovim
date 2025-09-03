@@ -113,7 +113,7 @@ class NvimUndoManager {
                     // currently present in the document** at the moment of execution,
                     // because IntelliJ measures ranges in the *live* document.
                     //
-                    // ─ forward == true  (redo)
+                    // ─ forward == true (redo)
                     //   The document still contains the *old* text, so the range to
                     //   replace is [offset, offset + old.length).
                     //
