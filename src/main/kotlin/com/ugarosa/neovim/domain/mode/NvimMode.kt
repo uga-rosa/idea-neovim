@@ -6,7 +6,7 @@ data class NvimMode(
     val kind: NvimModeKind,
 ) {
     companion object {
-        // The ui `mode_change` event sends the mode string, but it's not same as the return value of mode().
+        // The ui `mode_change` event sends the mode string, but it's different from the return value of mode().
         // For example, this could be "operator", "visual", "replace" or "cmdline_normal".
         fun fromModeChangeEvent(raw: String): NvimMode? {
             val kind =

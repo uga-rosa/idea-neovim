@@ -3,7 +3,7 @@ package com.ugarosa.neovim.domain.position
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.util.TextRange
 
-// (0, 0) index, column is byte offset
+// (0, 0) indexes, column is byte offset
 data class NvimPosition(
     val line: Int,
     val col: Int,

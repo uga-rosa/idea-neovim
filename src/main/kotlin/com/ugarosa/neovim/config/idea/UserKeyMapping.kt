@@ -72,7 +72,7 @@ sealed class KeyMappingAction {
     }
 
     companion object {
-        // This regex will match: <Action>(actionId)
+        // This regex will match: `<Action>({actionId})`
         private val regex = Regex("""<Action>\(([^)]+)\)""")
 
         fun parseNotations(notations: String): List<KeyMappingAction> {

@@ -18,7 +18,7 @@ fun charOffsetToUtf8ByteOffset(
     charOffset: Int,
 ): Int {
     val safeOffset = charOffset.coerceAtMost(text.length)
-    return text.substring(0, safeOffset).toByteArray(Charsets.UTF_8).size
+    return text.take(safeOffset).toByteArray(Charsets.UTF_8).size
 }
 
 fun String.takeByte(byteCount: Int): String {

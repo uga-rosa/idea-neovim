@@ -16,7 +16,7 @@ suspend fun NvimClient.bufferSetLines(
     lines: List<String>,
 ) {
     // Indexing is zero-based, end-exclusive. Negative indices are interpreted as length+1+index: -1 refers to the index
-    // past the end. So to change or delete the last line use start=-2 and end=-1.
+    // past the end. So to change or delete the last line, use start=-2 and end=-1.
     request("nvim_buf_set_lines", listOf(bufferId, start, end, false, lines))
 }
 
